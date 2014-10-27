@@ -1,0 +1,16 @@
+Using KT3D - X/Y Linear Drifts
+data.txt
+NCOL = 100
+NROW = 100
+XMIN = 1067275
+XMAX = 1072225
+YMIN = 241459
+YMAX = 243934
+COLSIZE = 50
+ROWSIZE = 25
+
+Using Exponential Variogram Model
+Sill = 500
+Range = 3000
+Nugget = 0
+Anisotropy = 1

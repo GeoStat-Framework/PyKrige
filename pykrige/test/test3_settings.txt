@@ -1,0 +1,16 @@
+Using MEUK - DEM External Drift
+data.txt
+NCOL = 200
+NROW = 100
+XMIN = 1067275
+XMAX = 1072225
+YMIN = 241459
+YMAX = 243934
+COLSIZE = 25
+ROWSIZE = 25
+
+Using Spherical Variogram Model
+Sill = 500
+Range = 3000
+Nugget = 0
+Anisotropy = 1
