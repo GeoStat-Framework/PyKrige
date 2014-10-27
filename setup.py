@@ -2,7 +2,7 @@ from distutils.core import setup
 from os.path import join
 
 setup(name='PyKrige',
-      version='0.1.1',
+      version='0.1.2',
       author='Benjamin S. Murphy',
       author_email='bscott.murphy@gmail.com',
       url='https://github.com/bsmurphy/PyKrige',
