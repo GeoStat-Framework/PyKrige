@@ -1,18 +1,18 @@
-LICENSE.txt
-README.md
-setup.cfg
-setup.py
-pykrige/__init__.py
-pykrige/kriging_tools.py
-pykrige/ok.py
-pykrige/uk.py
-pykrige/variogram_models.py
-pykrige/test/test_data.txt
-pykrige/test/test_pykrige.py
-pykrige/test/test1_answer.asc
-pykrige/test/test1_settings.txt
-pykrige/test/test2_answer.asc
-pykrige/test/test2_settings.txt
-pykrige/test/test3_answer.asc
-pykrige/test/test3_dem.asc
-pykrige/test/test3_settings.txt
+include LICENSE.txt
+include README.md
+include setup.cfg
+include setup.py
+include pykrige/__init__.py
+include pykrige/kriging_tools.py
+include pykrige/ok.py
+include pykrige/uk.py
+include pykrige/variogram_models.py
+include pykrige/test/test_data.txt
+include pykrige/test/test_pykrige.py
+include pykrige/test/test1_answer.asc
+include pykrige/test/test1_settings.txt
+include pykrige/test/test2_answer.asc
+include pykrige/test/test2_settings.txt
+include pykrige/test/test3_answer.asc
+include pykrige/test/test3_dem.asc
+include pykrige/test/test3_settings.txt
