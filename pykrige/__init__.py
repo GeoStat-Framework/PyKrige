@@ -1,9 +1,7 @@
 __author__ = 'Benjamin S. Murphy'
 __version__ = '0.1.1'
 __doc__ = """Code by Benjamin S. Murphy
-College of Earth, Ocean, and Atmospheric Sciences,
-Oregon State University,
-Corvallis, OR
+bscott.murphy@gmail.com
 
 Dependencies:
     NumPy

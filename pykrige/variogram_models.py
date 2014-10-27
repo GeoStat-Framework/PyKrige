@@ -1,7 +1,5 @@
 __doc__ = """Code by Benjamin S. Murphy
-College of Earth, Ocean, and Atmospheric Sciences,
-Oregon State University,
-Corvallis, OR
+bscott.murphy@gmail.com
 
 Dependencies:
     NumPy
