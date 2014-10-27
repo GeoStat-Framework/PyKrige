@@ -45,7 +45,6 @@ Universal Kriging Example
 ```python
 from pykrige.uk import UniversalKriging
 import numpy as np
-import pykrige.kriging_tools as kt
 
 data = np.array([[2.3, 4.5, 0.3],
                  [4.7, 1.4, 0.6],
@@ -71,4 +70,4 @@ z, ss = UK.execute(gridx, gridy)
 
 To Do...
 --------
-- Consolidate core kriging function to reduce redundancy in code.
+- Consolidate core kriging functions to reduce redundancy in code.
