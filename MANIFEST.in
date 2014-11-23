@@ -1,5 +1,6 @@
 include LICENSE.txt
 include README.md
+include CHANGELOG.md
 include setup.cfg
 include setup.py
 include pykrige/__init__.py
@@ -7,6 +8,7 @@ include pykrige/kriging_tools.py
 include pykrige/ok.py
 include pykrige/uk.py
 include pykrige/variogram_models.py
+include pykrige/core.py
 include pykrige/test/test_data.txt
 include pykrige/test/test_pykrige.py
 include pykrige/test/test1_answer.asc

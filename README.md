@@ -70,4 +70,6 @@ z, ss = UK.execute(gridx, gridy)
 
 To Do...
 --------
-- Consolidate core kriging functions to reduce redundancy in code.
+- Implement more drift terms, including a stream drift.
+- Develop support for three-dimensional kriging.
+- Further test and fine-tune the external drift capabilities.

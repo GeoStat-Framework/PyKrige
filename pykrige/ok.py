@@ -32,9 +32,9 @@ with this program; if not, go to <https://www.gnu.org/>.
 """
 
 import numpy as np
-from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 import variogram_models
+import core
 
 
 class OrdinaryKriging:
@@ -43,7 +43,6 @@ class OrdinaryKriging:
 
     Dependencies:
         NumPy
-        SciPy (scipy.optimize.minimize())
         MatPlotLib
 
     Inputs:
@@ -110,7 +109,8 @@ class OrdinaryKriging:
             variogram fit (in that order). No arguments.
 
         print_statistics(): Prints out the Q1, Q2, and cR statistics for
-            the variogram fit.
+            the variogram fit. NOTE that ideally Q1 is close to zero,
+            Q2 is close to 1, and cR is as small as possible.
 
         execute(GRIDX, GRIDY): Calculates a kriged grid.
             Inputs:
@@ -147,8 +147,9 @@ class OrdinaryKriging:
         if self.verbose:
             print "Adjusting data for anisotropy..."
         self.X_ADJUSTED, self.Y_ADJUSTED = \
-            self._adjust_for_anisotropy(np.copy(self.X_ORIG),
-                                        np.copy(self.Y_ORIG))
+            core.adjust_for_anisotropy(np.copy(self.X_ORIG), np.copy(self.Y_ORIG),
+                                       self.XCENTER, self.YCENTER,
+                                       self.anisotropy_scaling, self.anisotropy_angle)
 
         self.variogram_model = variogram_model
         if self.variogram_model == 'linear':
@@ -161,10 +162,12 @@ class OrdinaryKriging:
             self.variogram_function = variogram_models.spherical_variogram_model
         if self.variogram_model == 'exponential':
             self.variogram_function = variogram_models.exponential_variogram_model
-        self.variogram_model_parameters = variogram_parameters
         if self.verbose:
             print "Initializing variogram model..."
-        self._initialize_variogram_model(nlags)
+        self.lags, self.semivariance, self.variogram_model_parameters = \
+            core.initialize_variogram_model(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z,
+                                            self.variogram_model, variogram_parameters,
+                                            self.variogram_function, nlags)
         if self.verbose:
             if self.variogram_model == 'linear':
                 print "Using '%s' Variogram Model" % 'linear'
@@ -185,129 +188,18 @@ class OrdinaryKriging:
 
         if self.verbose:
             print "Calculating statistics on variogram model fit..."
-        self.delta, self.sigma, self.epsilon = self._find_statistics()
-        self.Q1 = self._calcQ1(self.epsilon)
-        self.Q2 = self._calcQ2(self.epsilon)
-        self.cR = self._calc_cR(self.Q2, self.sigma)
+        self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED,
+                                                                    self.Y_ADJUSTED,
+                                                                    self.Z,
+                                                                    self.variogram_function,
+                                                                    self.variogram_model_parameters)
+        self.Q1 = core.calcQ1(self.epsilon)
+        self.Q2 = core.calcQ2(self.epsilon)
+        self.cR = core.calc_cR(self.Q2, self.sigma)
         if self.verbose:
             print "Q1 =", self.Q1
             print "Q2 =", self.Q2
             print "cR =", self.cR, '\n'
-
-    def _adjust_for_anisotropy(self, x, y):
-        # Adjusts data coordinates to take into account anisotropy.
-        # Can also be used to take into account data scaling.
-
-        x -= self.XCENTER
-        y -= self.YCENTER
-        xshape = x.shape
-        yshape = y.shape
-        x = x.flatten()
-        y = y.flatten()
-
-        coords = np.vstack((x, y))
-        stretch = np.array([[1, 0], [0, self.anisotropy_scaling]])
-        rotate = np.array([[np.cos(self.anisotropy_angle * np.pi/180.0),
-                            np.sin(self.anisotropy_angle * np.pi/180.0)],
-                         [- np.sin(self.anisotropy_angle * np.pi/180.0),
-                            np.cos(self.anisotropy_angle * np.pi/180.0)]])
-        rotated_coords = np.dot(stretch, np.dot(rotate, coords))
-        x = rotated_coords[0, :].reshape(xshape)
-        y = rotated_coords[1, :].reshape(yshape)
-        x += self.XCENTER
-        y += self.YCENTER
-
-        return x, y
-
-    def _initialize_variogram_model(self, nlags):
-        # Initializes the variogram model for kriging according
-        # to user specifications or to defaults.
-
-        x1, x2 = np.meshgrid(self.X_ADJUSTED, self.X_ADJUSTED)
-        y1, y2 = np.meshgrid(self.Y_ADJUSTED, self.Y_ADJUSTED)
-        z1, z2 = np.meshgrid(self.Z, self.Z)
-
-        dx = x1 - x2
-        dy = y1 - y2
-        dz = z1 - z2
-        d = np.sqrt(dx**2 + dy**2)
-        g = 0.5 * dz**2
-
-        indices = np.indices(d.shape)
-        d = d[(indices[0, :, :] > indices[1, :, :])]
-        g = g[(indices[0, :, :] > indices[1, :, :])]
-
-        # Bins are computed such that there are more at shorter lags.
-        # This effectively weights smaller distances more highly in
-        # determining the variogram. As Kitanidis points out, the variogram
-        # fit to the data at smaller lag distances is more important.
-        dmax = np.amax(d)
-        dmin = np.amin(d)
-        dd = dmax - dmin
-        bins = [dd*(0.5**n) + dmin for n in range(nlags, 1, -1)]
-        bins.insert(0, dmin)
-        bins.append(dmax)
-
-        lags = np.zeros(nlags)
-        semivariance = np.zeros(nlags)
-
-        for n in range(nlags):
-            # This 'if... else...' statement ensures that there are data
-            # in the bin so that numpy can actually find the mean. If we
-            # don't test this first, then Python kicks out an annoying warning
-            # message when there is an empty bin and we try to calculate the
-            # mean.
-            if d[(d >= bins[n]) & (d < bins[n + 1])].size > 0:
-                lags[n] = np.mean(d[(d >= bins[n]) & (d < bins[n + 1])])
-                semivariance[n] = np.mean(g[(d >= bins[n]) & (d < bins[n + 1])])
-            else:
-                lags[n] = np.nan
-                semivariance[n] = np.nan
-
-        self.lags = lags[~np.isnan(semivariance)]
-        self.semivariance = semivariance[~np.isnan(semivariance)]
-
-        if self.variogram_model_parameters is not None:
-            if self.variogram_model == 'linear' and \
-                            len(self.variogram_model_parameters) != 2:
-                raise ValueError("Exactly two parameters required "
-                                 "for linear variogram model")
-            elif self.variogram_model != 'linear' and \
-                            len(self.variogram_model_parameters) != 3:
-                raise ValueError("Exactly three parameters required "
-                                 "for %s variogram model" % self.variogram_model)
-        else:
-            self.variogram_model_parameters = self._calculate_variogram_model(
-                self.lags, self.semivariance)
-
-    def _variogram_function_error(self, params, x, y):
-        # Function used to in fitting of variogram model.
-        # Returns RMSE between calculated fit and actual data.
-
-        diff = self.variogram_function(params, x) - y
-        rmse = np.sqrt(np.mean(diff**2))
-        return rmse
-
-    def _calculate_variogram_model(self, lags, semivariance):
-        # Function that fits a variogram model when parameters
-        # are not specified.
-
-        if self.variogram_model == 'linear':
-            x0 = [(np.amax(semivariance) - np.amin(semivariance))/(np.amax(lags) - np.amin(lags)),
-                  np.amin(semivariance)]
-            bnds = ((0.0, 1000000000.0), (0.0, np.amax(semivariance)))
-        elif self.variogram_model == 'power':
-            x0 = [(np.amax(semivariance) - np.amin(semivariance))/(np.amax(lags) - np.amin(lags)),
-                  1.1, np.amin(semivariance)]
-            bnds = ((0.0, 1000000000.0), (0.01, 1.99), (0.0, np.amax(semivariance)))
-        else:
-            x0 = [np.amax(semivariance), 0.5*np.amax(lags), np.amin(semivariance)]
-            bnds = ((0.0, 10*np.amax(semivariance)), (0.0, np.amax(lags)), (0.0, np.amax(semivariance)))
-
-        res = minimize(self._variogram_function_error, x0,
-                       args=(lags, semivariance), method='SLSQP', bounds=bnds)
-
-        return res.x
 
     def update_variogram_model(self, variogram_model,
                                variogram_parameters=None,
@@ -322,24 +214,29 @@ class OrdinaryKriging:
             self.anisotropy_scaling = anisotropy_scaling
             self.anisotropy_angle = anisotropy_angle
             self.X_ADJUSTED, self.Y_ADJUSTED = \
-                self._adjust_for_anisotropy(np.copy(self.X_ORIG),
-                                            np.copy(self.Y_ORIG))
+                core.adjust_for_anisotropy(np.copy(self.X_ORIG),
+                                           np.copy(self.Y_ORIG),
+                                           self.XCENTER, self.YCENTER,
+                                           self.anisotropy_scaling,
+                                           self.anisotropy_angle)
 
         self.variogram_model = variogram_model
         if self.variogram_model == 'linear':
-            self.variogram_function = self._linear_variogram_model
+            self.variogram_function = variogram_models.linear_variogram_model
         if self.variogram_model == 'power':
-            self.variogram_function = self._power_variogram_model
+            self.variogram_function = variogram_models.power_variogram_model
         if self.variogram_model == 'gaussian':
-            self.variogram_function = self._gaussian_variogram_model
+            self.variogram_function = variogram_models.gaussian_variogram_model
         if self.variogram_model == 'spherical':
-            self.variogram_function = self._spherical_variogram_model
+            self.variogram_function = variogram_models.spherical_variogram_model
         if self.variogram_model == 'exponential':
-            self.variogram_function = self._exponential_variogram_model
-        self.variogram_model_parameters = variogram_parameters
+            self.variogram_function = variogram_models.exponential_variogram_model
         if self.verbose:
             print "Updating variogram mode..."
-        self._initialize_variogram_model(nlags)
+        self.lags, self.semivariance, self.variogram_model_parameters = \
+            core.initialize_variogram_model(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z,
+                                            self.variogram_model, variogram_parameters,
+                                            self.variogram_function, nlags)
         if self.verbose:
             if self.variogram_model == 'linear':
                 print "Using '%s' Variogram Model" % 'linear'
@@ -360,10 +257,14 @@ class OrdinaryKriging:
 
         if self.verbose:
             print "Calculating statistics on variogram model fit..."
-        self.delta, self.sigma, self.epsilon = self._find_statistics()
-        self.Q1 = self._calcQ1(self.epsilon)
-        self.Q2 = self._calcQ2(self.epsilon)
-        self.cR = self._calc_cR(self.Q2, self.sigma)
+        self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED,
+                                                                    self.Y_ADJUSTED,
+                                                                    self.Z,
+                                                                    self.variogram_function,
+                                                                    self.variogram_model_parameters)
+        self.Q1 = core.calcQ1(self.epsilon)
+        self.Q2 = core.calcQ2(self.epsilon)
+        self.cR = core.calc_cR(self.Q2, self.sigma)
         if self.verbose:
             print "Q1 =", self.Q1
             print "Q2 =", self.Q2
@@ -375,8 +276,7 @@ class OrdinaryKriging:
         ax = fig.add_subplot(111)
         ax.plot(self.lags, self.semivariance, 'r*')
         ax.plot(self.lags,
-                self.variogram_function(self.variogram_model_parameters, self.lags,),
-                'k-')
+                self.variogram_function(self.variogram_model_parameters, self.lags), 'k-')
         plt.show()
 
     def switch_verbose(self):
@@ -386,64 +286,6 @@ class OrdinaryKriging:
     def switch_plotting(self):
         """Allows user to switch plot display on/off. Takes no arguments."""
         self.enable_plotting = not self.enable_plotting
-
-    def _krige(self, x, y, z, coords):
-        # Sets up and solves the kriging matrix for the given coordinate pair.
-
-        x1, x2 = np.meshgrid(x, x)
-        y1, y2 = np.meshgrid(y, y)
-        d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-        bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2)
-
-        n = x.shape[0]
-        A = np.zeros((n+1, n+1))
-        A[:n, :n] = - self.variogram_function(self.variogram_model_parameters, d)
-        np.fill_diagonal(A, 0.0)
-        A[n, :] = 1.0
-        A[:, n] = 1.0
-        A[n, n] = 0.0
-
-        b = np.zeros((n+1, 1))
-        b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
-        b[n, 0] = 1.0
-
-        x = np.linalg.solve(A, b)
-        zinterp = np.sum(x[:n, 0] * z)
-        sigmasq = np.sum(x[:, 0] * -b[:, 0])
-
-        return zinterp, sigmasq
-
-    def _find_statistics(self):
-        # Calculates variogram fit statistics.
-
-        delta = np.zeros(self.Z.shape)
-        sigma = np.zeros(self.Z.shape)
-
-        for n in range(self.Z.shape[0]):
-            if n == 0:
-                delta[n] = 0.0
-                sigma[n] = 0.0
-            else:
-                z, ss = self._krige(self.X_ADJUSTED[:n], self.Y_ADJUSTED[:n], self.Z[:n],
-                                   (self.X_ADJUSTED[n], self.Y_ADJUSTED[n]))
-                d = self.Z[n] - z
-                delta[n] = d
-                sigma[n] = np.sqrt(ss)
-
-        delta = delta[1:]
-        sigma = sigma[1:]
-        epsilon = delta/sigma
-
-        return delta, sigma, epsilon
-
-    def _calcQ1(self, epsilon):
-        return abs(np.sum(epsilon)/(epsilon.shape[0] - 1))
-
-    def _calcQ2(self, epsilon):
-        return np.sum(epsilon**2)/(epsilon.shape[0] - 1)
-
-    def _calc_cR(self, Q2, sigma):
-        return Q2 * np.exp(np.sum(np.log(sigma**2))/sigma.shape[0])
 
     def get_epsilon_residuals(self):
         # Returns the epsilon residuals for the variogram fit.
@@ -482,13 +324,18 @@ class OrdinaryKriging:
         gridx = np.array(gridx).flatten()
         gridy = np.array(gridy).flatten()
         gridded_x, gridded_y = np.meshgrid(gridx, gridy)
-        gridded_x, gridded_y = self._adjust_for_anisotropy(gridded_x, gridded_y)
+        gridded_x, gridded_y = core.adjust_for_anisotropy(gridded_x, gridded_y,
+                                                          self.XCENTER, self.YCENTER,
+                                                          self.anisotropy_scaling,
+                                                          self.anisotropy_angle)
         gridz = np.zeros((gridy.shape[0], gridx.shape[0]))
         sigmasq = np.zeros((gridy.shape[0], gridx.shape[0]))
         for m in range(gridz.shape[0]):
             for n in range(gridz.shape[1]):
-                z, ss = self._krige(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z,
-                                    (gridded_x[m, n], gridded_y[m, n]))
+                z, ss = core.krige(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z,
+                                   (gridded_x[m, n], gridded_y[m, n]),
+                                   self.variogram_function,
+                                   self.variogram_model_parameters)
                 gridz[m, n] = z
                 sigmasq[m, n] = ss
 

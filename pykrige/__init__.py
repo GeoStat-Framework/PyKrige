@@ -1,5 +1,5 @@
 __author__ = 'Benjamin S. Murphy'
-__version__ = '0.1.2'
+__version__ = '0.2.0'
 __doc__ = """Code by Benjamin S. Murphy
 bscott.murphy@gmail.com
 
@@ -20,6 +20,10 @@ Modules:
         models. Note that the utilized formulas are as presented in Kitanidis,
         so the exact definition of the range (specifically, the associated
         scaling of that value) may differ slightly from other sources.
+    core: Contains the backbone functions of the package that are called by
+        both the OrdinaryKriging class and the UniversalKriging class.
+        The functions were consolidated here in order to reduce redundancy
+        in the code.
 
 References:
     P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
