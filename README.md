@@ -5,11 +5,10 @@ Kriging Toolkit for Python
 
 Currently, the code supports two-dimensional ordinary and universal kriging. The universal kriging code currently supports regional-linear, point-logarithmic, and external drift terms. Ordinary and universal kriging are separated into two classes. Examples of their uses are shown below. The code also includes a module that contains functions that should be useful in working with ASCII grid files (*.asc).
 
-PyKrige is on PyPi, so installation is as simple as typing
+PyKrige is on PyPi, so installation is as simple as typing the following in a command line.
 ```shell
 pip install pykrige
 ```
-in a command line.
 
 Ordinary Kriging Example
 ------------------------
