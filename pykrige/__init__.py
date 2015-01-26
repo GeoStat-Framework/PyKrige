@@ -1,12 +1,12 @@
 __author__ = 'Benjamin S. Murphy'
-__version__ = '0.2.0'
+__version__ = '1.0'
 __doc__ = """Code by Benjamin S. Murphy
 bscott.murphy@gmail.com
 
 Dependencies:
-    NumPy
-    SciPy
-    MatPlotLib
+    numpy
+    scipy
+    matplotlib
 
 Modules:
     ok: Contains class OrdinaryKriging, which is a convenience class
@@ -24,25 +24,11 @@ Modules:
         both the OrdinaryKriging class and the UniversalKriging class.
         The functions were consolidated here in order to reduce redundancy
         in the code.
+    test: Contains the test script.
 
 References:
-    P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
+    P.K. Kitanidis, Introduction to Geostatistics: Applications in Hydrogeology,
     (Cambridge University Press, 1997) 272 p.
     
-Copyright (C) 2014 Benjamin S. Murphy
-
-This file is part of PyKrige.
-
-PyKrige is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-PyKrige is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along
-with this program; if not, go to <https://www.gnu.org/>.
+Copyright (c) 2015 Benjamin S. Murphy
 """

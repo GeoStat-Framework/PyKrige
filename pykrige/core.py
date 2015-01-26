@@ -2,12 +2,12 @@ __doc__ = """Code by Benjamin S. Murphy
 bscott.murphy@gmail.com
 
 Dependencies:
-    NumPy
-    SciPy (scipy.optimize.minimize())
+    numpy
+    scipy (scipy.optimize.minimize())
 
-Methods:
+Functions:
     adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
-        Returns X and Y arrays of adjusted data coordinates.
+        Returns X and Y arrays of adjusted data coordinates. Angle is CCW.
     initialize_variogram_model(x, y, z, variogram_model, variogram_model_parameters,
                                variogram_function, nlags):
         Returns lags, semivariance, and variogram model parameters as a list.
@@ -17,8 +17,8 @@ Methods:
         Returns variogram model parameters that minimize the RMSE between the specified
         variogram function and the actual calculated variogram points.
     krige(x, y, z, coords, variogram_function, variogram_model_parameters):
-        This is the function that does that actual kriging calculations.
-        Returns the Z value and sigma squared for the calculated grid point.
+        Function that solves the ordinary kriging system for a single specified point.
+        Returns the Z value and sigma squared for the specified coordinates.
     find_statistics(x, y, z, variogram_funtion, variogram_model_parameters):
         Returns the delta, sigma, and epsilon values for the variogram fit.
     calcQ1(epsilon):
@@ -32,22 +32,7 @@ References:
     P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
     (Cambridge University Press, 1997) 272 p.
 
-Copyright (C) 2014 Benjamin S. Murphy
-
-This file is part of PyKrige.
-
-PyKrige is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-PyKrige is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along
-with this program; if not, go to <https://www.gnu.org/>.
+Copyright (c) 2015 Benjamin S. Murphy
 """
 
 import numpy as np
@@ -67,10 +52,10 @@ def adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
 
     coords = np.vstack((x, y))
     stretch = np.array([[1, 0], [0, scaling]])
-    rotate = np.array([[np.cos(angle * np.pi/180.0),
-                        np.sin(angle * np.pi/180.0)],
-                     [- np.sin(angle * np.pi/180.0),
-                        np.cos(angle * np.pi/180.0)]])
+    rotate = np.array([[np.cos(-angle * np.pi/180.0),
+                        np.sin(-angle * np.pi/180.0)],
+                     [- np.sin(-angle * np.pi/180.0),
+                        np.cos(-angle * np.pi/180.0)]])
     rotated_coords = np.dot(stretch, np.dot(rotate, coords))
     x = rotated_coords[0, :].reshape(xshape)
     y = rotated_coords[1, :].reshape(yshape)
@@ -83,7 +68,7 @@ def adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
 def initialize_variogram_model(x, y, z, variogram_model,
                                variogram_model_parameters,
                                variogram_function,
-                               nlags):
+                               nlags, weight):
     # Initializes the variogram model for kriging according
     # to user specifications or to defaults.
 
@@ -101,16 +86,35 @@ def initialize_variogram_model(x, y, z, variogram_model,
     d = d[(indices[0, :, :] > indices[1, :, :])]
     g = g[(indices[0, :, :] > indices[1, :, :])]
 
-    # Bins are computed such that there are more at shorter lags.
-    # This effectively weights smaller distances more highly in
-    # determining the variogram. As Kitanidis points out, the variogram
-    # fit to the data at smaller lag distances is more important.
+    # Equal-sized bins are now implemented. The upper limit on the bins
+    # is appended to the list (instead of calculated as part of the
+    # list comprehension) to avoid any numerical oddities
+    # (specifically, say, ending up as 0.99999999999999 instead of 1.0).
+    # Appending dmax + 0.001 ensures that the largest distance value
+    # is included in the semivariogram calculation.
     dmax = np.amax(d)
     dmin = np.amin(d)
-    dd = dmax - dmin
-    bins = [dd*(0.5**n) + dmin for n in range(nlags, 1, -1)]
-    bins.insert(0, dmin)
+    dd = (dmax - dmin)/nlags
+    bins = [dmin + n*dd for n in range(nlags)]
+    dmax += 0.001
     bins.append(dmax)
+
+    # This old binning method was experimental and doesn't seem
+    # to work too well. Bins were computed such that there are more
+    # at shorter lags. This effectively weights smaller distances more
+    # highly in determining the variogram. As Kitanidis points out,
+    # the variogram fit to the data at smaller lag distances is more
+    # important. However, the value at the largest lag probably ends up
+    # being biased too high for the larger values and thereby throws off
+    # automatic variogram calculation and confuses comparison of the
+    # semivariogram with the variogram model.
+    #
+    # dmax = np.amax(d)
+    # dmin = np.amin(d)
+    # dd = dmax - dmin
+    # bins = [dd*(0.5**n) + dmin for n in range(nlags, 1, -1)]
+    # bins.insert(0, dmin)
+    # bins.append(dmax)
 
     lags = np.zeros(nlags)
     semivariance = np.zeros(nlags)
@@ -119,8 +123,7 @@ def initialize_variogram_model(x, y, z, variogram_model,
         # This 'if... else...' statement ensures that there are data
         # in the bin so that numpy can actually find the mean. If we
         # don't test this first, then Python kicks out an annoying warning
-        # message when there is an empty bin and we try to calculate the
-        # mean.
+        # message when there is an empty bin and we try to calculate the mean.
         if d[(d >= bins[n]) & (d < bins[n + 1])].size > 0:
             lags[n] = np.mean(d[(d >= bins[n]) & (d < bins[n + 1])])
             semivariance[n] = np.mean(g[(d >= bins[n]) & (d < bins[n + 1])])
@@ -140,23 +143,29 @@ def initialize_variogram_model(x, y, z, variogram_model,
                              "for %s variogram model" % variogram_model)
     else:
         variogram_model_parameters = calculate_variogram_model(lags, semivariance,
-                                                               variogram_model, variogram_function)
+                                                               variogram_model, variogram_function, weight)
 
     return lags, semivariance, variogram_model_parameters
 
 
-def variogram_function_error(params, x, y, variogram_function):
+def variogram_function_error(params, x, y, variogram_function, weight):
     # Function used to in fitting of variogram model.
     # Returns RMSE between calculated fit and actual data.
 
     diff = variogram_function(params, x) - y
-    rmse = np.sqrt(np.mean(diff**2))
+
+    if weight:
+        weights = np.arange(x.size, 0.0, -1.0)
+        weights /= np.sum(weights)
+        rmse = np.sqrt(np.average(diff**2, weights=weights))
+    else:
+        rmse = np.sqrt(np.mean(diff**2))
+
     return rmse
 
 
-def calculate_variogram_model(lags, semivariance, variogram_model, variogram_function):
-    # Function that fits a variogram model when parameters
-    # are not specified.
+def calculate_variogram_model(lags, semivariance, variogram_model, variogram_function, weight):
+    # Function that fits a variogram model when parameters are not specified.
 
     if variogram_model == 'linear':
         x0 = [(np.amax(semivariance) - np.amin(semivariance))/(np.amax(lags) - np.amin(lags)),
@@ -170,7 +179,7 @@ def calculate_variogram_model(lags, semivariance, variogram_model, variogram_fun
         x0 = [np.amax(semivariance), 0.5*np.amax(lags), np.amin(semivariance)]
         bnds = ((0.0, 10*np.amax(semivariance)), (0.0, np.amax(lags)), (0.0, np.amax(semivariance)))
 
-    res = minimize(variogram_function_error, x0, args=(lags, semivariance, variogram_function),
+    res = minimize(variogram_function_error, x0, args=(lags, semivariance, variogram_function, weight),
                    method='SLSQP', bounds=bnds)
 
     return res.x
@@ -178,11 +187,20 @@ def calculate_variogram_model(lags, semivariance, variogram_model, variogram_fun
 
 def krige(x, y, z, coords, variogram_function, variogram_model_parameters):
         # Sets up and solves the kriging matrix for the given coordinate pair.
+        # This function is now only used for the statistics calculations.
+
+        zero_index = None
+        if np.any(x == coords[0]) and np.any(y == coords[1]):
+            zero_value = True
+        else:
+            zero_value = False
 
         x1, x2 = np.meshgrid(x, x)
         y1, y2 = np.meshgrid(y, y)
         d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
         bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2)
+        if zero_value:
+            zero_index = np.where(bd <= 1e-8)[0][0]
 
         n = x.shape[0]
         A = np.zeros((n+1, n+1))
@@ -194,6 +212,8 @@ def krige(x, y, z, coords, variogram_function, variogram_model_parameters):
 
         b = np.zeros((n+1, 1))
         b[:n, 0] = - variogram_function(variogram_model_parameters, bd)
+        if zero_value:
+            b[zero_index, 0] = 0.0
         b[n, 0] = 1.0
 
         x = np.linalg.solve(A, b)

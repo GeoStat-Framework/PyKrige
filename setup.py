@@ -1,8 +1,8 @@
 from distutils.core import setup
-from os.path import join
+# from os.path import join
 
 setup(name='PyKrige',
-      version='0.2.0',
+      version='1.0',
       author='Benjamin S. Murphy',
       author_email='bscott.murphy@gmail.com',
       url='https://github.com/bsmurphy/PyKrige',
@@ -13,9 +13,10 @@ setup(name='PyKrige',
       packages=['pykrige'],
 #      package_data={'pykrige':['README.md', 'CHANGELOG.md', 'LICENSE.txt', \
 #                    join('test', '*.txt'), join('test', '*.asc')]},
-      classifiers=['Development Status :: 4 - Beta',
+      requires=['numpy', 'scipy', 'matplotlib'],
+      classifiers=['Development Status :: 5 - Production/Stable',
                    'Intended Audience :: Science/Research',
-                   'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
+                   'License :: OSI Approved :: BSD License',
                    'Programming Language :: Python',
                    'Topic :: Scientific/Engineering',
                    'Topic :: Scientific/Engineering :: GIS']

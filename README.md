@@ -5,10 +5,17 @@ Kriging Toolkit for Python
 
 Currently, the code supports two-dimensional ordinary and universal kriging. The universal kriging code currently supports regional-linear, point-logarithmic, and external drift terms. Ordinary and universal kriging are separated into two classes. Examples of their uses are shown below. The code also includes a module that contains functions that should be useful in working with ASCII grid files (*.asc).
 
-PyKrige is on PyPi, so installation is as simple as typing the following in a command line.
+PyKrige is on PyPi, so installation is as simple as typing the following into a command line.
 ```shell
 pip install pykrige
 ```
+
+To update PyKrige from PyPi, type the following into a command line.
+```shell
+pip install --upgrade pykrige
+```
+
+PyKrige now uses the BSD 3-Clause License.
 
 Ordinary Kriging Example
 ------------------------
@@ -18,14 +25,14 @@ from pykrige.ok import OrdinaryKriging
 import numpy as np
 import pykrige.kriging_tools as kt
 
-data = np.array([[2.3, 4.5, 0.3],
-                 [4.7, 1.4, 0.6],
-                 [8.2, 7.4, 1.6],
-                 [3.6, 8.5, 1.3],
-                 [1.2, 7.6, 4.7]])
+data = np.array([[0.3, 1.2, 0.47],
+                 [1.9, 0.6, 0.56],
+                 [1.1, 3.2, 0.74],
+                 [3.3, 4.4, 1.47],
+                 [4.7, 3.8, 1.74]])
 
-gridx = np.arange(0.0, 10.0, 0.5)
-gridy = np.arange(0.0, 10.0, 0.5)
+gridx = np.arange(0.0, 5.5, 0.5)
+gridy = np.arange(0.0, 5.5, 0.5)
 
 # Create the ordinary kriging object. Required inputs are the X-coordinates of
 # the data points, the Y-coordinates of the data points, and the Z-values of the
@@ -37,8 +44,10 @@ gridy = np.arange(0.0, 10.0, 0.5)
 OK = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2], variogram_model='linear',
                      verbose=False, enable_plotting=False)
 					 
-# Creates the kriged grid and the variance grid.
-z, ss = OK.execute(gridx, gridy)
+# Creates the kriged grid and the variance grid. Allows for kriging on a rectangular
+# grid of points, on a masked rectangular grid of points, or with arbitrary points.
+# (See OrdinaryKriging.__doc__ for more information.)
+z, ss = OK.execute('grid', gridx, gridy)
 
 # Writes the kriged grid to an ASCII grid file.
 kt.write_asc_grid(gridx, gridy, z, filename="output.asc")
@@ -51,14 +60,14 @@ Universal Kriging Example
 from pykrige.uk import UniversalKriging
 import numpy as np
 
-data = np.array([[2.3, 4.5, 0.3],
-                 [4.7, 1.4, 0.6],
-                 [8.2, 7.4, 1.6],
-                 [3.6, 8.5, 1.3],
-                 [1.2, 7.6, 4.7]])
+data = np.array([[0.3, 1.2, 0.47],
+                 [1.9, 0.6, 0.56],
+                 [1.1, 3.2, 0.74],
+                 [3.3, 4.4, 1.47],
+                 [4.7, 3.8, 1.74]])
 
-gridx = np.arange(0.0, 10.0, 0.5)
-gridy = np.arange(0.0, 10.0, 0.5)
+gridx = np.arange(0.0, 5.5, 0.5)
+gridy = np.arange(0.0, 5.5, 0.5)
 
 # Create the ordinary kriging object. Required inputs are the X-coordinates of
 # the data points, the Y-coordinates of the data points, and the Z-values of the
@@ -69,12 +78,12 @@ gridy = np.arange(0.0, 10.0, 0.5)
 UK = UniversalKriging(data[:, 0], data[:, 1], data[:, 2], variogram_model='linear',
                       drift_terms=['regional_linear'])
 					 
-# Creates the kriged grid and the variance grid.
-z, ss = UK.execute(gridx, gridy)
+# Creates the kriged grid and the variance grid. Allows for kriging on a rectangular
+# grid of points, on a masked rectangular grid of points, or with arbitrary points.
+# (See UniversalKriging.__doc__ for more information.)
+z, ss = UK.execute('grid', gridx, gridy)
 ```
 
 To Do...
 --------
-- Implement more drift terms, including a stream drift.
-- Develop support for three-dimensional kriging.
-- Further test and fine-tune the external drift capabilities.
+In the future, the code will ideally include more drift terms, including a stream drift. Someday the code will also support 3D kriging.
