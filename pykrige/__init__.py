@@ -1,5 +1,5 @@
 __author__ = 'Benjamin S. Murphy'
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __doc__ = """Code by Benjamin S. Murphy
 bscott.murphy@gmail.com
 
