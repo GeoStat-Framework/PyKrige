@@ -141,6 +141,8 @@ class OrdinaryKriging:
         (Cambridge University Press, 1997) 272 p.
     """
 
+    eps = 1e-15   # Cutoff for comparison to zero
+
     def __init__(self, x, y, z, variogram_model='linear',
                  variogram_parameters=None, nlags=6, weight=False,
                  anisotropy_scaling=1.0, anisotropy_angle=0.0,
@@ -387,13 +389,21 @@ class OrdinaryKriging:
         ny = ypoints.shape[0]
         n = self.X_ADJUSTED.shape[0]
         zero_index = None
-        if np.any(xpoints == self.X_ORIG) and np.any(ypoints == self.Y_ORIG):
-            zero_value = True
-        else:
-            zero_value = False
+        zero_value = False
 
         if style == 'grid':
+
             grid_x, grid_y = np.meshgrid(xpoints, ypoints)
+            if np.any(np.asarray([np.any(np.in1d(np.unique(np.where(np.absolute(grid_x - self.X_ORIG[i])
+                                                                    <= self.eps)[0]),
+                                                 np.unique(np.where(np.absolute(grid_y - self.Y_ORIG[i])
+                                                                    <= self.eps)[0]))) &
+                                  np.any(np.in1d(np.unique(np.where(np.absolute(grid_x - self.X_ORIG[i])
+                                                                    <= self.eps)[1]),
+                                                 np.unique(np.where(np.absolute(grid_y - self.Y_ORIG[i])
+                                                                    <= self.eps)[1])))
+                                  for i in range(self.X_ORIG.size)])):
+                zero_value = True
             grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y,
                                                         self.XCENTER, self.YCENTER,
                                                         self.anisotropy_scaling, self.anisotropy_angle)
@@ -415,7 +425,7 @@ class OrdinaryKriging:
             data_y_3d = np.repeat(np.repeat(self.Y_ADJUSTED[np.newaxis, np.newaxis, :], ny, axis=0), nx, axis=1)
             bd = np.sqrt((data_x_3d - grid_x_3d)**2 + (data_y_3d - grid_y_3d)**2)
             if zero_value:
-                zero_index = np.where(bd == 0.0)
+                zero_index = np.where(np.absolute(bd) <= self.eps)
             b = np.zeros((ny, nx, n+1, 1))
             b[:, :, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
             if zero_value:
@@ -427,6 +437,7 @@ class OrdinaryKriging:
             sigmasq = np.sum(x[:, :, :, 0] * -b[:, :, :, 0], axis=2)
 
         elif style == 'masked':
+
             if mask is None:
                 raise IOError("Must specify boolean masking array.")
             if mask.shape[0] != ny or mask.shape[1] != nx:
@@ -436,6 +447,16 @@ class OrdinaryKriging:
                     raise ValueError("Mask dimensions do not match specified grid dimensions.")
 
             grid_x, grid_y = np.meshgrid(xpoints, ypoints)
+            if np.any(np.asarray([np.any(np.in1d(np.unique(np.where(np.absolute(grid_x - self.X_ORIG[i])
+                                                                    <= self.eps)[0]),
+                                                 np.unique(np.where(np.absolute(grid_y - self.Y_ORIG[i])
+                                                                    <= self.eps)[0]))) &
+                                  np.any(np.in1d(np.unique(np.where(np.absolute(grid_x - self.X_ORIG[i])
+                                                                    <= self.eps)[1]),
+                                                 np.unique(np.where(np.absolute(grid_y - self.Y_ORIG[i])
+                                                                    <= self.eps)[1])))
+                                  for i in range(self.X_ORIG.size)])):
+                zero_value = True
             grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y,
                                                         self.XCENTER, self.YCENTER,
                                                         self.anisotropy_scaling, self.anisotropy_angle)
@@ -459,7 +480,7 @@ class OrdinaryKriging:
             data_y_3d = np.repeat(np.repeat(self.Y_ADJUSTED[np.newaxis, np.newaxis, :], ny, axis=0), nx, axis=1)
             bd = np.sqrt((data_x_3d - grid_x_3d)**2 + (data_y_3d - grid_y_3d)**2)
             if zero_value:
-                zero_index = np.where(bd == 0.0)
+                zero_index = np.where(np.absolute(bd) <= self.eps)
             b = np.zeros((ny, nx, n+1, 1))
             b[:, :, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
             if zero_value:
@@ -476,6 +497,11 @@ class OrdinaryKriging:
             if xpoints.shape != ypoints.shape:
                 raise ValueError("xpoints and ypoints must have same dimensions "
                                  "when treated as listing discrete points.")
+
+            if np.any(np.asarray([np.any(np.where(np.absolute(xpoints - self.X_ORIG[i]) <= self.eps)[0] ==
+                                         np.where(np.absolute(ypoints - self.Y_ORIG[i]) <= self.eps)[0])
+                                  for i in range(self.X_ORIG.size)])):
+                zero_value = True
 
             xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
                                                           self.anisotropy_scaling, self.anisotropy_angle)
@@ -497,7 +523,7 @@ class OrdinaryKriging:
             y_data = np.repeat(self.Y_ADJUSTED[np.newaxis, :], nx, axis=0)
             bd = np.sqrt((x_data - x_vals)**2 + (y_data - y_vals)**2)
             if zero_value:
-                zero_index = np.where(bd == 0.0)
+                zero_index = np.where(np.absolute(bd) <= self.eps)
             b = np.zeros((nx, n+1, 1))
             b[:, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
             if zero_value:

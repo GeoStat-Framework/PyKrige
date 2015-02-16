@@ -190,7 +190,7 @@ def krige(x, y, z, coords, variogram_function, variogram_model_parameters):
         # This function is now only used for the statistics calculations.
 
         zero_index = None
-        if np.any(x == coords[0]) and np.any(y == coords[1]):
+        if np.where((np.absolute(x - coords[0]) <= 1e-15) & (np.absolute(y - coords[1]) <= 1e-15))[0].size > 0:
             zero_value = True
         else:
             zero_value = False
