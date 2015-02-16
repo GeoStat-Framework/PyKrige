@@ -24,7 +24,7 @@ January 25, 2015
 * Added more comprehensive testing script.
 * Fixed slight problem with read_asc_grid() function in kriging_tools. Also made some code improvements to both the write_asc_grid() and read_asc_grid() functions in kriging_tools.
 
-**Version 1.0.1**
+**Version 1.0.2**
 February 15, 2015
 
 * Fixed a problem with the tests that are performed to see if the kriging system is to be solved at a data point. (Tests are completed in order to determine whether to force the kriging solution to converge to the true data value.)

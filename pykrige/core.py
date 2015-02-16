@@ -190,17 +190,15 @@ def krige(x, y, z, coords, variogram_function, variogram_model_parameters):
         # This function is now only used for the statistics calculations.
 
         zero_index = None
-        if np.where((np.absolute(x - coords[0]) <= 1e-15) & (np.absolute(y - coords[1]) <= 1e-15))[0].size > 0:
-            zero_value = True
-        else:
-            zero_value = False
+        zero_value = False
 
         x1, x2 = np.meshgrid(x, x)
         y1, y2 = np.meshgrid(y, y)
         d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
         bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2)
-        if zero_value:
-            zero_index = np.where(bd <= 1e-8)[0][0]
+        if np.any(np.absolute(bd) <= 1e-10):
+            zero_value = True
+            zero_index = np.where(bd <= 1e-10)[0][0]
 
         n = x.shape[0]
         A = np.zeros((n+1, n+1))
