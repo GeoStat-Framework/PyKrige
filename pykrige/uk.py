@@ -905,36 +905,36 @@ class UniversalKriging:
         self.n_withdrifts = n_withdrifts
 
 
-    def _apply_dot_product(self, x, y, z, coords, Ai, b):
+    def _apply_dot_product(self, x, y, z, x_pt, y_pt, Ai, b):
         n_withdrifts = self.n_withdrifts
         n = x.shape[0]
 
-        bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2)
-        b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+        bd = np.sqrt((x - x_pt)**2 + (y - y_pt)**2)
+        b[:n] = - self.variogram_function(self.variogram_model_parameters, bd)
         index = n
         if self.regional_linear_drift:
-            b[index, 0] = coords[0]
+            b[index] = x_pt
             index += 1
-            b[index, 0] = coords[1]
+            b[index] = y_pt
             index += 1
         if self.point_log_drift:
             for well_no in range(self.point_log_array.shape[0]):
-                dist = np.sqrt((coords[0] - self.point_log_array[well_no, 0])**2 +
-                               (coords[1] - self.point_log_array[well_no, 1])**2)
-                b[index, 0] = - self.point_log_array[well_no, 2] * np.log(dist)
+                dist = np.sqrt((x_pt - self.point_log_array[well_no, 0])**2 +
+                               (y_pt - self.point_log_array[well_no, 1])**2)
+                b[index] = - self.point_log_array[well_no, 2] * np.log(dist)
                 index += 1
         if self.external_Z_drift:
-            b[index, 0] = self._calculate_data_point_zscalars(np.array([coords[0]]),
-                                                              np.array([coords[1]]))
+            b[index] = self._calculate_data_point_zscalars(np.array([x_pt]),
+                                                              np.array([y_pt]))
             index += 1
         if index != n_withdrifts:
             print "WARNING: Error in setting up kriging system. Kriging may fail."
         if self.UNBIAS:
-            b[n_withdrifts, 0] = 1.0
+            b[n_withdrifts] = 1.0
 
         res = np.dot(Ai, b)
-        zinterp = np.sum(res[:n, 0] * z)
-        sigmasq = np.sum(res[:, 0] * -b[:, 0])
+        zinterp = np.sum(res[:n] * z)
+        sigmasq = np.sum(res[:] * -b[:])
 
         return zinterp, sigmasq
 
@@ -942,19 +942,19 @@ class UniversalKriging:
     def _python_loop(self, grid_x, grid_y, x_adjusted, y_adjusted, z_in, Ai, b):
             """ Main loop that calculate kriging on the grid""" 
 
-            nx, ny = grid_x.shape
+            ny, nx = grid_x.shape
             gridz = np.zeros((ny, nx))
             sigmasq = np.zeros((ny, nx))
 
 
-            for m in range(ny):
-                for n in range(nx):
-                    xpt, ypt = grid_x[m, n], grid_y[m, n]
+            for n in range(ny):
+                for m in range(nx):
+                    xpt, ypt = grid_x[n, m], grid_y[n, m]
 
                     z, ss = self._apply_dot_product(x_adjusted, y_adjusted, z_in,
-                                                    (xpt, ypt), Ai, b)
-                    gridz[m, n] = z
-                    sigmasq[m, n] = ss
+                                                    xpt, ypt, Ai, b)
+                    gridz[n, m] = z
+                    sigmasq[n, m] = ss
             return gridz, sigmasq
 
 
@@ -983,9 +983,9 @@ class UniversalKriging:
             Ai = self._inverse_system(x_adjusted, y_adjusted, z_in)
 
             if self.UNBIAS:
-                b = np.zeros((self.n_withdrifts + 1, 1))
+                b = np.zeros(self.n_withdrifts + 1)
             else:
-                b = np.zeros((self.n_withdrifts, 1))
+                b = np.zeros(self.n_withdrifts)
 
             if backend == 'python':
                 gridz, sigmasq = self._python_loop(grid_x, grid_y, x_adjusted, y_adjusted, z_in, Ai, b)

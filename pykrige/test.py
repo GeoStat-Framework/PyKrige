@@ -497,16 +497,17 @@ class TestPyKrigeOpt(unittest.TestCase):
         data = np.random.rand(100, 3)
 
         self.gridx = np.linspace(0.0, 1, 20)
-        self.gridy = np.linspace(0.0, 1, 20)
+        self.gridy = np.linspace(0.0, 1, 30)
         self.UK = UniversalKriging(data[:, 0], data[:, 1], data[:, 2], variogram_model='linear',
                                       drift_terms=['regional_linear'])
 
     def test_uk_python_backend(self):
         """ Compare the optimised version with the original implementation """
         z, ss = self.UK.execute('grid', self.gridx, self.gridy)
-        z2, ss2 = self.UK.cexecute('grid', self.gridx, self.gridy)
+        z2, ss2 = self.UK.cexecute('grid', self.gridx, self.gridy, backend='python')
         self.assertTrue(np.allclose(z, z2))
         self.assertTrue(np.allclose(ss, ss2))
+
 
 
 if __name__ == '__main__':
