@@ -22,7 +22,6 @@ import scipy.linalg
 import matplotlib.pyplot as plt
 import variogram_models
 import core
-import numexpr as ne
 
 
 class UniversalKriging:
