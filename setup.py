@@ -10,7 +10,8 @@ Cython.Compiler.Options.annotate = True
 ext_modules=[
         Extension("pykrige.lib.cuk",
                 ["pykrige/lib/cuk.pyx"],
-                extra_compile_args=['-O3', '-march=native'],
+                extra_compile_args=['-g', '-O3', '-march=native'],
+                extra_link_args=['-g', '-O3', '-march=native']
                 )]
 
 setup(name='PyKrige',

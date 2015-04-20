@@ -943,19 +943,19 @@ class UniversalKriging:
     def _python_loop(self, grid_x, grid_y, x_adjusted, y_adjusted, z_in, Ai, b):
             """ Main loop that calculate kriging on the grid""" 
 
-            nx, ny = grid_x.shape
+            ny, nx = grid_x.shape
             gridz = np.zeros((ny, nx))
             sigmasq = np.zeros((ny, nx))
 
 
-            for m in range(ny):
-                for n in range(nx):
-                    xpt, ypt = grid_x[m, n], grid_y[m, n]
+            for n in range(ny):
+                for m in range(nx):
+                    xpt, ypt = grid_x[n, m], grid_y[n, m]
 
                     z, ss = self._apply_dot_product(x_adjusted, y_adjusted, z_in,
                                                     xpt, ypt, Ai, b)
-                    gridz[m, n] = z
-                    sigmasq[m, n] = ss
+                    gridz[n, m] = z
+                    sigmasq[n, m] = ss
             return gridz, sigmasq
 
 

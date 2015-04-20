@@ -8,11 +8,12 @@ import scipy.linalg.blas
 #from scipy.linalg._fblas import dgemv # this is slower but more general
 from libc.math cimport sqrt
 from cpython.cobject cimport PyCObject_AsVoidPtr # only works with python 2, use capsules for python 3
+#from cython.parallel import prange
 
 np.import_array()
 
 
-# interface to BLAS matrix-vector multipilcation though scipy.linalg 
+# low level interface to BLAS matrix-vector multiplication from scipy.linalg
 # adapted from
 # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/tsa/kalmanf/kalman_loglike.pyx
 
@@ -29,12 +30,12 @@ ctypedef int dgemv_t(
         np.float64_t *beta, # Scalar multiple
         np.float64_t *y, # Vector y, min(len(y)) = m
         int *incy # The increment between elements of y (usually 1)
-        )
+        ) nogil
 
 cdef dgemv_t *dgemv = <dgemv_t*>PyCObject_AsVoidPtr(scipy.linalg.blas.get_blas_funcs('gemv', dtype='float64')._cpointer)
 
 #ctypedef void (*variogram_model_t)(double [::1], np.ndarray[np.float64_t], np.ndarray[np.float64_t])
-ctypedef void (*variogram_model_t)(double [::1], double [::1], int, double [::1])
+ctypedef void (*variogram_model_t)(double [::1], double [::1], int, double [::1]) nogil
 
 
 cpdef _c_loop(double [:, ::1] grid_x, double [:, ::1] grid_y,
@@ -45,8 +46,8 @@ cpdef _c_loop(double [:, ::1] grid_x, double [:, ::1] grid_y,
               dict pars):
     cdef int nx, ny, n, i, j
 
-    nx = grid_x.shape[0]
-    ny = grid_x.shape[1]
+    ny = grid_x.shape[0]
+    nx = grid_x.shape[1]
     n = x_adjusted.shape[0]
 
     cdef double [:,::1] gridz = np.zeros((ny, nx), dtype='float64')
@@ -56,6 +57,7 @@ cpdef _c_loop(double [:, ::1] grid_x, double [:, ::1] grid_y,
     cdef double [::1] tmp = np.zeros(n, dtype='float64')
     cdef double xpt, ypt
     cdef double z, ss
+
 
     func_name = pars['variogram_function'].__name__
 
@@ -68,6 +70,7 @@ cpdef _c_loop(double [:, ::1] grid_x, double [:, ::1] grid_y,
 
     cdef double [::1] variogram_model_parameters = np.asarray(pars['variogram_model_parameters'])
 
+    cdef int n_withdrifts = pars['n_withdrifts']
 
     for i in range(ny):
         for j in range(nx):
@@ -78,7 +81,9 @@ cpdef _c_loop(double [:, ::1] grid_x, double [:, ::1] grid_y,
                                             xpt, ypt,
                                             bd, res, tmp,
                                             c_variogram_function, variogram_model_parameters,
-                                            Ai, b, pars, &z, &ss)
+                                            Ai, b,
+                                            pars,
+                                            &z, &ss)
             gridz[i, j] = z
             sigmasq[i, j] = ss
     return gridz, sigmasq
@@ -90,7 +95,7 @@ cdef int _apply_dot_product(double [::1] x, double [::1] y, double[::1] z,
                             variogram_model_t variogram_function, double [::1] variogram_model_parameters,
                             double [:,:] Ai, double [::1] b, dict pars,
                             double * zinterp, double *sigmasq):
-    cdef int n_withdrifts, n, index, k, l, nb, inc=1
+    cdef int  n, n_withdrifts, index, k, l, nb, inc=1
     cdef double alpha=1.0, beta=0.0
     n_withdrifts = pars['n_withdrifts']
     n = x.shape[0]
@@ -153,9 +158,6 @@ cdef int _apply_dot_product(double [::1] x, double [::1] y, double[::1] z,
     return 0
 
 # copied from variogram_model.py
-
-#cdef void _c_linear_variogram_model(double [::1] params, np.ndarray[np.float64_t]  dist, np.ndarray[np.float64_t] out):
-#    out[:] =  params[0]*dist + params[1]
 
 cdef void _c_linear_variogram_model(double [::1] params, double [::1]  dist, int n, double[::1] out) nogil:
     cdef int k
