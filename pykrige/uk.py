@@ -940,37 +940,100 @@ class UniversalKriging:
 
 
     def _python_loop(self, grid_x, grid_y, x_adjusted, y_adjusted, z_in, Ai, b):
-            """ Main loop that calculate kriging on the grid""" 
+        """ Main loop that calculate kriging on the grid""" 
 
-            ny, nx = grid_x.shape
-            gridz = np.zeros((ny, nx))
-            sigmasq = np.zeros((ny, nx))
-
-
-            for n in range(ny):
-                for m in range(nx):
-                    xpt, ypt = grid_x[n, m], grid_y[n, m]
-
-                    z, ss = self._apply_dot_product(x_adjusted, y_adjusted, z_in,
-                                                    xpt, ypt, Ai, b)
-                    gridz[n, m] = z
-                    sigmasq[n, m] = ss
-            return gridz, sigmasq
+        ny, nx = grid_x.shape
+        gridz = np.zeros((ny, nx))
+        sigmasq = np.zeros((ny, nx))
 
 
-    def cexecute(self, style, xpoints, ypoints, mask=None, backend='python'):
+        for n in range(ny):
+            for m in range(nx):
+                xpt, ypt = grid_x[n, m], grid_y[n, m]
+
+                z, ss = self._apply_dot_product(x_adjusted, y_adjusted, z_in,
+                                                xpt, ypt, Ai, b)
+                gridz[n, m] = z
+                sigmasq[n, m] = ss
+        return gridz, sigmasq
+
+    def _python_vectorised(self, grid_x, grid_y, x_adjusted, y_adjusted, z_in, Ai, b):
+        """ Main loop that calculate kriging on the grid""" 
+
+        from scipy.spatial.distance import cdist 
+
+        zero_value = False
+        ny, nx = grid_x.shape
+
+        n_withdrifts = self.n_withdrifts
+        n = x_adjusted.shape[0]
+
+
+        data = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
+        grid = np.concatenate((grid_x[:, :, np.newaxis], grid_y[:, :, np.newaxis]), axis=2).reshape(-1,2)
+
+        grid_x_3d = grid_x[np.newaxis, :, :]
+        grid_y_3d = grid_y[np.newaxis, :, :]
+
+        data_z_3d = self.Z[:, np.newaxis, np.newaxis]
+
+        bd = cdist(data, grid, 'euclidean').reshape(n, ny, nx)
+        #bd = np.sqrt((data_x_3d - grid_x_3d)**2 + (data_y_3d - grid_y_3d)**2)
+
+        #if np.any(np.absolute(bd) <= self.eps):
+        #    zero_value = True
+        #    zero_index = np.where(np.absolute(bd) <= self.eps)
+        if self.UNBIAS:
+            b = np.zeros((n_withdrifts+1, ny, nx))
+        else:
+            b = np.zeros((n_withdrifts+1, ny, nx))
+        b[:n, :, :] = - self.variogram_function(self.variogram_model_parameters, bd)
+        #if zero_value:
+        #    b[zero_index[0], zero_index[1], zero_index[2]] = 0.0
+
+        i = n
+        if self.regional_linear_drift:
+            b[i, :, :] = grid_x_3d[0, :, :]
+            i += 1
+            b[i, :, :] = grid_y_3d[0, :, :]
+            i += 1
+        if self.point_log_drift:
+            for well_no in range(self.point_log_array.shape[0]):
+                log_dist = np.log(np.sqrt((grid_x_3d[:, :, 0] - self.point_log_array[well_no, 0])**2 +
+                                          (grid_y_3d[:, :, 0] - self.point_log_array[well_no, 1])**2))
+                if np.any(np.isinf(log_dist)):
+                    log_dist[np.isinf(log_dist)] = -100.0
+                b[:, :, i, 0] = - self.point_log_array[well_no, 2] * log_dist
+                i += 1
+        if self.external_Z_drift:
+            b[0, :, :] = self._calculate_data_point_zscalars(grid_x_3d[0, :, :], grid_y_3d[0, :, :])
+            i += 1
+        if i != n_withdrifts:
+            print "WARNING: Error in setting up kriging system. Kriging may fail."
+        if self.UNBIAS:
+            b[n_withdrifts, :, :] = 1.0
+
+
+        b_flat = b.reshape(b.shape[0], -1)
+        x = np.dot(Ai, b_flat)
+        x = x.reshape(-1, ny, nx)
+        zvalues = np.sum(x[:n, :, :] * data_z_3d, axis=0)
+        sigmasq = np.sum(x[:, :, :] * -b[:, :, :], axis=0)
+
+        return zvalues, sigmasq
+
+
+    def cexecute(self, style, xpoints, ypoints, mask=None, backend='vectorized'):
         """ Optimised version of execute. See execute.__doc__ ."""
 
         if self.verbose:
             print "Executing Universal Kriging...\n"
 
-        if backend not in ['python', 'C']:
+        if backend not in ['python', 'vectorized', 'C']:
             raise NotImplementedError
 
         xpoints = np.array(xpoints, copy=True).flatten()
         ypoints = np.array(ypoints, copy=True).flatten()
-        zero_index = None
-        zero_value = False
 
         if style == 'grid':
 
@@ -989,13 +1052,9 @@ class UniversalKriging:
 
             if backend == 'python':
                 gridz, sigmasq = self._python_loop(grid_x, grid_y, x_adjusted, y_adjusted, z_in, Ai, b)
+            elif backend == 'vectorized':
+                gridz, sigmasq = self._python_vectorised(grid_x, grid_y, x_adjusted, y_adjusted, z_in, Ai, b)
             else:
-                flags = {'n_withdrifts': self.n_withdrifts,
-                        'regional_linear_drift': self.regional_linear_drift,
-                        'point_log_array': self.point_log_array,
-                        'external_Z_drift': self.external_Z_drift,
-                        'UNBIAS': self.UNBIAS}
-
 
                 raise NotImplementedError
 

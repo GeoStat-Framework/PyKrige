@@ -508,6 +508,12 @@ class TestPyKrigeOpt(unittest.TestCase):
         self.assertTrue(np.allclose(z, z2))
         self.assertTrue(np.allclose(ss, ss2))
 
+    def test_uk_vectorized_backend(self):
+        """ Compare the optimised version with the original implementation """
+        z, ss = self.UK.execute('grid', self.gridx, self.gridy)
+        z2, ss2 = self.UK.cexecute('grid', self.gridx, self.gridy, backend='vectorized')
+        self.assertTrue(np.allclose(z, z2))
+        self.assertTrue(np.allclose(ss, ss2))
 
 
 if __name__ == '__main__':
