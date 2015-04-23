@@ -980,16 +980,18 @@ class UniversalKriging:
         bd = cdist(data, grid, 'euclidean').reshape(n, ny, nx)
         #bd = np.sqrt((data_x_3d - grid_x_3d)**2 + (data_y_3d - grid_y_3d)**2)
 
-        #if np.any(np.absolute(bd) <= self.eps):
-        #    zero_value = True
-        #    zero_index = np.where(np.absolute(bd) <= self.eps)
+        if np.any(np.absolute(bd) <= self.eps):
+            zero_value = True
+            zero_index = np.where(np.absolute(bd) <= self.eps)
+        else:
+            zero_value = False
         if self.UNBIAS:
             b = np.zeros((n_withdrifts+1, ny, nx))
         else:
             b = np.zeros((n_withdrifts+1, ny, nx))
         b[:n, :, :] = - self.variogram_function(self.variogram_model_parameters, bd)
-        #if zero_value:
-        #    b[zero_index[0], zero_index[1], zero_index[2]] = 0.0
+        if zero_value:
+            b[zero_index[0], zero_index[1], zero_index[2]] = 0.0
 
         i = n
         if self.regional_linear_drift:
