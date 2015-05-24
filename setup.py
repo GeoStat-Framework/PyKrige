@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 from os.path import join
 
 setup(name='PyKrige',
