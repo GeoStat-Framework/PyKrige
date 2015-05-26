@@ -757,6 +757,7 @@ class TestPyKrige(unittest.TestCase):
         self.assertFalse(np.allclose(np.ravel(z), data[:, 2]))
         self.assertFalse(np.allclose(ss, 0.))
 
+<<<<<<< HEAD
     def test_custom_variogram(self):
         func = lambda params, dist: params[0] * np.log10(dist + params[1]) + params[2]
 
@@ -983,6 +984,31 @@ class TestPyKrige(unittest.TestCase):
         self.assertAlmostEqual(ss[1, 2, 2], 0.0)
         self.assertNotAlmostEqual(ss[2, 2, 2], 0.0)
         self.assertNotAlmostEqual(ss[0, 0, 0], 0.0)
+=======
+class TestPyKrigeOpt(unittest.TestCase):
+    def setUp(self):
+        data = np.random.rand(100, 3)
+
+        self.gridx = np.linspace(0.0, 1, 20)
+        self.gridy = np.linspace(0.0, 1, 30)
+        self.UK = UniversalKriging(data[:, 0], data[:, 1], data[:, 2], variogram_model='linear',
+                                      drift_terms=['regional_linear'])
+
+    def test_uk_python_backend(self):
+        """ Compare the optimised version with the original implementation """
+        z, ss = self.UK.execute('grid', self.gridx, self.gridy)
+        z2, ss2 = self.UK.cexecute('grid', self.gridx, self.gridy, backend='python')
+        self.assertTrue(np.allclose(z, z2))
+        self.assertTrue(np.allclose(ss, ss2))
+
+    def test_uk_vectorized_backend(self):
+        """ Compare the optimised version with the original implementation """
+        z, ss = self.UK.execute('grid', self.gridx, self.gridy)
+        z2, ss2 = self.UK.cexecute('grid', self.gridx, self.gridy, backend='vectorized')
+        self.assertTrue(np.allclose(z, z2))
+        self.assertTrue(np.allclose(ss, ss2))
+
+>>>>>>> FETCH_HEAD
 
 if __name__ == '__main__':
     unittest.main()

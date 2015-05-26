@@ -2,4 +2,7 @@
 *.egg-info/
 build/
 *.swp
+<<<<<<< HEAD
 .idea/*
+=======
+>>>>>>> FETCH_HEAD
