@@ -470,101 +470,67 @@ class OrdinaryKriging:
         n = self.X_ADJUSTED.shape[0]
         a_inv = scipy.linalg.inv(self._get_kriging_matrix(n))
 
-        if style == 'grid':
+        if style in ['grid', 'masked']:
 
-            zvalues = np.zeros((ny, nx))
-            sigmasq = np.zeros((ny, nx))
-            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
-            grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y, self.XCENTER, self.YCENTER,
-                                                        self.anisotropy_scaling, self.anisotropy_angle)
-
-            for j in range(ny):
-                for k in range(nx):
-                    bd = np.sqrt((self.X_ADJUSTED - grid_x[j, k])**2 + (self.Y_ADJUSTED - grid_y[j, k])**2)
-                    if np.any(np.absolute(bd) <= self.eps):
-                        zero_value = True
-                        zero_index = np.where(np.absolute(bd) <= self.eps)
+            if style == 'masked':
+                if mask is None:
+                    raise IOError("Must specify boolean masking array.")
+                if mask.shape[0] != ny or mask.shape[1] != nx:
+                    if mask.shape[0] == nx and mask.shape[1] == ny:
+                        mask = mask.T
                     else:
-                        zero_index = None
-                        zero_value = False
-                    b = np.zeros((n+1, 1))
-                    b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
-                    if zero_value:
-                        b[zero_index[0], 0] = 0.0
-                    b[n, 0] = 1.0
-
-                    x = np.dot(a_inv, b)
-                    zvalues[j, k] = np.sum(x[:n, 0] * self.Z)
-                    sigmasq[j, k] = np.sum(x[:, 0] * -b[:, 0])
-
-        elif style == 'masked':
-
-            if mask is None:
-                raise IOError("Must specify boolean masking array.")
-            if mask.shape[0] != ny or mask.shape[1] != nx:
-                if mask.shape[0] == nx and mask.shape[1] == ny:
-                    mask = mask.T
-                else:
-                    raise ValueError("Mask dimensions do not match specified grid dimensions.")
-
-            zvalues = np.zeros((ny, nx))
-            sigmasq = np.zeros((ny, nx))
+                        raise ValueError("Mask dimensions do not match specified grid dimensions.")
+                mask = mask.flatten()
+            npt = ny*nx
             grid_x, grid_y = np.meshgrid(xpoints, ypoints)
             grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y, self.XCENTER, self.YCENTER,
                                                         self.anisotropy_scaling, self.anisotropy_angle)
+            xpoints = grid_x.flatten()
+            ypoints = grid_y.flatten()
 
-            for j in range(ny):
-                for k in range(nx):
-                    if not mask[j, k]:
-                        bd = np.sqrt((self.X_ADJUSTED - grid_x[j, k])**2 + (self.Y_ADJUSTED - grid_y[j, k])**2)
-                        if np.any(np.absolute(bd) <= self.eps):
-                            zero_value = True
-                            zero_index = np.where(np.absolute(bd) <= self.eps)
-                        else:
-                            zero_index = None
-                            zero_value = False
-                        b = np.zeros((n+1, 1))
-                        b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
-                        if zero_value:
-                            b[zero_index[0], 0] = 0.0
-                        b[n, 0] = 1.0
-
-                        x = np.dot(a_inv, b)
-                        zvalues[j, k] = np.sum(x[:n, 0] * self.Z)
-                        sigmasq[j, k] = np.sum(x[:, 0] * -b[:, 0])
-
-            zvalues = np.ma.array(zvalues, mask=mask)
-            sigmasq = np.ma.array(sigmasq, mask=mask)
 
         elif style == 'points':
             if xpoints.shape != ypoints.shape:
                 raise ValueError("xpoints and ypoints must have same dimensions "
                                  "when treated as listing discrete points.")
 
-            zvalues = np.zeros(nx)
-            sigmasq = np.zeros(nx)
+            npt = nx
             xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
                                                           self.anisotropy_scaling, self.anisotropy_angle)
-
-            for j in range(nx):
-                bd = np.sqrt((self.X_ADJUSTED - xpoints[j])**2 + (self.Y_ADJUSTED - ypoints[j])**2)
-                if np.any(np.absolute(bd) <= self.eps):
-                    zero_value = True
-                    zero_index = np.where(np.absolute(bd) <= self.eps)
-                else:
-                    zero_index = None
-                    zero_value = False
-                b = np.zeros((n+1, 1))
-                b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
-                if zero_value:
-                    b[zero_index[0], 0] = 0.0
-                b[n, 0] = 1.0
-                x = np.dot(a_inv, b)
-                zvalues[j] = np.sum(x[:n, 0] * self.Z)
-                sigmasq[j] = np.sum(x[:, 0] * -b[:, 0])
-
         else:
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
+
+        zvalues = np.zeros(npt)
+        sigmasq = np.zeros(npt)
+
+        if style != 'masked':
+            mask = np.zeros(npt, dtype='bool')
+
+        for i in np.nonzero(~mask)[0]:   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
+            bd = np.sqrt((self.X_ADJUSTED - xpoints[i])**2 + (self.Y_ADJUSTED - ypoints[i])**2)
+            if np.any(np.absolute(bd) <= self.eps):
+                zero_value = True
+                zero_index = np.where(np.absolute(bd) <= self.eps)
+            else:
+                zero_index = None
+                zero_value = False
+            b = np.zeros((n+1, 1))
+            b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            if zero_value:
+                b[zero_index[0], 0] = 0.0
+            b[n, 0] = 1.0
+            x = np.dot(a_inv, b)
+            zvalues[i] = np.sum(x[:n, 0] * self.Z)
+            sigmasq[i] = np.sum(x[:, 0] * -b[:, 0])
+
+        if style == 'masked':
+            zvalues = np.ma.array(zvalues, mask=mask)
+            sigmasq = np.ma.array(sigmasq, mask=mask)
+
+        if style in ['masked', 'grid']:
+            zvalues = zvalues.reshape((ny, nx))
+            sigmasq = sigmasq.reshape((ny, nx))
+
 
         return zvalues, sigmasq
 
