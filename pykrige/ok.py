@@ -483,8 +483,6 @@ class OrdinaryKriging:
                 mask = mask.flatten()
             npt = ny*nx
             grid_x, grid_y = np.meshgrid(xpoints, ypoints)
-            grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y, self.XCENTER, self.YCENTER,
-                                                        self.anisotropy_scaling, self.anisotropy_angle)
             xpoints = grid_x.flatten()
             ypoints = grid_y.flatten()
 
@@ -495,10 +493,11 @@ class OrdinaryKriging:
                                  "when treated as listing discrete points.")
 
             npt = nx
-            xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
-                                                          self.anisotropy_scaling, self.anisotropy_angle)
         else:
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
+
+        xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
+                                                      self.anisotropy_scaling, self.anisotropy_angle)
 
         zvalues = np.zeros(npt)
         sigmasq = np.zeros(npt)
