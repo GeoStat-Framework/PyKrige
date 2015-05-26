@@ -597,8 +597,8 @@ class OrdinaryKriging:
         if style != 'grid' and style != 'masked' and style != 'points':
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
-        xpoints = np.array(xpoints, copy=True).flatten()
-        ypoints = np.array(ypoints, copy=True).flatten()
+        xpoints = np.asarray(xpoints, copy=True)
+        ypoints = np.asarray(ypoints, copy=True)
         if backend == 'vectorized':
             zvalues, sigmasq = self._exec_vector(style, xpoints, ypoints, mask)
         elif backend == 'loop':
