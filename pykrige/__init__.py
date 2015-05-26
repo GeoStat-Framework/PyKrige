@@ -1,5 +1,5 @@
 __author__ = 'Benjamin S. Murphy'
-__version__ = '1.0.3'
+__version__ = '1.1.0'
 __doc__ = """Code by Benjamin S. Murphy
 bscott.murphy@gmail.com
 
@@ -10,11 +10,12 @@ Dependencies:
 
 Modules:
     ok: Contains class OrdinaryKriging, which is a convenience class
-        for easy access to 2D Ordinary Kriging.
+        for easy access to 2D ordinary kriging.
     uk: Contains class UniversalKriging, which  provides more control over
         2D kriging by utilizing drift terms. Supported drift terms
         currently include point-logarithmic, regional linear, and external
         z-scalar.
+    k3d: Contains class Krige3D, which provides support for 3D ordinary kriging.
     kriging_tools: Contains a set of functions to work with *.asc files.
     variogram_models: Contains the definitions for the implemented variogram
         models. Note that the utilized formulas are as presented in Kitanidis,

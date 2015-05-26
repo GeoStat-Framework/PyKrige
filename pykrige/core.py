@@ -8,8 +8,15 @@ Dependencies:
 Functions:
     adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
         Returns X and Y arrays of adjusted data coordinates. Angle is CCW.
+    adjust_for_anisotropy_3d(x, y, z, xcenter, ycenter, zcenter, scaling_y,
+                             scaling_z, angle_x, angle_y, angle_z):
+        Returns X, Y, Z arrays of adjusted data coordinates. Angles are CCW about
+        specified axes. Scaling is applied in rotated coordinate system.
     initialize_variogram_model(x, y, z, variogram_model, variogram_model_parameters,
                                variogram_function, nlags):
+        Returns lags, semivariance, and variogram model parameters as a list.
+    initialize_variogram_model_3d(x, y, z, values, variogram_model,
+                                  variogram_model_parameters, variogram_function, nlags):
         Returns lags, semivariance, and variogram model parameters as a list.
     variogram_function_error(params, x, y, variogram_function):
         Called by calculate_variogram_model.
@@ -19,6 +26,9 @@ Functions:
     krige(x, y, z, coords, variogram_function, variogram_model_parameters):
         Function that solves the ordinary kriging system for a single specified point.
         Returns the Z value and sigma squared for the specified coordinates.
+    krige_3d(x, y, z, vals, coords, variogram_function, variogram_model_parameters):
+        Function that solves the ordinary kriging system for a single specified point.
+        Returns the interpolated value and sigma squared for the specified coordinates.
     find_statistics(x, y, z, variogram_funtion, variogram_model_parameters):
         Returns the delta, sigma, and epsilon values for the variogram fit.
     calcQ1(epsilon):
@@ -40,8 +50,8 @@ from scipy.optimize import minimize
 
 
 def adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
-    # Adjusts data coordinates to take into account anisotropy.
-    # Can also be used to take into account data scaling.
+    """ Adjusts data coordinates to take into account anisotropy.
+    Can also be used to take into account data scaling."""
 
     x -= xcenter
     y -= ycenter
@@ -52,10 +62,8 @@ def adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
 
     coords = np.vstack((x, y))
     stretch = np.array([[1, 0], [0, scaling]])
-    rotate = np.array([[np.cos(-angle * np.pi/180.0),
-                        np.sin(-angle * np.pi/180.0)],
-                     [- np.sin(-angle * np.pi/180.0),
-                        np.cos(-angle * np.pi/180.0)]])
+    rotate = np.array([[np.cos(-angle * np.pi/180.0), -np.sin(-angle * np.pi/180.0)],
+                       [np.sin(-angle * np.pi/180.0), np.cos(-angle * np.pi/180.0)]])
     rotated_coords = np.dot(stretch, np.dot(rotate, coords))
     x = rotated_coords[0, :].reshape(xshape)
     y = rotated_coords[1, :].reshape(yshape)
@@ -65,12 +73,48 @@ def adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
     return x, y
 
 
-def initialize_variogram_model(x, y, z, variogram_model,
-                               variogram_model_parameters,
-                               variogram_function,
-                               nlags, weight):
-    # Initializes the variogram model for kriging according
-    # to user specifications or to defaults.
+def adjust_for_anisotropy_3d(x, y, z, xcenter, ycenter, zcenter, scaling_y,
+                             scaling_z, angle_x, angle_y, angle_z):
+    """ Adjusts data coordinates to take into account anisotropy.
+    Can also be used to take into account data scaling."""
+
+    x -= xcenter
+    y -= ycenter
+    z -= zcenter
+    xshape = x.shape
+    yshape = y.shape
+    zshape = z.shape
+    x = x.flatten()
+    y = y.flatten()
+    z = z.flatten()
+
+    coords = np.vstack((x, y, z))
+    stretch = np.array([[1., 0., 0.], [0., scaling_y, 0.], [0., 0., scaling_z]])
+    rotate_x = np.array([[1., 0., 0.],
+                         [0., np.cos(-angle_x * np.pi/180.), -np.sin(-angle_x * np.pi/180.)],
+                         [0., np.sin(-angle_x * np.pi/180.), np.cos(-angle_x * np.pi/180.)]])
+    rotate_y = np.array([[np.cos(-angle_y * np.pi/180.), 0., np.sin(-angle_y * np.pi/180.)],
+                         [0., 1., 0.],
+                         [-np.sin(-angle_y * np.pi/180.), 0., np.cos(-angle_y * np.pi/180.)]])
+    rotate_z = np.array([[np.cos(-angle_z * np.pi/180.), -np.sin(-angle_z * np.pi/180.), 0.],
+                         [np.sin(-angle_z * np.pi/180.), np.cos(-angle_z * np.pi/180.), 0.],
+                         [0., 0., 1.]])
+    rot_tot = np.dot(rotate_z, np.dot(rotate_y, rotate_x))
+    rotated_coords = np.dot(stretch, np.dot(rot_tot, coords))
+    x = rotated_coords[0, :].reshape(xshape)
+    y = rotated_coords[1, :].reshape(yshape)
+    z = rotated_coords[2, :].reshape(zshape)
+    x += xcenter
+    y += ycenter
+    z += zcenter
+
+    return x, y, z
+
+
+def initialize_variogram_model(x, y, z, variogram_model, variogram_model_parameters,
+                               variogram_function, nlags, weight):
+    """Initializes the variogram model for kriging according
+    to user specifications or to defaults"""
 
     x1, x2 = np.meshgrid(x, x)
     y1, y2 = np.meshgrid(y, y)
@@ -138,19 +182,85 @@ def initialize_variogram_model(x, y, z, variogram_model,
         if variogram_model == 'linear' and len(variogram_model_parameters) != 2:
             raise ValueError("Exactly two parameters required "
                              "for linear variogram model")
-        elif variogram_model != 'linear' and len(variogram_model_parameters) != 3:
+        elif (variogram_model == 'power' or variogram_model == 'spherical' or variogram_model == 'exponential'
+              or variogram_model == 'gaussian') and len(variogram_model_parameters) != 3:
             raise ValueError("Exactly three parameters required "
                              "for %s variogram model" % variogram_model)
     else:
-        variogram_model_parameters = calculate_variogram_model(lags, semivariance,
-                                                               variogram_model, variogram_function, weight)
+        if variogram_model == 'custom':
+            raise ValueError("Variogram parameters must be specified when implementing custom variogram model.")
+        else:
+            variogram_model_parameters = calculate_variogram_model(lags, semivariance, variogram_model,
+                                                                   variogram_function, weight)
+
+    return lags, semivariance, variogram_model_parameters
+
+
+def initialize_variogram_model_3d(x, y, z, values, variogram_model, variogram_model_parameters,
+                                  variogram_function, nlags, weight):
+    """Initializes the variogram model for kriging according
+    to user specifications or to defaults"""
+
+    x1, x2 = np.meshgrid(x, x)
+    y1, y2 = np.meshgrid(y, y)
+    z1, z2 = np.meshgrid(z, z)
+    val1, val2 = np.meshgrid(values, values)
+    d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
+    g = 0.5 * (val1 - val2)**2
+
+    indices = np.indices(d.shape)
+    d = d[(indices[0, :, :] > indices[1, :, :])]
+    g = g[(indices[0, :, :] > indices[1, :, :])]
+
+    # The upper limit on the bins is appended to the list (instead of calculated as part of the
+    # list comprehension) to avoid any numerical oddities (specifically, say, ending up as
+    # 0.99999999999999 instead of 1.0). Appending dmax + 0.001 ensures that the largest distance value
+    # is included in the semivariogram calculation.
+    dmax = np.amax(d)
+    dmin = np.amin(d)
+    dd = (dmax - dmin)/nlags
+    bins = [dmin + n*dd for n in range(nlags)]
+    dmax += 0.001
+    bins.append(dmax)
+
+    lags = np.zeros(nlags)
+    semivariance = np.zeros(nlags)
+
+    for n in range(nlags):
+        # This 'if... else...' statement ensures that there are data in the bin so that numpy can actually
+        # find the mean. If we don't test this first, then Python kicks out an annoying warning message
+        # when there is an empty bin and we try to calculate the mean.
+        if d[(d >= bins[n]) & (d < bins[n + 1])].size > 0:
+            lags[n] = np.mean(d[(d >= bins[n]) & (d < bins[n + 1])])
+            semivariance[n] = np.mean(g[(d >= bins[n]) & (d < bins[n + 1])])
+        else:
+            lags[n] = np.nan
+            semivariance[n] = np.nan
+
+    lags = lags[~np.isnan(semivariance)]
+    semivariance = semivariance[~np.isnan(semivariance)]
+
+    if variogram_model_parameters is not None:
+        if variogram_model == 'linear' and len(variogram_model_parameters) != 2:
+            raise ValueError("Exactly two parameters required "
+                             "for linear variogram model")
+        elif (variogram_model == 'power' or variogram_model == 'spherical' or variogram_model == 'exponential'
+              or variogram_model == 'gaussian') and len(variogram_model_parameters) != 3:
+            raise ValueError("Exactly three parameters required "
+                             "for %s variogram model" % variogram_model)
+    else:
+        if variogram_model == 'custom':
+            raise ValueError("Variogram parameters must be specified when implementing custom variogram model.")
+        else:
+            variogram_model_parameters = calculate_variogram_model(lags, semivariance, variogram_model,
+                                                                   variogram_function, weight)
 
     return lags, semivariance, variogram_model_parameters
 
 
 def variogram_function_error(params, x, y, variogram_function, weight):
-    # Function used to in fitting of variogram model.
-    # Returns RMSE between calculated fit and actual data.
+    """Function used to in fitting of variogram model.
+    Returns RMSE between calculated fit and actual data."""
 
     diff = variogram_function(params, x) - y
 
@@ -165,7 +275,7 @@ def variogram_function_error(params, x, y, variogram_function, weight):
 
 
 def calculate_variogram_model(lags, semivariance, variogram_model, variogram_function, weight):
-    # Function that fits a variogram model when parameters are not specified.
+    """Function that fits a variogram model when parameters are not specified."""
 
     if variogram_model == 'linear':
         x0 = [(np.amax(semivariance) - np.amin(semivariance))/(np.amax(lags) - np.amin(lags)),
@@ -186,8 +296,8 @@ def calculate_variogram_model(lags, semivariance, variogram_model, variogram_fun
 
 
 def krige(x, y, z, coords, variogram_function, variogram_model_parameters):
-        # Sets up and solves the kriging matrix for the given coordinate pair.
-        # This function is now only used for the statistics calculations.
+        """Sets up and solves the kriging matrix for the given coordinate pair.
+        This function is now only used for the statistics calculations."""
 
         zero_index = None
         zero_value = False
@@ -201,12 +311,12 @@ def krige(x, y, z, coords, variogram_function, variogram_model_parameters):
             zero_index = np.where(bd <= 1e-10)[0][0]
 
         n = x.shape[0]
-        A = np.zeros((n+1, n+1))
-        A[:n, :n] = - variogram_function(variogram_model_parameters, d)
-        np.fill_diagonal(A, 0.0)
-        A[n, :] = 1.0
-        A[:, n] = 1.0
-        A[n, n] = 0.0
+        a = np.zeros((n+1, n+1))
+        a[:n, :n] = - variogram_function(variogram_model_parameters, d)
+        np.fill_diagonal(a, 0.0)
+        a[n, :] = 1.0
+        a[:, n] = 1.0
+        a[n, n] = 0.0
 
         b = np.zeros((n+1, 1))
         b[:n, 0] = - variogram_function(variogram_model_parameters, bd)
@@ -214,15 +324,52 @@ def krige(x, y, z, coords, variogram_function, variogram_model_parameters):
             b[zero_index, 0] = 0.0
         b[n, 0] = 1.0
 
-        x = np.linalg.solve(A, b)
-        zinterp = np.sum(x[:n, 0] * z)
-        sigmasq = np.sum(x[:, 0] * -b[:, 0])
+        x_ = np.linalg.solve(a, b)
+        zinterp = np.sum(x_[:n, 0] * z)
+        sigmasq = np.sum(x_[:, 0] * -b[:, 0])
+
+        return zinterp, sigmasq
+
+
+def krige_3d(x, y, z, vals, coords, variogram_function, variogram_model_parameters):
+        """Sets up and solves the kriging matrix for the given coordinate pair.
+        This function is now only used for the statistics calculations."""
+
+        zero_index = None
+        zero_value = False
+
+        x1, x2 = np.meshgrid(x, x)
+        y1, y2 = np.meshgrid(y, y)
+        z1, z2 = np.meshgrid(z, z)
+        d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
+        bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2 + (z - coords[2])**2)
+        if np.any(np.absolute(bd) <= 1e-10):
+            zero_value = True
+            zero_index = np.where(bd <= 1e-10)[0][0]
+
+        n = x.shape[0]
+        a = np.zeros((n+1, n+1))
+        a[:n, :n] = - variogram_function(variogram_model_parameters, d)
+        np.fill_diagonal(a, 0.0)
+        a[n, :] = 1.0
+        a[:, n] = 1.0
+        a[n, n] = 0.0
+
+        b = np.zeros((n+1, 1))
+        b[:n, 0] = - variogram_function(variogram_model_parameters, bd)
+        if zero_value:
+            b[zero_index, 0] = 0.0
+        b[n, 0] = 1.0
+
+        x_ = np.linalg.solve(a, b)
+        zinterp = np.sum(x_[:n, 0] * vals)
+        sigmasq = np.sum(x_[:, 0] * -b[:, 0])
 
         return zinterp, sigmasq
 
 
 def find_statistics(x, y, z, variogram_function, variogram_model_parameters):
-    # Calculates variogram fit statistics.
+    """Calculates variogram fit statistics."""
 
     delta = np.zeros(z.shape)
     sigma = np.zeros(z.shape)
@@ -232,8 +379,31 @@ def find_statistics(x, y, z, variogram_function, variogram_model_parameters):
             delta[n] = 0.0
             sigma[n] = 0.0
         else:
-            z_, ss_ = krige(x[:n], y[:n], z[:n], (x[n], y[n]),
-                            variogram_function, variogram_model_parameters)
+            z_, ss_ = krige(x[:n], y[:n], z[:n], (x[n], y[n]), variogram_function, variogram_model_parameters)
+            d = z[n] - z_
+            delta[n] = d
+            sigma[n] = np.sqrt(ss_)
+
+    delta = delta[1:]
+    sigma = sigma[1:]
+    epsilon = delta/sigma
+
+    return delta, sigma, epsilon
+
+
+def find_statistics_3d(x, y, z, vals, variogram_function, variogram_model_parameters):
+    """Calculates variogram fit statistics for 3D problems."""
+
+    delta = np.zeros(vals.shape)
+    sigma = np.zeros(vals.shape)
+
+    for n in range(z.shape[0]):
+        if n == 0:
+            delta[n] = 0.0
+            sigma[n] = 0.0
+        else:
+            z_, ss_ = krige_3d(x[:n], y[:n], z[:n], vals[:n], (x[n], y[n], z[n]),
+                               variogram_function, variogram_model_parameters)
             d = z[n] - z_
             delta[n] = d
             sigma[n] = np.sqrt(ss_)

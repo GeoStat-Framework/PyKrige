@@ -3,7 +3,7 @@ PyKrige
 
 Kriging Toolkit for Python
 
-Currently, the code supports two-dimensional ordinary and universal kriging. The universal kriging code currently supports regional-linear, point-logarithmic, and external drift terms. Ordinary and universal kriging are separated into two classes. Examples of their uses are shown below. The code also includes a module that contains functions that should be useful in working with ASCII grid files (*.asc).
+The code supports two-dimensional ordinary and universal kriging as well as three-dimensional ordinary kriging. The universal kriging code currently supports regional-linear, point-logarithmic, and external drift terms. Standard variogram models (linear, power, spherical, gaussian, exponential) are built in, but custom variogram models can also be used with the code. Three-dimensional ordinary kriging, two-dimensional ordinary kriging, and two-dimensional universal kriging are separated into three classes. Examples of their uses are shown below. The code also includes a module that contains functions that should be useful in working with ASCII grid files (*.asc).
 
 PyKrige is on PyPi, so installation is as simple as typing the following into a command line.
 ```shell
@@ -15,7 +15,7 @@ To update PyKrige from PyPi, type the following into a command line.
 pip install --upgrade pykrige
 ```
 
-PyKrige now uses the BSD 3-Clause License.
+PyKrige uses the BSD 3-Clause License.
 
 Ordinary Kriging Example
 ------------------------
@@ -86,4 +86,4 @@ z, ss = UK.execute('grid', gridx, gridy)
 
 To Do...
 --------
-In the future, the code will ideally include more drift terms, including a stream drift. Someday the code will also support 3D kriging.
+Someday the code will implement more drift terms, such as stream (line) and pond (polygon) drifts (for hydrological applications) and higher order polynomial drifts.

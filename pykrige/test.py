@@ -1,6 +1,6 @@
 """
 Testing code.
-BSM Jan 2015
+Updated BSM May 2015
 """
 
 import unittest
@@ -11,6 +11,7 @@ import core
 import variogram_models
 from ok import OrdinaryKriging
 from uk import UniversalKriging
+from k3d import Krige3D
 
 
 class TestPyKrige(unittest.TestCase):
@@ -34,13 +35,42 @@ class TestPyKrige(unittest.TestCase):
         xi, yi = np.meshgrid(self.simple_gridx, self.simple_gridy)
         self.mask = np.array(xi == yi)
 
+        self.simple_data_3d = np.array([[0.1, 0.1, 0.3, 0.9],
+                                        [0.2, 0.1, 0.4, 0.8],
+                                        [0.1, 0.3, 0.1, 0.9],
+                                        [0.5, 0.4, 0.4, 0.5],
+                                        [0.3, 0.3, 0.2, 0.7]])
+        self.simple_gridx_3d = np.arange(0.0, 0.6, 0.05)
+        self.simple_gridy_3d = np.arange(0.0, 0.6, 0.01)
+        self.simple_gridz_3d = np.arange(0.0, 0.6, 0.1)
+        zi, yi, xi = np.meshgrid(self.simple_gridz_3d, self.simple_gridy_3d, self.simple_gridx_3d, indexing='ij')
+        self.mask_3d = np.array((xi == yi) & (yi == zi))
+
     def test_core_adjust_for_anisotropy(self):
 
         x = np.array([1.0, 0.0, -1.0, 0.0])
         y = np.array([0.0, 1.0, 0.0, -1.0])
         rotated_x, rotated_y = core.adjust_for_anisotropy(x, y, 0.0, 0.0, 2.0, 90.0)
-        self.assertTrue(np.allclose(rotated_x, np.array([0.0, -1.0, 0.0, 1.0])))
-        self.assertTrue(np.allclose(rotated_y, np.array([2.0, 0.0, -2.0, 0.0])))
+        self.assertTrue(np.allclose(rotated_x, np.array([0.0, 1.0, 0.0, -1.0])))
+        self.assertTrue(np.allclose(rotated_y, np.array([-2.0, 0.0, 2.0, 0.0])))
+
+    def test_core_adjust_for_anisotropy_3d(self):
+
+        x = np.array([1.0, 0.0, 0.0])
+        y = np.array([0.0, 1.0, 0.0])
+        z = np.array([0.0, 0.0, 1.0])
+        rotated_x, rotated_y, rotated_z = core.adjust_for_anisotropy_3d(x, y, z, 0., 0., 0., 2., 2., 90., 0., 0.)
+        self.assertTrue(np.allclose(rotated_x, np.array([1., 0., 0.])))
+        self.assertTrue(np.allclose(rotated_y, np.array([0., 0., 2.])))
+        self.assertTrue(np.allclose(rotated_z, np.array([0., -2., 0.])))
+        rotated_x, rotated_y, rotated_z = core.adjust_for_anisotropy_3d(x, y, z, 0., 0., 0., 2., 2., 0., 90., 0.)
+        self.assertTrue(np.allclose(rotated_x, np.array([0., 0., -1.])))
+        self.assertTrue(np.allclose(rotated_y, np.array([0., 2., 0.])))
+        self.assertTrue(np.allclose(rotated_z, np.array([2., 0., 0.])))
+        rotated_x, rotated_y, rotated_z = core.adjust_for_anisotropy_3d(x, y, z, 0., 0., 0., 2., 2., 0., 0., 90.)
+        self.assertTrue(np.allclose(rotated_x, np.array([0., 1., 0.])))
+        self.assertTrue(np.allclose(rotated_y, np.array([-2., 0., 0.])))
+        self.assertTrue(np.allclose(rotated_z, np.array([0., 0., 2.])))
 
     def test_core_initialize_variogram_model(self):
 
@@ -59,6 +89,26 @@ class TestPyKrige(unittest.TestCase):
                                                                                          6, False)
 
         self.assertTrue(np.allclose(lags, np.array([1.0, 2.0, 3.0])))
+        self.assertTrue(np.allclose(semivariance, np.array([0.5, 2.0, 4.5])))
+
+    def test_core_initialize_variogram_model_3d(self):
+
+        # Note the variogram_function argument is not a string in real life...
+        self.assertRaises(ValueError, core.initialize_variogram_model_3d, self.simple_data_3d[:, 0],
+                          self.simple_data_3d[:, 1], self.simple_data_3d[:, 2], self.simple_data_3d[:, 3],
+                          'linear', [0.0], 'linear', 6, False)
+
+        self.assertRaises(ValueError, core.initialize_variogram_model_3d, self.simple_data_3d[:, 0],
+                          self.simple_data_3d[:, 1], self.simple_data_3d[:, 2], self.simple_data_3d[:, 3],
+                          'spherical', [0.0], 'spherical', 6, False)
+
+        lags, semivariance, variogram_model_parameters = core.initialize_variogram_model_3d(np.array([1., 2., 3., 4.]),
+                                                                                            np.array([1., 2., 3., 4.]),
+                                                                                            np.array([1., 2., 3., 4.]),
+                                                                                            np.array([1., 2., 3., 4.]),
+                                                                                            'linear', [0.0, 0.0],
+                                                                                            'linear', 3, False)
+        self.assertTrue(np.allclose(lags, np.array([np.sqrt(3.), 2.*np.sqrt(3.), 3.*np.sqrt(3.)])))
         self.assertTrue(np.allclose(semivariance, np.array([0.5, 2.0, 4.5])))
 
     def test_core_calculate_variogram_model(self):
@@ -102,6 +152,21 @@ class TestPyKrige(unittest.TestCase):
         self.assertAlmostEqual(z, 2.822, 3)
         self.assertAlmostEqual(ss, 0.0, 3)
 
+    def test_core_krige_3d(self):
+
+        # Adapted from example 3.2 from Kitanidis
+        data = np.array([[9.7, 47.6, 1.0, 1.22],
+                         [43.8, 24.6, 1.0, 2.822]])
+        z, ss = core.krige_3d(data[:, 0], data[:, 1], data[:, 2], data[:, 3], (18.8, 67.9, 1.0),
+                              variogram_models.linear_variogram_model, [0.006, 0.1])
+        self.assertAlmostEqual(z, 1.6364, 4)
+        self.assertAlmostEqual(ss, 0.4201, 4)
+
+        z, ss = core.krige_3d(data[:, 0], data[:, 1], data[:, 2], data[:, 3], (43.8, 24.6, 1.0),
+                              variogram_models.linear_variogram_model, [0.006, 0.1])
+        self.assertAlmostEqual(z, 2.822, 3)
+        self.assertAlmostEqual(ss, 0.0, 3)
+
     def test_ok(self):
 
         # Test to compare OK results to those obtained using KT3D_H2O.
@@ -109,7 +174,9 @@ class TestPyKrige(unittest.TestCase):
 
         ok = OrdinaryKriging(self.test_data[:, 0], self.test_data[:, 1], self.test_data[:, 2],
                              variogram_model='exponential', variogram_parameters=[500.0, 3000.0, 0.0])
-        z, ss = ok.execute('grid', self.ok_test_gridx, self.ok_test_gridy)
+        z, ss = ok.execute('grid', self.ok_test_gridx, self.ok_test_gridy, backend='vectorized')
+        self.assertTrue(np.allclose(z, self.ok_test_answer))
+        z, ss = ok.execute('grid', self.ok_test_gridx, self.ok_test_gridy, backend='loop')
         self.assertTrue(np.allclose(z, self.ok_test_answer))
 
     def test_ok_update_variogram_model(self):
@@ -136,7 +203,7 @@ class TestPyKrige(unittest.TestCase):
 
         self.assertRaises(ValueError, ok.execute, 'blurg', self.simple_gridx, self.simple_gridy)
 
-        z, ss = ok.execute('grid', self.simple_gridx, self.simple_gridy)
+        z, ss = ok.execute('grid', self.simple_gridx, self.simple_gridy, backend='vectorized')
         shape = (self.simple_gridy.size, self.simple_gridx.size)
         self.assertEqual(z.shape, shape)
         self.assertEqual(ss.shape, shape)
@@ -144,22 +211,53 @@ class TestPyKrige(unittest.TestCase):
         self.assertNotEqual(np.amax(ss), np.amin(ss))
         self.assertFalse(np.ma.is_masked(z))
 
-        self.assertRaises(IOError, ok.execute, 'masked', self.simple_gridx, self.simple_gridy)
+        z, ss = ok.execute('grid', self.simple_gridx, self.simple_gridy, backend='loop')
+        shape = (self.simple_gridy.size, self.simple_gridx.size)
+        self.assertEqual(z.shape, shape)
+        self.assertEqual(ss.shape, shape)
+        self.assertNotEqual(np.amax(z), np.amin(z))
+        self.assertNotEqual(np.amax(ss), np.amin(ss))
+        self.assertFalse(np.ma.is_masked(z))
+
+        self.assertRaises(IOError, ok.execute, 'masked', self.simple_gridx, self.simple_gridy, backend='vectorized')
         mask = np.array([True, False])
-        self.assertRaises(ValueError, ok.execute, 'masked', self.simple_gridx, self.simple_gridy, mask=mask)
-        z, ss = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask)
+        self.assertRaises(ValueError, ok.execute, 'masked', self.simple_gridx, self.simple_gridy, mask=mask,
+                          backend='vectorized')
+        z, ss = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask, backend='vectorized')
         self.assertTrue(np.ma.is_masked(z))
         self.assertTrue(np.ma.is_masked(ss))
         self.assertIs(z[0, 0], np.ma.masked)
         self.assertIs(ss[0, 0], np.ma.masked)
-        z, ss = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask.T)
+        z, ss = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask.T, backend='vectorized')
         self.assertTrue(np.ma.is_masked(z))
         self.assertTrue(np.ma.is_masked(ss))
         self.assertIs(z[0, 0], np.ma.masked)
         self.assertIs(ss[0, 0], np.ma.masked)
 
-        self.assertRaises(ValueError, ok.execute, 'points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]))
-        z, ss = ok.execute('points', self.simple_gridx[0], self.simple_gridy[0])
+        self.assertRaises(IOError, ok.execute, 'masked', self.simple_gridx, self.simple_gridy, backend='loop')
+        mask = np.array([True, False])
+        self.assertRaises(ValueError, ok.execute, 'masked', self.simple_gridx, self.simple_gridy, mask=mask,
+                          backend='loop')
+        z, ss = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask, backend='loop')
+        self.assertTrue(np.ma.is_masked(z))
+        self.assertTrue(np.ma.is_masked(ss))
+        self.assertIs(z[0, 0], np.ma.masked)
+        self.assertIs(ss[0, 0], np.ma.masked)
+        z, ss = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask.T, backend='loop')
+        self.assertTrue(np.ma.is_masked(z))
+        self.assertTrue(np.ma.is_masked(ss))
+        self.assertIs(z[0, 0], np.ma.masked)
+        self.assertIs(ss[0, 0], np.ma.masked)
+
+        self.assertRaises(ValueError, ok.execute, 'points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
+                          backend='vectorized')
+        z, ss = ok.execute('points', self.simple_gridx[0], self.simple_gridy[0], backend='vectorized')
+        self.assertEqual(z.shape, (1,))
+        self.assertEqual(ss.shape, (1,))
+
+        self.assertRaises(ValueError, ok.execute, 'points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
+                          backend='loop')
+        z, ss = ok.execute('points', self.simple_gridx[0], self.simple_gridy[0], backend='loop')
         self.assertEqual(z.shape, (1,))
         self.assertEqual(ss.shape, (1,))
 
@@ -171,7 +269,9 @@ class TestPyKrige(unittest.TestCase):
         uk = UniversalKriging(self.test_data[:, 0], self.test_data[:, 1], self.test_data[:, 2],
                               variogram_model='exponential', variogram_parameters=[500.0, 3000.0, 0.0],
                               drift_terms=['regional_linear'])
-        z, ss = uk.execute('grid', self.uk_test_gridx, self.uk_test_gridy)
+        z, ss = uk.execute('grid', self.uk_test_gridx, self.uk_test_gridy, backend='vectorized')
+        self.assertTrue(np.allclose(z, self.uk_test_answer))
+        z, ss = uk.execute('grid', self.uk_test_gridx, self.uk_test_gridy, backend='loop')
         self.assertTrue(np.allclose(z, self.uk_test_answer))
 
     def test_uk_update_variogram_model(self):
@@ -245,11 +345,15 @@ class TestPyKrige(unittest.TestCase):
 
         uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2], variogram_model='exponential',
                               variogram_parameters=[10.0, 9.99, 0.0], drift_terms=['regional_linear'])
-        z, ss = uk.execute('points', np.array([point[0]]), np.array([point[1]]))
+        z, ss = uk.execute('points', np.array([point[0]]), np.array([point[1]]), backend='vectorized')
         self.assertAlmostEqual(z_answer, z, places=0)
         self.assertAlmostEqual(ss_answer, ss, places=0)
 
-        z, ss = uk.execute('points', np.array([61.0]), np.array([139.0]))
+        z, ss = uk.execute('points', np.array([61.0]), np.array([139.0]), backend='vectorized')
+        self.assertAlmostEqual(z, 477.0, 3)
+        self.assertAlmostEqual(ss, 0.0, 3)
+
+        z, ss = uk.execute('points', np.array([61.0]), np.array([139.0]), backend='loop')
         self.assertAlmostEqual(z, 477.0, 3)
         self.assertAlmostEqual(ss, 0.0, 3)
 
@@ -259,8 +363,9 @@ class TestPyKrige(unittest.TestCase):
                               variogram_model='linear', drift_terms=['regional_linear'])
 
         self.assertRaises(ValueError, uk.execute, 'blurg', self.simple_gridx, self.simple_gridy)
+        self.assertRaises(ValueError, uk.execute, 'grid', self.simple_gridx, self.simple_gridy, backend='mrow')
 
-        z, ss = uk.execute('grid', self.simple_gridx, self.simple_gridy)
+        z, ss = uk.execute('grid', self.simple_gridx, self.simple_gridy, backend='vectorized')
         shape = (self.simple_gridy.size, self.simple_gridx.size)
         self.assertEqual(z.shape, shape)
         self.assertEqual(ss.shape, shape)
@@ -268,22 +373,53 @@ class TestPyKrige(unittest.TestCase):
         self.assertNotEqual(np.amax(ss), np.amin(ss))
         self.assertFalse(np.ma.is_masked(z))
 
-        self.assertRaises(IOError, uk.execute, 'masked', self.simple_gridx, self.simple_gridy)
+        z, ss = uk.execute('grid', self.simple_gridx, self.simple_gridy, backend='loop')
+        shape = (self.simple_gridy.size, self.simple_gridx.size)
+        self.assertEqual(z.shape, shape)
+        self.assertEqual(ss.shape, shape)
+        self.assertNotEqual(np.amax(z), np.amin(z))
+        self.assertNotEqual(np.amax(ss), np.amin(ss))
+        self.assertFalse(np.ma.is_masked(z))
+
+        self.assertRaises(IOError, uk.execute, 'masked', self.simple_gridx, self.simple_gridy, backend='vectorized')
         mask = np.array([True, False])
-        self.assertRaises(ValueError, uk.execute, 'masked', self.simple_gridx, self.simple_gridy, mask=mask)
-        z, ss = uk.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask)
+        self.assertRaises(ValueError, uk.execute, 'masked', self.simple_gridx, self.simple_gridy, mask=mask,
+                          backend='vectorized')
+        z, ss = uk.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask, backend='vectorized')
         self.assertTrue(np.ma.is_masked(z))
         self.assertTrue(np.ma.is_masked(ss))
         self.assertIs(z[0, 0], np.ma.masked)
         self.assertIs(ss[0, 0], np.ma.masked)
-        z, ss = uk.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask.T)
+        z, ss = uk.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask.T, backend='vectorized')
         self.assertTrue(np.ma.is_masked(z))
         self.assertTrue(np.ma.is_masked(ss))
         self.assertIs(z[0, 0], np.ma.masked)
         self.assertIs(ss[0, 0], np.ma.masked)
 
-        self.assertRaises(ValueError, uk.execute, 'points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]))
-        z, ss = uk.execute('points', self.simple_gridx[0], self.simple_gridy[0])
+        self.assertRaises(IOError, uk.execute, 'masked', self.simple_gridx, self.simple_gridy, backend='loop')
+        mask = np.array([True, False])
+        self.assertRaises(ValueError, uk.execute, 'masked', self.simple_gridx, self.simple_gridy, mask=mask,
+                          backend='loop')
+        z, ss = uk.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask, backend='loop')
+        self.assertTrue(np.ma.is_masked(z))
+        self.assertTrue(np.ma.is_masked(ss))
+        self.assertIs(z[0, 0], np.ma.masked)
+        self.assertIs(ss[0, 0], np.ma.masked)
+        z, ss = uk.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask.T, backend='loop')
+        self.assertTrue(np.ma.is_masked(z))
+        self.assertTrue(np.ma.is_masked(ss))
+        self.assertIs(z[0, 0], np.ma.masked)
+        self.assertIs(ss[0, 0], np.ma.masked)
+
+        self.assertRaises(ValueError, uk.execute, 'points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
+                          backend='vectorized')
+        z, ss = uk.execute('points', self.simple_gridx[0], self.simple_gridy[0], backend='vectorized')
+        self.assertEqual(z.shape, (1,))
+        self.assertEqual(ss.shape, (1,))
+
+        self.assertRaises(ValueError, uk.execute, 'points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
+                          backend='loop')
+        z, ss = uk.execute('points', self.simple_gridx[0], self.simple_gridy[0], backend='loop')
         self.assertEqual(z.shape, (1,))
         self.assertEqual(ss.shape, (1,))
 
@@ -293,13 +429,39 @@ class TestPyKrige(unittest.TestCase):
         gridy = np.linspace(241500.0, 244000.0, 100)
         ok = OrdinaryKriging(self.test_data[:, 0], self.test_data[:, 1], self.test_data[:, 2],
                              variogram_model='linear', verbose=False, enable_plotting=False)
-        z_ok, ss_ok = ok.execute('grid', gridx, gridy)
+        z_ok, ss_ok = ok.execute('grid', gridx, gridy, backend='vectorized')
         uk = UniversalKriging(self.test_data[:, 0], self.test_data[:, 1], self.test_data[:, 2],
                               variogram_model='linear', verbose=False, enable_plotting=False)
-        z_uk, ss_uk = uk.execute('grid', gridx, gridy)
-
+        z_uk, ss_uk = uk.execute('grid', gridx, gridy, backend='vectorized')
         self.assertTrue(np.allclose(z_ok, z_uk))
         self.assertTrue(np.allclose(ss_ok, ss_uk))
+
+        z_ok, ss_ok = ok.execute('grid', gridx, gridy, backend='loop')
+        z_uk, ss_uk = uk.execute('grid', gridx, gridy, backend='loop')
+        self.assertTrue(np.allclose(z_ok, z_uk))
+        self.assertTrue(np.allclose(ss_ok, ss_uk))
+
+    def test_ok_backends_produce_same_result(self):
+
+        gridx = np.linspace(1067000.0, 1072000.0, 100)
+        gridy = np.linspace(241500.0, 244000.0, 100)
+        ok = OrdinaryKriging(self.test_data[:, 0], self.test_data[:, 1], self.test_data[:, 2],
+                             variogram_model='linear', verbose=False, enable_plotting=False)
+        z_ok_v, ss_ok_v = ok.execute('grid', gridx, gridy, backend='vectorized')
+        z_ok_l, ss_ok_l = ok.execute('grid', gridx, gridy, backend='loop')
+        self.assertTrue(np.allclose(z_ok_v, z_ok_l))
+        self.assertTrue(np.allclose(ss_ok_v, ss_ok_l))
+
+    def test_uk_backends_produce_same_result(self):
+
+        gridx = np.linspace(1067000.0, 1072000.0, 100)
+        gridy = np.linspace(241500.0, 244000.0, 100)
+        uk = UniversalKriging(self.test_data[:, 0], self.test_data[:, 1], self.test_data[:, 2],
+                              variogram_model='linear', verbose=False, enable_plotting=False)
+        z_uk_v, ss_uk_v = uk.execute('grid', gridx, gridy, backend='vectorized')
+        z_uk_l, ss_uk_l = uk.execute('grid', gridx, gridy, backend='loop')
+        self.assertTrue(np.allclose(z_uk_v, z_uk_l))
+        self.assertTrue(np.allclose(ss_uk_v, ss_uk_l))
 
     def test_kriging_tools(self):
 
@@ -345,8 +507,16 @@ class TestPyKrige(unittest.TestCase):
         uk = UniversalKriging(self.simple_data[:, 0], self.simple_data[:, 1], self.simple_data[:, 2],
                               variogram_model='linear', drift_terms=['regional_linear', 'external_Z', 'point_log'],
                               point_drift=well, external_drift=dem, external_drift_x=dem_x, external_drift_y=dem_y)
-        z, ss = uk.execute('grid', self.simple_gridx, self.simple_gridy)
 
+        z, ss = uk.execute('grid', self.simple_gridx, self.simple_gridy, backend='vectorized')
+        self.assertEquals(z.shape, (self.simple_gridy.shape[0], self.simple_gridx.shape[0]))
+        self.assertEquals(ss.shape, (self.simple_gridy.shape[0], self.simple_gridx.shape[0]))
+        self.assertTrue(np.all(np.isfinite(z)))
+        self.assertFalse(np.all(np.isnan(z)))
+        self.assertTrue(np.all(np.isfinite(ss)))
+        self.assertFalse(np.all(np.isnan(ss)))
+
+        z, ss = uk.execute('grid', self.simple_gridx, self.simple_gridy, backend='loop')
         self.assertEquals(z.shape, (self.simple_gridy.shape[0], self.simple_gridx.shape[0]))
         self.assertEquals(ss.shape, (self.simple_gridy.shape[0], self.simple_gridx.shape[0]))
         self.assertTrue(np.all(np.isfinite(z)))
@@ -358,7 +528,6 @@ class TestPyKrige(unittest.TestCase):
 
         dem, demx, demy, cellsize, no_data = \
             kt.read_asc_grid(os.path.join(os.getcwd(), 'test_data/test3_dem.asc'))
-
         uk = UniversalKriging(self.test_data[:, 0], self.test_data[:, 1], self.test_data[:, 2],
                               variogram_model='spherical',
                               variogram_parameters=[500.0, 3000.0, 0.0],
@@ -368,8 +537,11 @@ class TestPyKrige(unittest.TestCase):
                               verbose=False)
         answer, gridx, gridy, cellsize, no_data = \
             kt.read_asc_grid(os.path.join(os.getcwd(), 'test_data/test3_answer.asc'))
-        z, ss = uk.execute('grid', gridx, gridy)
 
+        z, ss = uk.execute('grid', gridx, gridy, backend='vectorized')
+        self.assertTrue(np.allclose(z, answer))
+
+        z, ss = uk.execute('grid', gridx, gridy, backend='loop')
         self.assertTrue(np.allclose(z, answer))
 
     def test_force_exact(self):
@@ -378,7 +550,7 @@ class TestPyKrige(unittest.TestCase):
                          [3., 3., 1.]])
         ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
                              variogram_model='linear', variogram_parameters=[1.0, 1.0])
-        z, ss = ok.execute('grid', [1., 2., 3.], [1., 2., 3.])
+        z, ss = ok.execute('grid', [1., 2., 3.], [1., 2., 3.], backend='vectorized')
         self.assertAlmostEqual(z[0, 0], 2.0)
         self.assertAlmostEqual(ss[0, 0], 0.0)
         self.assertAlmostEqual(z[1, 1], 1.5)
@@ -387,13 +559,13 @@ class TestPyKrige(unittest.TestCase):
         self.assertAlmostEqual(ss[2, 2], 0.0)
         self.assertNotAlmostEqual(ss[0, 2], 0.0)
         self.assertNotAlmostEqual(ss[2, 0], 0.0)
-        z, ss = ok.execute('points', [1., 2., 3., 3.], [2., 1., 1., 3.])
+        z, ss = ok.execute('points', [1., 2., 3., 3.], [2., 1., 1., 3.], backend='vectorized')
         self.assertNotAlmostEqual(ss[0], 0.0)
         self.assertNotAlmostEqual(ss[1], 0.0)
         self.assertNotAlmostEqual(ss[2], 0.0)
         self.assertAlmostEqual(z[3], 1.0)
         self.assertAlmostEqual(ss[3], 0.0)
-        z, ss = ok.execute('grid', np.arange(0., 4., 0.1), np.arange(0., 4., 0.1))
+        z, ss = ok.execute('grid', np.arange(0., 4., 0.1), np.arange(0., 4., 0.1), backend='vectorized')
         self.assertAlmostEqual(z[10, 10], 2.)
         self.assertAlmostEqual(ss[10, 10], 0.)
         self.assertAlmostEqual(z[20, 20], 1.5)
@@ -408,19 +580,60 @@ class TestPyKrige(unittest.TestCase):
         self.assertNotAlmostEqual(ss[10, 20], 0.0)
         self.assertNotAlmostEqual(ss[30, 20], 0.0)
         self.assertNotAlmostEqual(ss[20, 30], 0.0)
-        z, ss = ok.execute('grid', np.arange(0., 3.1, 0.1), np.arange(2.1, 3.1, 0.1))
+        z, ss = ok.execute('grid', np.arange(0., 3.1, 0.1), np.arange(2.1, 3.1, 0.1), backend='vectorized')
         self.assertTrue(np.any(ss <= 1e-15))
         self.assertFalse(np.any(ss[:9, :30] <= 1e-15))
         self.assertFalse(np.allclose(z[:9, :30], 0.))
-        z, ss = ok.execute('grid', np.arange(0., 1.9, 0.1), np.arange(2.1, 3.1, 0.1))
+        z, ss = ok.execute('grid', np.arange(0., 1.9, 0.1), np.arange(2.1, 3.1, 0.1), backend='vectorized')
         self.assertFalse(np.any(ss <= 1e-15))
-        z, ss = ok.execute('masked', np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25),
-                           np.asarray(np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.))
+        z, ss = ok.execute('masked', np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25), backend='vectorized',
+                           mask=np.asarray(np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.))
+        self.assertTrue(ss[2, 5] <= 1e-15)
+        self.assertFalse(np.allclose(ss, 0.))
+
+        z, ss = ok.execute('grid', [1., 2., 3.], [1., 2., 3.], backend='loop')
+        self.assertAlmostEqual(z[0, 0], 2.0)
+        self.assertAlmostEqual(ss[0, 0], 0.0)
+        self.assertAlmostEqual(z[1, 1], 1.5)
+        self.assertAlmostEqual(ss[1, 1], 0.0)
+        self.assertAlmostEqual(z[2, 2], 1.0)
+        self.assertAlmostEqual(ss[2, 2], 0.0)
+        self.assertNotAlmostEqual(ss[0, 2], 0.0)
+        self.assertNotAlmostEqual(ss[2, 0], 0.0)
+        z, ss = ok.execute('points', [1., 2., 3., 3.], [2., 1., 1., 3.], backend='loop')
+        self.assertNotAlmostEqual(ss[0], 0.0)
+        self.assertNotAlmostEqual(ss[1], 0.0)
+        self.assertNotAlmostEqual(ss[2], 0.0)
+        self.assertAlmostEqual(z[3], 1.0)
+        self.assertAlmostEqual(ss[3], 0.0)
+        z, ss = ok.execute('grid', np.arange(0., 4., 0.1), np.arange(0., 4., 0.1), backend='loop')
+        self.assertAlmostEqual(z[10, 10], 2.)
+        self.assertAlmostEqual(ss[10, 10], 0.)
+        self.assertAlmostEqual(z[20, 20], 1.5)
+        self.assertAlmostEqual(ss[20, 20], 0.)
+        self.assertAlmostEqual(z[30, 30], 1.0)
+        self.assertAlmostEqual(ss[30, 30], 0.)
+        self.assertNotAlmostEqual(ss[0, 0], 0.0)
+        self.assertNotAlmostEqual(ss[15, 15], 0.0)
+        self.assertNotAlmostEqual(ss[10, 0], 0.0)
+        self.assertNotAlmostEqual(ss[0, 10], 0.0)
+        self.assertNotAlmostEqual(ss[20, 10], 0.0)
+        self.assertNotAlmostEqual(ss[10, 20], 0.0)
+        self.assertNotAlmostEqual(ss[30, 20], 0.0)
+        self.assertNotAlmostEqual(ss[20, 30], 0.0)
+        z, ss = ok.execute('grid', np.arange(0., 3.1, 0.1), np.arange(2.1, 3.1, 0.1), backend='loop')
+        self.assertTrue(np.any(ss <= 1e-15))
+        self.assertFalse(np.any(ss[:9, :30] <= 1e-15))
+        self.assertFalse(np.allclose(z[:9, :30], 0.))
+        z, ss = ok.execute('grid', np.arange(0., 1.9, 0.1), np.arange(2.1, 3.1, 0.1), backend='loop')
+        self.assertFalse(np.any(ss <= 1e-15))
+        z, ss = ok.execute('masked', np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25), backend='loop',
+                           mask=np.asarray(np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.))
         self.assertTrue(ss[2, 5] <= 1e-15)
         self.assertFalse(np.allclose(ss, 0.))
 
         uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2])
-        z, ss = uk.execute('grid', [1., 2., 3.], [1., 2., 3.])
+        z, ss = uk.execute('grid', [1., 2., 3.], [1., 2., 3.], backend='vectorized')
         self.assertAlmostEqual(z[0, 0], 2.0)
         self.assertAlmostEqual(ss[0, 0], 0.0)
         self.assertAlmostEqual(z[1, 1], 1.5)
@@ -429,13 +642,13 @@ class TestPyKrige(unittest.TestCase):
         self.assertAlmostEqual(ss[2, 2], 0.0)
         self.assertNotAlmostEqual(ss[0, 2], 0.0)
         self.assertNotAlmostEqual(ss[2, 0], 0.0)
-        z, ss = uk.execute('points', [1., 2., 3., 3.], [2., 1., 1., 3.])
+        z, ss = uk.execute('points', [1., 2., 3., 3.], [2., 1., 1., 3.], backend='vectorized')
         self.assertNotAlmostEqual(ss[0], 0.0)
         self.assertNotAlmostEqual(ss[1], 0.0)
         self.assertNotAlmostEqual(ss[2], 0.0)
         self.assertAlmostEqual(z[3], 1.0)
         self.assertAlmostEqual(ss[3], 0.0)
-        z, ss = uk.execute('grid', np.arange(0., 4., 0.1), np.arange(0., 4., 0.1))
+        z, ss = uk.execute('grid', np.arange(0., 4., 0.1), np.arange(0., 4., 0.1), backend='vectorized')
         self.assertAlmostEqual(z[10, 10], 2.)
         self.assertAlmostEqual(ss[10, 10], 0.)
         self.assertAlmostEqual(z[20, 20], 1.5)
@@ -450,14 +663,54 @@ class TestPyKrige(unittest.TestCase):
         self.assertNotAlmostEqual(ss[10, 20], 0.0)
         self.assertNotAlmostEqual(ss[30, 20], 0.0)
         self.assertNotAlmostEqual(ss[20, 30], 0.0)
-        z, ss = uk.execute('grid', np.arange(0., 3.1, 0.1), np.arange(2.1, 3.1, 0.1))
+        z, ss = uk.execute('grid', np.arange(0., 3.1, 0.1), np.arange(2.1, 3.1, 0.1), backend='vectorized')
         self.assertTrue(np.any(ss <= 1e-15))
         self.assertFalse(np.any(ss[:9, :30] <= 1e-15))
         self.assertFalse(np.allclose(z[:9, :30], 0.))
-        z, ss = uk.execute('grid', np.arange(0., 1.9, 0.1), np.arange(2.1, 3.1, 0.1))
+        z, ss = uk.execute('grid', np.arange(0., 1.9, 0.1), np.arange(2.1, 3.1, 0.1), backend='vectorized')
         self.assertFalse(np.any(ss <= 1e-15))
-        z, ss = uk.execute('masked', np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25),
-                           np.asarray(np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.))
+        z, ss = uk.execute('masked', np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25), backend='vectorized',
+                           mask=np.asarray(np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.))
+        self.assertTrue(ss[2, 5] <= 1e-15)
+        self.assertFalse(np.allclose(ss, 0.))
+        z, ss = uk.execute('grid', [1., 2., 3.], [1., 2., 3.], backend='loop')
+        self.assertAlmostEqual(z[0, 0], 2.0)
+        self.assertAlmostEqual(ss[0, 0], 0.0)
+        self.assertAlmostEqual(z[1, 1], 1.5)
+        self.assertAlmostEqual(ss[1, 1], 0.0)
+        self.assertAlmostEqual(z[2, 2], 1.0)
+        self.assertAlmostEqual(ss[2, 2], 0.0)
+        self.assertNotAlmostEqual(ss[0, 2], 0.0)
+        self.assertNotAlmostEqual(ss[2, 0], 0.0)
+        z, ss = uk.execute('points', [1., 2., 3., 3.], [2., 1., 1., 3.], backend='loop')
+        self.assertNotAlmostEqual(ss[0], 0.0)
+        self.assertNotAlmostEqual(ss[1], 0.0)
+        self.assertNotAlmostEqual(ss[2], 0.0)
+        self.assertAlmostEqual(z[3], 1.0)
+        self.assertAlmostEqual(ss[3], 0.0)
+        z, ss = uk.execute('grid', np.arange(0., 4., 0.1), np.arange(0., 4., 0.1), backend='loop')
+        self.assertAlmostEqual(z[10, 10], 2.)
+        self.assertAlmostEqual(ss[10, 10], 0.)
+        self.assertAlmostEqual(z[20, 20], 1.5)
+        self.assertAlmostEqual(ss[20, 20], 0.)
+        self.assertAlmostEqual(z[30, 30], 1.0)
+        self.assertAlmostEqual(ss[30, 30], 0.)
+        self.assertNotAlmostEqual(ss[0, 0], 0.0)
+        self.assertNotAlmostEqual(ss[15, 15], 0.0)
+        self.assertNotAlmostEqual(ss[10, 0], 0.0)
+        self.assertNotAlmostEqual(ss[0, 10], 0.0)
+        self.assertNotAlmostEqual(ss[20, 10], 0.0)
+        self.assertNotAlmostEqual(ss[10, 20], 0.0)
+        self.assertNotAlmostEqual(ss[30, 20], 0.0)
+        self.assertNotAlmostEqual(ss[20, 30], 0.0)
+        z, ss = uk.execute('grid', np.arange(0., 3.1, 0.1), np.arange(2.1, 3.1, 0.1), backend='loop')
+        self.assertTrue(np.any(ss <= 1e-15))
+        self.assertFalse(np.any(ss[:9, :30] <= 1e-15))
+        self.assertFalse(np.allclose(z[:9, :30], 0.))
+        z, ss = uk.execute('grid', np.arange(0., 1.9, 0.1), np.arange(2.1, 3.1, 0.1), backend='loop')
+        self.assertFalse(np.any(ss <= 1e-15))
+        z, ss = uk.execute('masked', np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25), backend='loop',
+                           mask=np.asarray(np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.))
         self.assertTrue(ss[2, 5] <= 1e-15)
         self.assertFalse(np.allclose(ss, 0.))
 
@@ -476,22 +729,260 @@ class TestPyKrige(unittest.TestCase):
         data[:, 2] = np.ravel(x) * np.ravel(y)
         ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
                              variogram_model='linear', variogram_parameters=[100.0, 1.0])
-        z, ss = ok.execute('grid', np.arange(0., 10., 1.), np.arange(0., 10., 2.))
+        z, ss = ok.execute('grid', np.arange(0., 10., 1.), np.arange(0., 10., 2.), backend='vectorized')
         self.assertTrue(np.allclose(np.ravel(z), data[:, 2]))
         self.assertTrue(np.allclose(ss, 0.))
-        z, ss = ok.execute('grid', np.arange(0.5, 10., 1.), np.arange(0.5, 10., 2.))
+        z, ss = ok.execute('grid', np.arange(0.5, 10., 1.), np.arange(0.5, 10., 2.), backend='vectorized')
+        self.assertFalse(np.allclose(np.ravel(z), data[:, 2]))
+        self.assertFalse(np.allclose(ss, 0.))
+        z, ss = ok.execute('grid', np.arange(0., 10., 1.), np.arange(0., 10., 2.), backend='loop')
+        self.assertTrue(np.allclose(np.ravel(z), data[:, 2]))
+        self.assertTrue(np.allclose(ss, 0.))
+        z, ss = ok.execute('grid', np.arange(0.5, 10., 1.), np.arange(0.5, 10., 2.), backend='loop')
         self.assertFalse(np.allclose(np.ravel(z), data[:, 2]))
         self.assertFalse(np.allclose(ss, 0.))
 
         uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
                               variogram_model='linear', variogram_parameters=[100.0, 1.0])
-        z, ss = uk.execute('grid', np.arange(0., 10., 1.), np.arange(0., 10., 2.))
+        z, ss = uk.execute('grid', np.arange(0., 10., 1.), np.arange(0., 10., 2.), backend='vectorized')
         self.assertTrue(np.allclose(np.ravel(z), data[:, 2]))
         self.assertTrue(np.allclose(ss, 0.))
-        z, ss = uk.execute('grid', np.arange(0.5, 10., 1.), np.arange(0.5, 10., 2.))
+        z, ss = uk.execute('grid', np.arange(0.5, 10., 1.), np.arange(0.5, 10., 2.), backend='vectorized')
+        self.assertFalse(np.allclose(np.ravel(z), data[:, 2]))
+        self.assertFalse(np.allclose(ss, 0.))
+        z, ss = uk.execute('grid', np.arange(0., 10., 1.), np.arange(0., 10., 2.), backend='loop')
+        self.assertTrue(np.allclose(np.ravel(z), data[:, 2]))
+        self.assertTrue(np.allclose(ss, 0.))
+        z, ss = uk.execute('grid', np.arange(0.5, 10., 1.), np.arange(0.5, 10., 2.), backend='loop')
         self.assertFalse(np.allclose(np.ravel(z), data[:, 2]))
         self.assertFalse(np.allclose(ss, 0.))
 
+    def test_custom_variogram(self):
+        func = lambda params, dist: params[0] * np.log10(dist + params[1]) + params[2]
+
+        self.assertRaises(ValueError, UniversalKriging, self.simple_data[:, 0], self.simple_data[:, 1],
+                          self.simple_data[:, 2], variogram_model='mrow')
+        self.assertRaises(ValueError, UniversalKriging, self.simple_data[:, 0], self.simple_data[:, 1],
+                          self.simple_data[:, 2], variogram_model='custom')
+        self.assertRaises(ValueError, UniversalKriging, self.simple_data[:, 0], self.simple_data[:, 1],
+                          self.simple_data[:, 2], variogram_model='custom', variogram_function=0)
+        self.assertRaises(ValueError, UniversalKriging, self.simple_data[:, 0], self.simple_data[:, 1],
+                          self.simple_data[:, 2], variogram_model='custom', variogram_function=func)
+        uk = UniversalKriging(self.simple_data[:, 0], self.simple_data[:, 1], self.simple_data[:, 2],
+                              variogram_model='custom', variogram_parameters=[1., 1., 1.], variogram_function=func)
+        self.assertAlmostEqual(uk.variogram_function([1., 1., 1.], 1.), 1.3010, 4)
+        uk = UniversalKriging(self.simple_data[:, 0], self.simple_data[:, 1], self.simple_data[:, 2],
+                              variogram_model='linear')
+        uk.update_variogram_model('custom', variogram_parameters=[1., 1., 1.], variogram_function=func)
+        self.assertAlmostEqual(uk.variogram_function([1., 1., 1.], 1.), 1.3010, 4)
+
+        self.assertRaises(ValueError, OrdinaryKriging, self.simple_data[:, 0], self.simple_data[:, 1],
+                          self.simple_data[:, 2], variogram_model='mrow')
+        self.assertRaises(ValueError, OrdinaryKriging, self.simple_data[:, 0], self.simple_data[:, 1],
+                          self.simple_data[:, 2], variogram_model='custom')
+        self.assertRaises(ValueError, OrdinaryKriging, self.simple_data[:, 0], self.simple_data[:, 1],
+                          self.simple_data[:, 2], variogram_model='custom', variogram_function=0)
+        self.assertRaises(ValueError, OrdinaryKriging, self.simple_data[:, 0], self.simple_data[:, 1],
+                          self.simple_data[:, 2], variogram_model='custom', variogram_function=func)
+        ok = OrdinaryKriging(self.simple_data[:, 0], self.simple_data[:, 1], self.simple_data[:, 2],
+                             variogram_model='custom', variogram_parameters=[1., 1., 1.], variogram_function=func)
+        self.assertAlmostEqual(ok.variogram_function([1., 1., 1.], 1.), 1.3010, 4)
+        ok = OrdinaryKriging(self.simple_data[:, 0], self.simple_data[:, 1], self.simple_data[:, 2],
+                             variogram_model='linear')
+        ok.update_variogram_model('custom', variogram_parameters=[1., 1., 1.], variogram_function=func)
+        self.assertAlmostEqual(ok.variogram_function([1., 1., 1.], 1.), 1.3010, 4)
+
+    def test_k3d(self):
+
+        # Test to compare K3D results to those obtained using KT3D_H2O.
+        # (M. Karanovic, M. Tonkin, and D. Wilson, 2009, Groundwater, vol. 47, no. 4, 580-586.)
+        k3d = Krige3D(self.test_data[:, 0], self.test_data[:, 1], np.zeros(self.test_data[:, 1].shape),
+                      self.test_data[:, 2], variogram_model='exponential', variogram_parameters=[500.0, 3000.0, 0.0])
+        k, ss = k3d.execute('grid', self.ok_test_gridx, self.ok_test_gridy, np.array([0.]), backend='vectorized')
+        self.assertTrue(np.allclose(k, self.ok_test_answer))
+        k, ss = k3d.execute('grid', self.ok_test_gridx, self.ok_test_gridy, np.array([0.]), backend='loop')
+        self.assertTrue(np.allclose(k, self.ok_test_answer))
+
+        # Test to compare K3D results to those obtained using KT3D.
+        data = np.genfromtxt('./test_data/test3d_data.txt', skip_header=1)
+        ans = np.genfromtxt('./test_data/test3d_answer.txt')
+        ans_z = ans[:, 0].reshape((10, 10, 10))
+        ans_ss = ans[:, 1].reshape((10, 10, 10))
+        k3d = Krige3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+                      variogram_model='linear', variogram_parameters=[1., 0.1])
+        k, ss = k3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='vectorized')
+        self.assertTrue(np.allclose(k, ans_z, rtol=1e-3))
+        self.assertTrue(np.allclose(ss, ans_ss, rtol=1e-3))
+        k3d = Krige3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+                      variogram_model='linear', variogram_parameters=[1., 0.1])
+        k, ss = k3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='loop')
+        self.assertTrue(np.allclose(k, ans_z, rtol=1e-3))
+        self.assertTrue(np.allclose(ss, ans_ss, rtol=1e-3))
+
+    def test_k3d_update_variogram_model(self):
+
+        self.assertRaises(ValueError, Krige3D, self.simple_data_3d[:, 0], self.simple_data_3d[:, 1],
+                          self.simple_data_3d[:, 2], self.simple_data_3d[:, 3], variogram_model='blurg')
+
+        k3d = Krige3D(self.simple_data_3d[:, 0], self.simple_data_3d[:, 1],
+                      self.simple_data_3d[:, 2], self.simple_data_3d[:, 3])
+        variogram_model = k3d.variogram_model
+        variogram_parameters = k3d.variogram_model_parameters
+        anisotropy_scaling_y = k3d.anisotropy_scaling_y
+        anisotropy_scaling_z = k3d.anisotropy_scaling_z
+        anisotropy_angle_x = k3d.anisotropy_angle_x
+        anisotropy_angle_y = k3d.anisotropy_angle_y
+        anisotropy_angle_z = k3d.anisotropy_angle_z
+
+        self.assertRaises(ValueError, k3d.update_variogram_model, 'blurg')
+        k3d.update_variogram_model('power', anisotropy_scaling_y=3.0, anisotropy_scaling_z=3.0,
+                                   anisotropy_angle_x=45.0, anisotropy_angle_y=45.0, anisotropy_angle_z=45.0)
+        self.assertFalse(variogram_model == k3d.variogram_model)
+        self.assertFalse(variogram_parameters == k3d.variogram_model_parameters)
+        self.assertFalse(anisotropy_scaling_y == k3d.anisotropy_scaling_y)
+        self.assertFalse(anisotropy_scaling_z == k3d.anisotropy_scaling_z)
+        self.assertFalse(anisotropy_angle_x == k3d.anisotropy_angle_x)
+        self.assertFalse(anisotropy_angle_y == k3d.anisotropy_angle_y)
+        self.assertFalse(anisotropy_angle_z == k3d.anisotropy_angle_z)
+
+    def test_k3d_backends_produce_same_result(self):
+
+        k3d = Krige3D(self.simple_data_3d[:, 0], self.simple_data_3d[:, 1], self.simple_data_3d[:, 2],
+                      self.simple_data_3d[:, 3], variogram_model='linear')
+        k_k3d_v, ss_k3d_v = k3d.execute('grid', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d,
+                                        backend='vectorized')
+        k_k3d_l, ss_k3d_l = k3d.execute('grid', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d,
+                                        backend='loop')
+        self.assertTrue(np.allclose(k_k3d_v, k_k3d_l))
+        self.assertTrue(np.allclose(ss_k3d_v, ss_k3d_l))
+
+    def test_3d_execute(self):
+
+        k3d = Krige3D(self.simple_data_3d[:, 0], self.simple_data_3d[:, 1],
+                      self.simple_data_3d[:, 2], self.simple_data_3d[:, 3])
+
+        self.assertRaises(ValueError, k3d.execute, 'blurg', self.simple_gridx_3d,
+                          self.simple_gridy_3d, self.simple_gridz_3d)
+
+        k, ss = k3d.execute('grid', self.simple_gridx_3d, self.simple_gridy_3d,
+                            self.simple_gridz_3d, backend='vectorized')
+        shape = (self.simple_gridz_3d.size, self.simple_gridy_3d.size, self.simple_gridx_3d.size)
+        self.assertEqual(k.shape, shape)
+        self.assertEqual(ss.shape, shape)
+        self.assertNotEqual(np.amax(k), np.amin(k))
+        self.assertNotEqual(np.amax(ss), np.amin(ss))
+        self.assertFalse(np.ma.is_masked(k))
+
+        k, ss = k3d.execute('grid', self.simple_gridx_3d, self.simple_gridy_3d,
+                            self.simple_gridz_3d, backend='loop')
+        shape = (self.simple_gridz_3d.size, self.simple_gridy_3d.size, self.simple_gridx_3d.size)
+        self.assertEqual(k.shape, shape)
+        self.assertEqual(ss.shape, shape)
+        self.assertNotEqual(np.amax(k), np.amin(k))
+        self.assertNotEqual(np.amax(ss), np.amin(ss))
+        self.assertFalse(np.ma.is_masked(k))
+
+        self.assertRaises(IOError, k3d.execute, 'masked', self.simple_gridx_3d, self.simple_gridy_3d,
+                          self.simple_gridz_3d, backend='vectorized')
+        mask = np.array([True, False])
+        self.assertRaises(ValueError, k3d.execute, 'masked', self.simple_gridx_3d, self.simple_gridy_3d,
+                          self.simple_gridz_3d, mask=mask, backend='vectorized')
+        k, ss = k3d.execute('masked', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d,
+                            mask=self.mask_3d, backend='vectorized')
+        self.assertTrue(np.ma.is_masked(k))
+        self.assertTrue(np.ma.is_masked(ss))
+        self.assertIs(k[0, 0, 0], np.ma.masked)
+        self.assertIs(ss[0, 0, 0], np.ma.masked)
+        z, ss = k3d.execute('masked', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d,
+                            mask=self.mask_3d.T, backend='vectorized')
+        self.assertTrue(np.ma.is_masked(z))
+        self.assertTrue(np.ma.is_masked(ss))
+        self.assertIs(z[0, 0, 0], np.ma.masked)
+        self.assertIs(ss[0, 0, 0], np.ma.masked)
+
+        self.assertRaises(IOError, k3d.execute, 'masked', self.simple_gridx_3d, self.simple_gridy_3d,
+                          self.simple_gridz_3d, backend='loop')
+        mask = np.array([True, False])
+        self.assertRaises(ValueError, k3d.execute, 'masked', self.simple_gridx_3d, self.simple_gridy_3d,
+                          self.simple_gridz_3d, mask=mask, backend='loop')
+        k, ss = k3d.execute('masked', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d,
+                            mask=self.mask_3d, backend='loop')
+        self.assertTrue(np.ma.is_masked(k))
+        self.assertTrue(np.ma.is_masked(ss))
+        self.assertIs(k[0, 0, 0], np.ma.masked)
+        self.assertIs(ss[0, 0, 0], np.ma.masked)
+        z, ss = k3d.execute('masked', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d,
+                            mask=self.mask_3d.T, backend='loop')
+        self.assertTrue(np.ma.is_masked(z))
+        self.assertTrue(np.ma.is_masked(ss))
+        self.assertIs(z[0, 0, 0], np.ma.masked)
+        self.assertIs(ss[0, 0, 0], np.ma.masked)
+
+        self.assertRaises(ValueError, k3d.execute, 'points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
+                          np.array([1.0]), backend='vectorized')
+        k, ss = k3d.execute('points', self.simple_gridx_3d[0], self.simple_gridy_3d[0],
+                            self.simple_gridz_3d[0], backend='vectorized')
+        self.assertEqual(k.shape, (1,))
+        self.assertEqual(ss.shape, (1,))
+
+        self.assertRaises(ValueError, k3d.execute, 'points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
+                          np.array([1.0]), backend='loop')
+        k, ss = k3d.execute('points', self.simple_gridx_3d[0], self.simple_gridy_3d[0],
+                            self.simple_gridz_3d[0], backend='loop')
+        self.assertEqual(k.shape, (1,))
+        self.assertEqual(ss.shape, (1,))
+
+        data = np.zeros((125, 4))
+        z, y, x = np.meshgrid(np.arange(0., 5., 1.), np.arange(0., 5., 1.), np.arange(0., 5., 1.))
+        data[:, 0] = np.ravel(x)
+        data[:, 1] = np.ravel(y)
+        data[:, 2] = np.ravel(z)
+        data[:, 3] = np.ravel(z)
+        k3d = Krige3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3], variogram_model='linear')
+        k, ss = k3d.execute('grid', np.arange(2., 3., 0.1), np.arange(2., 3., 0.1),
+                            np.arange(0., 4., 1.), backend='vectorized')
+        self.assertTrue(np.allclose(k[0, :, :], 0., atol=0.01))
+        self.assertTrue(np.allclose(k[1, :, :], 1., rtol=1.e-2))
+        self.assertTrue(np.allclose(k[2, :, :], 2., rtol=1.e-2))
+        self.assertTrue(np.allclose(k[3, :, :], 3., rtol=1.e-2))
+        k, ss = k3d.execute('grid', np.arange(2., 3., 0.1), np.arange(2., 3., 0.1),
+                            np.arange(0., 4., 1.), backend='loop')
+        self.assertTrue(np.allclose(k[0, :, :], 0., atol=0.01))
+        self.assertTrue(np.allclose(k[1, :, :], 1., rtol=1.e-2))
+        self.assertTrue(np.allclose(k[2, :, :], 2., rtol=1.e-2))
+        self.assertTrue(np.allclose(k[3, :, :], 3., rtol=1.e-2))
+        k3d = Krige3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3], variogram_model='linear')
+        k, ss = k3d.execute('points', [2.5, 2.5, 2.5], [2.5, 2.5, 2.5], [1., 2., 3.], backend='vectorized')
+        self.assertTrue(np.allclose(k[0], 1., atol=0.01))
+        self.assertTrue(np.allclose(k[1], 2., rtol=1.e-2))
+        self.assertTrue(np.allclose(k[2], 3., rtol=1.e-2))
+        k, ss = k3d.execute('points', [2.5, 2.5, 2.5], [2.5, 2.5, 2.5], [1., 2., 3.], backend='loop')
+        self.assertTrue(np.allclose(k[0], 1., atol=0.01))
+        self.assertTrue(np.allclose(k[1], 2., rtol=1.e-2))
+        self.assertTrue(np.allclose(k[2], 3., rtol=1.e-2))
+
+    def test_force_exact_3d(self):
+        k3d = Krige3D(self.simple_data_3d[:, 0], self.simple_data_3d[:, 1], self.simple_data_3d[:, 2],
+                      self.simple_data_3d[:, 3], variogram_model='linear')
+        k, ss = k3d.execute('grid', [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], backend='vectorized')
+        self.assertAlmostEqual(k[2, 0, 0], 0.9)
+        self.assertAlmostEqual(ss[2, 0, 0], 0.0)
+        self.assertAlmostEqual(k[0, 2, 0], 0.9)
+        self.assertAlmostEqual(ss[0, 2, 0], 0.0)
+        self.assertAlmostEqual(k[1, 2, 2], 0.7)
+        self.assertAlmostEqual(ss[1, 2, 2], 0.0)
+        self.assertNotAlmostEqual(ss[2, 2, 2], 0.0)
+        self.assertNotAlmostEqual(ss[0, 0, 0], 0.0)
+
+        k, ss = k3d.execute('grid', [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], backend='loop')
+        self.assertAlmostEqual(k[2, 0, 0], 0.9)
+        self.assertAlmostEqual(ss[2, 0, 0], 0.0)
+        self.assertAlmostEqual(k[0, 2, 0], 0.9)
+        self.assertAlmostEqual(ss[0, 2, 0], 0.0)
+        self.assertAlmostEqual(k[1, 2, 2], 0.7)
+        self.assertAlmostEqual(ss[1, 2, 2], 0.0)
+        self.assertNotAlmostEqual(ss[2, 2, 2], 0.0)
+        self.assertNotAlmostEqual(ss[0, 0, 0], 0.0)
 
 if __name__ == '__main__':
     unittest.main()

@@ -17,6 +17,8 @@ Copyright (c) 2015 Benjamin S. Murphy
 """
 
 import numpy as np
+import scipy.linalg
+from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 import variogram_models
 import core
@@ -28,6 +30,7 @@ class OrdinaryKriging:
 
     Dependencies:
         numpy
+        scipy
         matplotlib
 
     Inputs:
@@ -37,7 +40,9 @@ class OrdinaryKriging:
 
         variogram_model (string, optional): Specified which variogram model to use;
             may be one of the following: linear, power, gaussian, spherical,
-            exponential. Default is linear variogram model.
+            exponential. Default is linear variogram model. To utilize as custom variogram
+            model, specify 'custom'; you must also provide variogram_parameters and
+            variogram_function.
         variogram_parameters (list, optional): Parameters that define the
             specified variogram model. If not provided, parameters will be automatically
             calculated such that the root-mean-square error for the fit variogram
@@ -47,6 +52,16 @@ class OrdinaryKriging:
                 gaussian - [sill, range, nugget]
                 spherical - [sill, range, nugget]
                 exponential - [sill, range, nugget]
+            For a custom variogram model, the parameters are required, as custom variogram
+            models currently will not automatically be fit to the data. The code does not
+            check that the provided list contains the appropriate number of parameters for
+            the custom variogram model, so an incorrect parameter list in such a case will
+            probably trigger an esoteric exception someplace deep in the code.
+        variogram_function (callable, optional): A callable function that must be provided
+            if variogram_model is specified as 'custom'. The function must take only two
+            arguments: first, a list of parameters for the variogram model; second, the
+            distances at which to calculate the variogram model. The list provided in
+            variogram_parameters will be passed to the function as the first argument.
         nlags (int, optional): Number of averaging bins for the semivariogram.
             Default is 6.
         weight (boolean, optional): Flag that specifies if semivariance at smaller lags
@@ -61,7 +76,7 @@ class OrdinaryKriging:
             is not 0).
         anisotropy_angle (float, optional): CCW angle (in degrees) by which to
             rotate coordinate system in order to take into account anisotropy.
-            Default is 0 (no rotation).
+            Default is 0 (no rotation). Note that the coordinate system is rotated.
         verbose (Boolean, optional): Enables program text output to monitor
             kriging process. Default is False (off).
         enable_plotting (Boolean, optional): Enables plotting to display
@@ -76,10 +91,14 @@ class OrdinaryKriging:
             the kriging system.
             Inputs:
                 variogram_model (string): May be any of the variogram models
-                    listed above.
+                    listed above. May also be 'custom', in which case variogram_parameters
+                    and variogram_function must be specified.
                 variogram_parameters (list, optional): List of variogram model
                     parameters, as listed above. If not provided, a best fit model
                     will be calculated as described above.
+                variogram_function (callable, optional): A callable function that must be
+                    provided if variogram_model is specified as 'custom'. See above for
+                    more information.
                 nlags (int, optional): Number of averaging bins for the semivariogram.
                     Defualt is 6.
                 weight (boolean, optional): Flag that specifies if semivariance at smaller lags
@@ -88,7 +107,7 @@ class OrdinaryKriging:
                 anisotropy_scaling (float, optional): Scalar stretching value to
                     take into account anisotropy. Default is 1 (effectively no
                     stretching). Scaling is applied in the y-direction.
-                anisotropy_angle (float, optional): Angle (in degrees) by which to
+                anisotropy_angle (float, optional): CCW angle (in degrees) by which to
                     rotate coordinate system in order to take into account
                     anisotropy. Default is 0 (no rotation).
 
@@ -128,6 +147,13 @@ class OrdinaryKriging:
                     kriging calculations. Must be provided if style is specified as 'masked'.
                     False indicates that the point should not be masked; True indicates that
                     the point should be masked.
+                backend (string, optional): Specifies which approach to use in kriging.
+                    Specifying 'vectorized' will solve the entire kriging problem at once in a
+                    vectorized operation. This approach is faster but also can consume a
+                    significant amount of memory for large grids and/or large datasets.
+                    Specifying 'loop' will loop through each point at which the kriging system
+                    is to be solved. This approach is slower but also less memory-intensive.
+                    Default is 'vectorized'.
             Outputs:
                 zvalues (numpy array, dim MxN or dim Nx1): Z-values of specified grid or at the
                     specified set of points. If style was specified as 'masked', zvalues will
@@ -141,12 +167,16 @@ class OrdinaryKriging:
         (Cambridge University Press, 1997) 272 p.
     """
 
-    eps = 1e-10   # Cutoff for comparison to zero
+    eps = 1.e-10   # Cutoff for comparison to zero
+    variogram_dict = {'linear': variogram_models.linear_variogram_model,
+                      'power': variogram_models.power_variogram_model,
+                      'gaussian': variogram_models.gaussian_variogram_model,
+                      'spherical': variogram_models.spherical_variogram_model,
+                      'exponential': variogram_models.exponential_variogram_model}
 
-    def __init__(self, x, y, z, variogram_model='linear',
-                 variogram_parameters=None, nlags=6, weight=False,
-                 anisotropy_scaling=1.0, anisotropy_angle=0.0,
-                 verbose=False, enable_plotting=False):
+    def __init__(self, x, y, z, variogram_model='linear', variogram_parameters=None,
+                 variogram_function=None, nlags=6, weight=False, anisotropy_scaling=1.0,
+                 anisotropy_angle=0.0, verbose=False, enable_plotting=False):
 
         # Code assumes 1D input arrays. Ensures that this is the case.
         # Copies are created to avoid any problems with referencing
@@ -172,18 +202,15 @@ class OrdinaryKriging:
                                        self.anisotropy_scaling, self.anisotropy_angle)
 
         self.variogram_model = variogram_model
-        if self.variogram_model == 'linear':
-            self.variogram_function = variogram_models.linear_variogram_model
-        elif self.variogram_model == 'power':
-            self.variogram_function = variogram_models.power_variogram_model
-        elif self.variogram_model == 'gaussian':
-            self.variogram_function = variogram_models.gaussian_variogram_model
-        elif self.variogram_model == 'spherical':
-            self.variogram_function = variogram_models.spherical_variogram_model
-        elif self.variogram_model == 'exponential':
-            self.variogram_function = variogram_models.exponential_variogram_model
-        else:
+        if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
             raise ValueError("Specified variogram model '%s' is not supported." % variogram_model)
+        elif self.variogram_model == 'custom':
+            if variogram_function is None or not callable(variogram_function):
+                raise ValueError("Must specify callable function for custom variogram model.")
+            else:
+                self.variogram_function = variogram_function
+        else:
+            self.variogram_function = self.variogram_dict[self.variogram_model]
         if self.verbose:
             print "Initializing variogram model..."
         self.lags, self.semivariance, self.variogram_model_parameters = \
@@ -200,6 +227,8 @@ class OrdinaryKriging:
                 print "Scale:", self.variogram_model_parameters[0]
                 print "Exponent:", self.variogram_model_parameters[1]
                 print "Nugget:", self.variogram_model_parameters[2], '\n'
+            elif self.variogram_model == 'custom':
+                print "Using Custom Variogram Model"
             else:
                 print "Using '%s' Variogram Model" % self.variogram_model
                 print "Sill:", self.variogram_model_parameters[0]
@@ -210,10 +239,8 @@ class OrdinaryKriging:
 
         if self.verbose:
             print "Calculating statistics on variogram model fit..."
-        self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED,
-                                                                    self.Y_ADJUSTED,
-                                                                    self.Z,
-                                                                    self.variogram_function,
+        self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED, self.Y_ADJUSTED,
+                                                                    self.Z, self.variogram_function,
                                                                     self.variogram_model_parameters)
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
@@ -224,7 +251,7 @@ class OrdinaryKriging:
             print "cR =", self.cR, '\n'
 
     def update_variogram_model(self, variogram_model, variogram_parameters=None,
-                               nlags=6, weight=False,
+                               variogram_function=None, nlags=6, weight=False,
                                anisotropy_scaling=1.0, anisotropy_angle=0.0):
         """Allows user to update variogram type and/or variogram model parameters."""
 
@@ -242,18 +269,15 @@ class OrdinaryKriging:
                                            self.anisotropy_angle)
 
         self.variogram_model = variogram_model
-        if self.variogram_model == 'linear':
-            self.variogram_function = variogram_models.linear_variogram_model
-        elif self.variogram_model == 'power':
-            self.variogram_function = variogram_models.power_variogram_model
-        elif self.variogram_model == 'gaussian':
-            self.variogram_function = variogram_models.gaussian_variogram_model
-        elif self.variogram_model == 'spherical':
-            self.variogram_function = variogram_models.spherical_variogram_model
-        elif self.variogram_model == 'exponential':
-            self.variogram_function = variogram_models.exponential_variogram_model
-        else:
+        if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
             raise ValueError("Specified variogram model '%s' is not supported." % variogram_model)
+        elif self.variogram_model == 'custom':
+            if variogram_function is None or not callable(variogram_function):
+                raise ValueError("Must specify callable function for custom variogram model.")
+            else:
+                self.variogram_function = variogram_function
+        else:
+            self.variogram_function = self.variogram_dict[self.variogram_model]
         if self.verbose:
             print "Updating variogram mode..."
         self.lags, self.semivariance, self.variogram_model_parameters = \
@@ -270,6 +294,8 @@ class OrdinaryKriging:
                 print "Scale:", self.variogram_model_parameters[0]
                 print "Exponent:", self.variogram_model_parameters[1]
                 print "Nugget:", self.variogram_model_parameters[2], '\n'
+            elif self.variogram_model == 'custom':
+                print "Using Custom Variogram Model"
             else:
                 print "Using '%s' Variogram Model" % self.variogram_model
                 print "Sill:", self.variogram_model_parameters[0]
@@ -280,10 +306,8 @@ class OrdinaryKriging:
 
         if self.verbose:
             print "Calculating statistics on variogram model fit..."
-        self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED,
-                                                                    self.Y_ADJUSTED,
-                                                                    self.Z,
-                                                                    self.variogram_function,
+        self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED, self.Y_ADJUSTED,
+                                                                    self.Z, self.variogram_function,
                                                                     self.variogram_model_parameters)
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
@@ -311,11 +335,11 @@ class OrdinaryKriging:
         self.enable_plotting = not self.enable_plotting
 
     def get_epsilon_residuals(self):
-        # Returns the epsilon residuals for the variogram fit.
+        """Returns the epsilon residuals for the variogram fit."""
         return self.epsilon
 
     def plot_epsilon_residuals(self):
-        # Plots the epsilon residuals for the variogram fit.
+        """Plots the epsilon residuals for the variogram fit."""
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.scatter(range(self.epsilon.size), self.epsilon, c='k', marker='*')
@@ -330,7 +354,221 @@ class OrdinaryKriging:
         print "Q2 =", self.Q2
         print "cR =", self.cR
 
-    def execute(self, style, xpoints, ypoints, mask=None):
+    def _get_kriging_matrix(self, n):
+        """Assembles the kriging matrix."""
+
+        xy = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
+        d = cdist(xy, xy, 'euclidean')
+        a = np.zeros((n+1, n+1))
+        a[:n, :n] = - self.variogram_function(self.variogram_model_parameters, d)
+        np.fill_diagonal(a, 0.)
+        a[n, :] = 1.0
+        a[:, n] = 1.0
+        a[n, n] = 0.0
+
+        return a
+
+    def _exec_vector(self, style, xpoints, ypoints, mask):
+        """Solves the kriging system as a vectorized operation. This method
+        can take a lot of memory for large grids and/or large datasets."""
+
+        nx = xpoints.shape[0]
+        ny = ypoints.shape[0]
+        n = self.X_ADJUSTED.shape[0]
+        zero_index = None
+        zero_value = False
+        a_inv = scipy.linalg.inv(self._get_kriging_matrix(n))
+
+        if style == 'grid':
+
+            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
+            grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y, self.XCENTER, self.YCENTER,
+                                                        self.anisotropy_scaling, self.anisotropy_angle)
+
+            bd = cdist(np.concatenate((grid_x[:, :, np.newaxis], grid_y[:, :, np.newaxis]), axis=2).reshape((nx*ny, 2)),
+                       np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
+                       'euclidean').reshape((ny, nx, n))
+            if np.any(np.absolute(bd) <= self.eps):
+                zero_value = True
+                zero_index = np.where(np.absolute(bd) <= self.eps)
+            b = np.zeros((ny, nx, n+1, 1))
+            b[:, :, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            if zero_value:
+                b[zero_index[0], zero_index[1], zero_index[2], 0] = 0.0
+            b[:, :, n, 0] = 1.0
+
+            x = np.dot(a_inv, b.reshape((nx*ny, n+1)).T).reshape((1, n+1, ny, nx)).T.swapaxes(0, 1)
+            zvalues = np.sum(x[:, :, :n, 0] * self.Z, axis=2)
+            sigmasq = np.sum(x[:, :, :, 0] * -b[:, :, :, 0], axis=2)
+
+        elif style == 'masked':
+
+            if mask is None:
+                raise IOError("Must specify boolean masking array.")
+            if mask.shape[0] != ny or mask.shape[1] != nx:
+                if mask.shape[0] == nx and mask.shape[1] == ny:
+                    mask = mask.T
+                else:
+                    raise ValueError("Mask dimensions do not match specified grid dimensions.")
+
+            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
+            grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y, self.XCENTER, self.YCENTER,
+                                                        self.anisotropy_scaling, self.anisotropy_angle)
+
+            bd = cdist(np.concatenate((grid_x[:, :, np.newaxis], grid_y[:, :, np.newaxis]), axis=2).reshape((nx*ny, 2)),
+                       np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
+                       'euclidean').reshape((ny, nx, n))
+            if np.any(np.absolute(bd) <= self.eps):
+                zero_value = True
+                zero_index = np.where(np.absolute(bd) <= self.eps)
+            b = np.zeros((ny, nx, n+1, 1))
+            b[:, :, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            if zero_value:
+                b[zero_index[0], zero_index[1], zero_index[2], 0] = 0.0
+            b[:, :, n, 0] = 1.0
+            mask_b = np.repeat(mask[:, :, np.newaxis, np.newaxis], n+1, axis=2)
+            b = np.ma.array(b, mask=mask_b)
+
+            x = np.dot(a_inv, b.reshape((nx*ny, n+1)).T).reshape((1, n+1, ny, nx)).T.swapaxes(0, 1)
+            zvalues = np.sum(x[:, :, :n, 0] * self.Z, axis=2)
+            sigmasq = np.sum(x[:, :, :, 0] * -b[:, :, :, 0], axis=2)
+
+        elif style == 'points':
+            if xpoints.shape != ypoints.shape:
+                raise ValueError("xpoints and ypoints must have same dimensions "
+                                 "when treated as listing discrete points.")
+
+            xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
+                                                          self.anisotropy_scaling, self.anisotropy_angle)
+            bd = cdist(np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1),
+                       np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
+                       'euclidean')
+            if np.any(np.absolute(bd) <= self.eps):
+                zero_value = True
+                zero_index = np.where(np.absolute(bd) <= self.eps)
+            b = np.zeros((nx, n+1, 1))
+            b[:, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            if zero_value:
+                b[zero_index[0], zero_index[1], 0] = 0.0
+            b[:, n, 0] = 1.0
+
+            x = np.dot(a_inv, b.reshape((nx, n+1)).T).reshape((1, n+1, nx)).T
+            zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
+            sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
+
+        else:
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
+
+        return zvalues, sigmasq
+
+    def _exec_loop(self, style, xpoints, ypoints, mask):
+        """Solves the kriging system by looping over all specified points.
+        Less memory-intensive, but involves a Python-level loop."""
+
+        nx = xpoints.shape[0]
+        ny = ypoints.shape[0]
+        n = self.X_ADJUSTED.shape[0]
+        a_inv = scipy.linalg.inv(self._get_kriging_matrix(n))
+
+        if style == 'grid':
+
+            zvalues = np.zeros((ny, nx))
+            sigmasq = np.zeros((ny, nx))
+            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
+            grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y, self.XCENTER, self.YCENTER,
+                                                        self.anisotropy_scaling, self.anisotropy_angle)
+
+            for j in range(ny):
+                for k in range(nx):
+                    bd = np.sqrt((self.X_ADJUSTED - grid_x[j, k])**2 + (self.Y_ADJUSTED - grid_y[j, k])**2)
+                    if np.any(np.absolute(bd) <= self.eps):
+                        zero_value = True
+                        zero_index = np.where(np.absolute(bd) <= self.eps)
+                    else:
+                        zero_index = None
+                        zero_value = False
+                    b = np.zeros((n+1, 1))
+                    b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+                    if zero_value:
+                        b[zero_index[0], 0] = 0.0
+                    b[n, 0] = 1.0
+
+                    x = np.dot(a_inv, b)
+                    zvalues[j, k] = np.sum(x[:n, 0] * self.Z)
+                    sigmasq[j, k] = np.sum(x[:, 0] * -b[:, 0])
+
+        elif style == 'masked':
+
+            if mask is None:
+                raise IOError("Must specify boolean masking array.")
+            if mask.shape[0] != ny or mask.shape[1] != nx:
+                if mask.shape[0] == nx and mask.shape[1] == ny:
+                    mask = mask.T
+                else:
+                    raise ValueError("Mask dimensions do not match specified grid dimensions.")
+
+            zvalues = np.zeros((ny, nx))
+            sigmasq = np.zeros((ny, nx))
+            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
+            grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y, self.XCENTER, self.YCENTER,
+                                                        self.anisotropy_scaling, self.anisotropy_angle)
+
+            for j in range(ny):
+                for k in range(nx):
+                    if not mask[j, k]:
+                        bd = np.sqrt((self.X_ADJUSTED - grid_x[j, k])**2 + (self.Y_ADJUSTED - grid_y[j, k])**2)
+                        if np.any(np.absolute(bd) <= self.eps):
+                            zero_value = True
+                            zero_index = np.where(np.absolute(bd) <= self.eps)
+                        else:
+                            zero_index = None
+                            zero_value = False
+                        b = np.zeros((n+1, 1))
+                        b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+                        if zero_value:
+                            b[zero_index[0], 0] = 0.0
+                        b[n, 0] = 1.0
+
+                        x = np.dot(a_inv, b)
+                        zvalues[j, k] = np.sum(x[:n, 0] * self.Z)
+                        sigmasq[j, k] = np.sum(x[:, 0] * -b[:, 0])
+
+            zvalues = np.ma.array(zvalues, mask=mask)
+            sigmasq = np.ma.array(sigmasq, mask=mask)
+
+        elif style == 'points':
+            if xpoints.shape != ypoints.shape:
+                raise ValueError("xpoints and ypoints must have same dimensions "
+                                 "when treated as listing discrete points.")
+
+            zvalues = np.zeros(nx)
+            sigmasq = np.zeros(nx)
+            xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
+                                                          self.anisotropy_scaling, self.anisotropy_angle)
+
+            for j in range(nx):
+                bd = np.sqrt((self.X_ADJUSTED - xpoints[j])**2 + (self.Y_ADJUSTED - ypoints[j])**2)
+                if np.any(np.absolute(bd) <= self.eps):
+                    zero_value = True
+                    zero_index = np.where(np.absolute(bd) <= self.eps)
+                else:
+                    zero_index = None
+                    zero_value = False
+                b = np.zeros((n+1, 1))
+                b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+                if zero_value:
+                    b[zero_index[0], 0] = 0.0
+                b[n, 0] = 1.0
+                x = np.dot(a_inv, b)
+                zvalues[j] = np.sum(x[:n, 0] * self.Z)
+                sigmasq[j] = np.sum(x[:, 0] * -b[:, 0])
+
+        else:
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
+
+        return zvalues, sigmasq
+
+    def execute(self, style, xpoints, ypoints, mask=None, backend='vectorized'):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation. Note that currently
@@ -368,9 +606,17 @@ class OrdinaryKriging:
             mask (boolean array, dim MxN, optional): Specifies the points in the rectangular
                 grid defined by xpoints and ypoints that are to be excluded in the
                 kriging calculations. Must be provided if style is specified as 'masked'.
-                False indicates that the point should not be masked, so that the kriging system
-                is solved at the point; True indicates that the point should be masked,
-                so that the kriging system is not solved at the point.
+                False indicates that the point should not be masked, so the kriging system
+                will be solved at the point.
+                True indicates that the point should be masked, so the kriging system should
+                will not be solved at the point.
+            backend (string, optional): Specifies which approach to use in kriging.
+                Specifying 'vectorized' will solve the entire kriging problem at once in a
+                vectorized operation. This approach is faster but also can consume a
+                significant amount of memory for large grids and/or large datasets.
+                Specifying 'loop' will loop through each point at which the kriging system
+                is to be solved. This approach is slower but also less memory-intensive.
+                Default is 'vectorized'.
         Outputs:
             zvalues (numpy array, dim MxN or dim Nx1): Z-values of specified grid or at the
                 specified set of points. If style was specified as 'masked', zvalues will
@@ -383,136 +629,17 @@ class OrdinaryKriging:
         if self.verbose:
             print "Executing Ordinary Kriging...\n"
 
-        xpoints = np.array(xpoints, copy=True).flatten()
-        ypoints = np.array(ypoints, copy=True).flatten()
-        nx = xpoints.shape[0]
-        ny = ypoints.shape[0]
-        n = self.X_ADJUSTED.shape[0]
-        zero_index = None
-        zero_value = False
-
-        if style == 'grid':
-
-            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
-            grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y,
-                                                        self.XCENTER, self.YCENTER,
-                                                        self.anisotropy_scaling, self.anisotropy_angle)
-
-            x1, x2 = np.meshgrid(self.X_ADJUSTED, self.X_ADJUSTED)
-            y1, y2 = np.meshgrid(self.Y_ADJUSTED, self.Y_ADJUSTED)
-            d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-            a = np.zeros((ny, nx, n+1, n+1))
-            a[:, :, :n, :n] = - self.variogram_function(self.variogram_model_parameters, d)
-            index_grid = np.indices((ny, nx, n+1, n+1))
-            a[index_grid[2] == index_grid[3]] = 0.0
-            a[:, :, n, :] = 1.0
-            a[:, :, :, n] = 1.0
-            a[:, :, n, n] = 0.0
-
-            grid_x_3d = np.repeat(grid_x[:, :, np.newaxis], n, axis=2)
-            grid_y_3d = np.repeat(grid_y[:, :, np.newaxis], n, axis=2)
-            data_x_3d = np.repeat(np.repeat(self.X_ADJUSTED[np.newaxis, np.newaxis, :], ny, axis=0), nx, axis=1)
-            data_y_3d = np.repeat(np.repeat(self.Y_ADJUSTED[np.newaxis, np.newaxis, :], ny, axis=0), nx, axis=1)
-            bd = np.sqrt((data_x_3d - grid_x_3d)**2 + (data_y_3d - grid_y_3d)**2)
-            if np.any(np.absolute(bd) <= self.eps):
-                zero_value = True
-                zero_index = np.where(np.absolute(bd) <= self.eps)
-            b = np.zeros((ny, nx, n+1, 1))
-            b[:, :, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
-                b[zero_index[0], zero_index[1], zero_index[2], 0] = 0.0
-            b[:, :, n, 0] = 1.0
-
-            x = np.linalg.solve(a, b)
-            zvalues = np.sum(x[:, :, :n, 0] * self.Z, axis=2)
-            sigmasq = np.sum(x[:, :, :, 0] * -b[:, :, :, 0], axis=2)
-
-        elif style == 'masked':
-
-            if mask is None:
-                raise IOError("Must specify boolean masking array.")
-            if mask.shape[0] != ny or mask.shape[1] != nx:
-                if mask.shape[0] == nx and mask.shape[1] == ny:
-                    mask = mask.T
-                else:
-                    raise ValueError("Mask dimensions do not match specified grid dimensions.")
-
-            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
-            grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y,
-                                                        self.XCENTER, self.YCENTER,
-                                                        self.anisotropy_scaling, self.anisotropy_angle)
-
-            x1, x2 = np.meshgrid(self.X_ADJUSTED, self.X_ADJUSTED)
-            y1, y2 = np.meshgrid(self.Y_ADJUSTED, self.Y_ADJUSTED)
-            d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-            a = np.zeros((ny, nx, n+1, n+1))
-            a[:, :, :n, :n] = - self.variogram_function(self.variogram_model_parameters, d)
-            index_grid = np.indices((ny, nx, n+1, n+1))
-            a[index_grid[2] == index_grid[3]] = 0.0
-            a[:, :, n, :] = 1.0
-            a[:, :, :, n] = 1.0
-            a[:, :, n, n] = 0.0
-            mask_a = np.repeat(np.repeat(mask[:, :, np.newaxis, np.newaxis], n+1, axis=2), n+1, axis=3)
-            a = np.ma.array(a, mask=mask_a)
-
-            grid_x_3d = np.repeat(grid_x[:, :, np.newaxis], n, axis=2)
-            grid_y_3d = np.repeat(grid_y[:, :, np.newaxis], n, axis=2)
-            data_x_3d = np.repeat(np.repeat(self.X_ADJUSTED[np.newaxis, np.newaxis, :], ny, axis=0), nx, axis=1)
-            data_y_3d = np.repeat(np.repeat(self.Y_ADJUSTED[np.newaxis, np.newaxis, :], ny, axis=0), nx, axis=1)
-            bd = np.sqrt((data_x_3d - grid_x_3d)**2 + (data_y_3d - grid_y_3d)**2)
-            if np.any(np.absolute(bd) <= self.eps):
-                zero_value = True
-                zero_index = np.where(np.absolute(bd) <= self.eps)
-            b = np.zeros((ny, nx, n+1, 1))
-            b[:, :, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
-                b[zero_index[0], zero_index[1], zero_index[2], 0] = 0.0
-            b[:, :, n, 0] = 1.0
-            mask_b = np.repeat(mask[:, :, np.newaxis, np.newaxis], n+1, axis=2)
-            b = np.ma.array(b, mask=mask_b)
-
-            x = np.linalg.solve(a, b)
-            zvalues = np.sum(x[:, :, :n, 0] * self.Z, axis=2)
-            sigmasq = np.sum(x[:, :, :, 0] * -b[:, :, :, 0], axis=2)
-
-        elif style == 'points':
-            if xpoints.shape != ypoints.shape:
-                raise ValueError("xpoints and ypoints must have same dimensions "
-                                 "when treated as listing discrete points.")
-
-            xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
-                                                          self.anisotropy_scaling, self.anisotropy_angle)
-
-            x1, x2 = np.meshgrid(self.X_ADJUSTED, self.X_ADJUSTED)
-            y1, y2 = np.meshgrid(self.Y_ADJUSTED, self.Y_ADJUSTED)
-            d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-            a = np.zeros((nx, n+1, n+1))
-            a[:, :n, :n] = - self.variogram_function(self.variogram_model_parameters, d)
-            index_grid = np.indices((nx, n+1, n+1))
-            a[index_grid[1] == index_grid[2]] = 0.0
-            a[:, n, :] = 1.0
-            a[:, :, n] = 1.0
-            a[:, n, n] = 0.0
-
-            x_vals = np.repeat(xpoints[:, np.newaxis], n, axis=1)
-            y_vals = np.repeat(ypoints[:, np.newaxis], n, axis=1)
-            x_data = np.repeat(self.X_ADJUSTED[np.newaxis, :], nx, axis=0)
-            y_data = np.repeat(self.Y_ADJUSTED[np.newaxis, :], nx, axis=0)
-            bd = np.sqrt((x_data - x_vals)**2 + (y_data - y_vals)**2)
-            if np.any(np.absolute(bd) <= self.eps):
-                zero_value = True
-                zero_index = np.where(np.absolute(bd) <= self.eps)
-            b = np.zeros((nx, n+1, 1))
-            b[:, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
-                b[zero_index[0], zero_index[1], 0] = 0.0
-            b[:, n, 0] = 1.0
-
-            x = np.linalg.solve(a, b)
-            zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
-            sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
-
-        else:
+        if style != 'grid' and style != 'masked' and style != 'points':
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
+        xpoints = np.array(xpoints, copy=True).flatten()
+        ypoints = np.array(ypoints, copy=True).flatten()
+        if backend == 'vectorized':
+            zvalues, sigmasq = self._exec_vector(style, xpoints, ypoints, mask)
+        elif backend == 'loop':
+            zvalues, sigmasq = self._exec_loop(style, xpoints, ypoints, mask)
+        else:
+            raise ValueError('Specified backend {} is not supported.'.format(backend))
+
         return zvalues, sigmasq
+
