@@ -16,6 +16,8 @@ np.import_array()
 # low level interface to BLAS matrix-vector multiplication from scipy.linalg
 # adapted from
 # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/tsa/kalmanf/kalman_loglike.pyx
+# see also
+# https://gist.github.com/pv/5437087
 
 ctypedef int dgemv_t(
         # Compute y := alpha*A*x + beta*y
@@ -32,7 +34,24 @@ ctypedef int dgemv_t(
         int *incy # The increment between elements of y (usually 1)
         ) nogil
 
+ctypedef int dsymv_t(
+        # Compute y := alpha*A*x + beta*y
+        char *uplo, #  On entry, UPLO specifies whether the upper or lower
+                    # triangular part of the array A is to be referenced as
+                    #          follows
+        int *n, # Columns of A / min(len(x))
+        np.float64_t *alpha, # Scalar multiple
+        np.float64_t *a, # Matrix A: mxn
+        int *lda, # The size of the first dimension of A (in memory)
+        np.float64_t *x, # Vector x, min(len(x)) = n
+        int *incx, # The increment between elements of x (usually 1)
+        np.float64_t *beta, # Scalar multiple
+        np.float64_t *y, # Vector y, min(len(y)) = m
+        int *incy # The increment between elements of y (usually 1)
+        ) nogil
+
 cdef dgemv_t *dgemv = <dgemv_t*>PyCObject_AsVoidPtr(scipy.linalg.blas.get_blas_funcs('gemv', dtype='float64')._cpointer)
+cdef dsymv_t *dsymv = <dsymv_t*>PyCObject_AsVoidPtr(scipy.linalg.blas.get_blas_funcs('symv', dtype='float64')._cpointer)
 
 #ctypedef void (*variogram_model_t)(double [::1], np.ndarray[np.float64_t], np.ndarray[np.float64_t])
 ctypedef void (*variogram_model_t)(double [::1], double [::1], int, double [::1]) nogil
@@ -41,7 +60,7 @@ ctypedef void (*variogram_model_t)(double [::1], double [::1], int, double [::1]
 cpdef _c_loop(double [:, ::1] grid_x, double [:, ::1] grid_y,
               double [::1] x_adjusted, double [::1] y_adjusted,
               double [::1] z_in,
-              double [:,:] Ai,
+              double [::1,:] Ai,
               double [::1] b,
               dict pars):
     cdef int nx, ny, n, i, j
@@ -147,6 +166,20 @@ cdef int _apply_dot_product(double [::1] x, double [::1] y, double[::1] z,
          &(res[0]),           # np.float64_t *y, # Vector y, min(len(y)) = m
          &inc                 # int *incy # The increment between elements of y (usually 1)
         )
+
+    #dsymv(
+    #                          # # Compute y := alpha*A*x + beta*y
+    #     'L',                 # 
+    #     &nb,                 # int *n, # Columns of A / min(len(x))
+    #     &alpha,              # np.float64_t *alpha, # Scalar multiple
+    #     &(Ai[0,0]),          # np.float64_t *a, # Matrix A: mxn
+    #     &nb,                 # int *lda, # The size of the first dimension of A (in memory)
+    #     &(b[0]),             # np.float64_t *x, # Vector x, min(len(x)) = n
+    #     &inc,                # int *incx, # The increment between elements of x (usually 1)
+    #     &beta,               # np.float64_t *beta, # Scalar multiple
+    #     &(res[0]),           # np.float64_t *y, # Vector y, min(len(y)) = m
+    #     &inc                 # int *incy # The increment between elements of y (usually 1)
+    #    )
 
     zinterp[0] = 0.0
     sigmasq[0] = 0.0
