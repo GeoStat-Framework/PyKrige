@@ -368,7 +368,7 @@ class OrdinaryKriging:
 
         return a
 
-    def _exec_vector(self, a_inv, xpoints, ypoints, mask):
+    def _exec_vector(self, a_inv, xpoints, ypoints, bd, mask):
         """Solves the kriging system as a vectorized operation. This method
         can take a lot of memory for large grids and/or large datasets."""
 
@@ -377,12 +377,10 @@ class OrdinaryKriging:
         zero_index = None
         zero_value = False
 
-        bd = cdist(np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1),
-                   np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
-                   'euclidean')
         if np.any(np.absolute(bd) <= self.eps):
             zero_value = True
             zero_index = np.where(np.absolute(bd) <= self.eps)
+
         b = np.zeros((npt, n+1, 1))
         b[:, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
         if zero_value:
@@ -399,7 +397,7 @@ class OrdinaryKriging:
 
         return zvalues, sigmasq
 
-    def _exec_loop(self, a_inv, xpoints, ypoints, mask):
+    def _exec_loop(self, a_inv, xpoints, ypoints, bd_all, mask):
         """Solves the kriging system by looping over all specified points.
         Less memory-intensive, but involves a Python-level loop."""
 
@@ -411,7 +409,7 @@ class OrdinaryKriging:
 
 
         for i in np.nonzero(~mask)[0]:   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
-            bd = np.sqrt((self.X_ADJUSTED - xpoints[i])**2 + (self.Y_ADJUSTED - ypoints[i])**2)
+            bd = bd_all[i]
             if np.any(np.absolute(bd) <= self.eps):
                 zero_value = True
                 zero_index = np.where(np.absolute(bd) <= self.eps)
@@ -535,11 +533,15 @@ class OrdinaryKriging:
         if style != 'masked':
             mask = np.zeros(npt, dtype='bool')
 
+        bd = cdist(np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1),
+                   np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
+                   'euclidean')
+
 
         if backend == 'vectorized':
-            zvalues, sigmasq = self._exec_vector(a_inv, xpoints, ypoints, mask)
+            zvalues, sigmasq = self._exec_vector(a_inv, xpoints, ypoints, bd, mask)
         elif backend == 'loop':
-            zvalues, sigmasq = self._exec_loop(a_inv, xpoints, ypoints, mask)
+            zvalues, sigmasq = self._exec_loop(a_inv, xpoints, ypoints, bd, mask)
         else:
             raise ValueError('Specified backend {} is not supported.'.format(backend))
 
