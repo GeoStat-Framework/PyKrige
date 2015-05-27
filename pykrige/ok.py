@@ -581,6 +581,12 @@ class OrdinaryKriging:
         bd = cdist(np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1),
                    np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
                    'euclidean')
+        if backend == 'C':
+            c_pars = {key: getattr(self, key) for key in ['Z', 'eps', 'variogram_model_parameters',
+                                                            'variogram_function']}
+        else:
+            c_pars = None
+
 
         if n_closest_points is not None:
             bd_sorted_idx = np.argsort(bd, axis=1)
@@ -595,6 +601,16 @@ class OrdinaryKriging:
                 zvalues, sigmasq = self._exec_vector(a, bd, mask)
             elif backend == 'loop':
                 zvalues, sigmasq = self._exec_loop(a, bd, mask)
+            elif backend == 'C':
+                #try:
+                from .lib.cok import _c_exec_loop
+                #except ImportError:
+                #    raise ImportError('C backend failed to load the Cython extension')
+                #except:
+                #    raise
+
+                zvalues, sigmasq = _c_exec_loop(a, bd, mask, self.X_ADJUSTED.shape[0],  c_pars)
+
             else:
                 raise ValueError('Specified backend {} is not supported.'.format(backend))
 
