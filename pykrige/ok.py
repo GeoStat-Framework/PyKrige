@@ -609,7 +609,8 @@ class OrdinaryKriging:
                 #except:
                 #    raise
 
-                zvalues, sigmasq = _c_exec_loop(a, bd, mask, self.X_ADJUSTED.shape[0],  c_pars)
+                zvalues, sigmasq = _c_exec_loop(a, bd, mask.astype('int8'),
+                                         self.X_ADJUSTED.shape[0],  c_pars)
 
             else:
                 raise ValueError('Specified backend {} is not supported.'.format(backend))
