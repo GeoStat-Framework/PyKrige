@@ -368,11 +368,11 @@ class OrdinaryKriging:
 
         return a
 
-    def _exec_vector(self, a_inv, xpoints, ypoints, bd, mask):
+    def _exec_vector(self, a_inv, bd, mask):
         """Solves the kriging system as a vectorized operation. This method
         can take a lot of memory for large grids and/or large datasets."""
 
-        npt = xpoints.shape[0]
+        npt = bd.shape[0]
         n = self.X_ADJUSTED.shape[0]
         zero_index = None
         zero_value = False
@@ -397,12 +397,12 @@ class OrdinaryKriging:
 
         return zvalues, sigmasq
 
-    def _exec_loop(self, a_inv, xpoints, ypoints, bd_all, mask):
+    def _exec_loop(self, a_inv, bd_all, mask):
         """Solves the kriging system by looping over all specified points.
         Less memory-intensive, but involves a Python-level loop."""
 
 
-        npt = xpoints.shape[0]
+        npt = bd_all.shape[0]
         n = self.X_ADJUSTED.shape[0]
         zvalues = np.zeros(npt)
         sigmasq = np.zeros(npt)
@@ -539,9 +539,9 @@ class OrdinaryKriging:
 
 
         if backend == 'vectorized':
-            zvalues, sigmasq = self._exec_vector(a_inv, xpoints, ypoints, bd, mask)
+            zvalues, sigmasq = self._exec_vector(a_inv, bd, mask)
         elif backend == 'loop':
-            zvalues, sigmasq = self._exec_loop(a_inv, xpoints, ypoints, bd, mask)
+            zvalues, sigmasq = self._exec_loop(a_inv, bd, mask)
         else:
             raise ValueError('Specified backend {} is not supported.'.format(backend))
 
