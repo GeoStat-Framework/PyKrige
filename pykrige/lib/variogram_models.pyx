@@ -19,10 +19,8 @@ cdef variogram_model_t get_variogram_model(function_name):
     return c_variogram_function
 
 
-cdef void _c_linear_variogram_model(double [::1] params, double [::1]  dist, double[::1] out) nogil:
-    cdef int k, n
-    n = dist.shape[0]
-
+cdef void _c_linear_variogram_model(double [::1] params, long n, double [::1]  dist, double[::1] out) nogil:
+    cdef int k
     for k in range(n):
         out[k] =  params[0]*dist[k] + params[1]
 

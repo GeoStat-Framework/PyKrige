@@ -5,6 +5,7 @@
 import numpy as np
 cimport numpy as np
 import scipy.linalg.blas
+import scipy.linalg.lapack
 from cpython.cobject cimport PyCObject_AsVoidPtr # only works with python 2, use capsules for python 3
 
 np.import_array()
@@ -16,3 +17,4 @@ np.import_array()
 
 
 cdef dgemv_t *dgemv = <dgemv_t*>PyCObject_AsVoidPtr(scipy.linalg.blas.get_blas_funcs('gemv', dtype='float64')._cpointer)
+cdef dgesv_t *dgesv = <dgesv_t*>PyCObject_AsVoidPtr(scipy.linalg.lapack.get_lapack_funcs('gesv', dtype='float64')._cpointer)

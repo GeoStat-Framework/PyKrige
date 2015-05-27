@@ -435,21 +435,21 @@ class OrdinaryKriging:
 
         return zvalues, sigmasq
 
-    def _exec_loop_mooving_window(self, a_all, bd_all, mask, bd_sorted_idx):
+    def _exec_loop_mooving_window(self, a_all, bd_all, mask, bd_idx):
         """Solves the kriging system by looping over all specified points.
         Less memory-intensive, but involves a Python-level loop."""
         import scipy.linalg.lapack
 
 
         npt = bd_all.shape[0]
-        n = bd_sorted_idx.shape[1]
+        n = bd_idx.shape[1]
         zvalues = np.zeros(npt)
         sigmasq = np.zeros(npt)
 
         for i in np.nonzero(~mask)[0]:   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
-            b_selector = bd_sorted_idx[i]
+            b_selector = bd_idx[i]
+            bd = bd_all[i]
 
-            bd = bd_all[i, b_selector]
             a_selector = np.concatenate((b_selector, np.array([a_all.shape[0] - 1]) ))
             a = a_all[a_selector[:, None], a_selector]
 
@@ -464,6 +464,7 @@ class OrdinaryKriging:
             if zero_value:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
+
             x = scipy.linalg.solve(a, b)
 
             zvalues[i] = x[:n, 0].dot(self.Z[b_selector])
@@ -578,10 +579,17 @@ class OrdinaryKriging:
             mask = np.zeros(npt, dtype='bool')
 
 
-        bd = cdist(np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1),
-                   np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
-                   'euclidean')
+        xy_points = np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1)
+        xy_adjusted = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
+
+
         if backend == 'C':
+            try:
+                from .lib.cok import _c_exec_loop, _c_exec_loop_mooving_window
+            except ImportError:
+                raise ImportError('C backend failed to load the Cython extension')
+            except:
+                raise
             c_pars = {key: getattr(self, key) for key in ['Z', 'eps', 'variogram_model_parameters',
                                                             'variogram_function']}
         else:
@@ -589,25 +597,28 @@ class OrdinaryKriging:
 
 
         if n_closest_points is not None:
-            bd_sorted_idx = np.argsort(bd, axis=1)
-            bd_sorted_idx = bd_sorted_idx[:,:n_closest_points ]
+            from scipy.spatial import cKDTree
+            tree = cKDTree(xy_adjusted)
+            bd, bd_idx = tree.query(xy_points, k=n_closest_points, eps=0.0)
+
 
             if backend == 'loop':
-                zvalues, sigmasq = self._exec_loop_mooving_window(a, bd, mask, bd_sorted_idx)
+               zvalues, sigmasq = self._exec_loop_mooving_window(a, bd, mask, bd_idx)
+            elif backend == 'C':
+                zvalues, sigmasq = _c_exec_loop_mooving_window(a, bd, mask.astype('int8'),
+                                bd_idx, self.X_ADJUSTED.shape[0], c_pars)
+
             else:
                 raise ValueError('Specified backend {} for a mooving window is not supported.'.format(backend))
         else:
+
+            bd = cdist(xy_points,  xy_adjusted, 'euclidean')
+
             if backend == 'vectorized':
                 zvalues, sigmasq = self._exec_vector(a, bd, mask)
             elif backend == 'loop':
                 zvalues, sigmasq = self._exec_loop(a, bd, mask)
             elif backend == 'C':
-                #try:
-                from .lib.cok import _c_exec_loop
-                #except ImportError:
-                #    raise ImportError('C backend failed to load the Cython extension')
-                #except:
-                #    raise
 
                 zvalues, sigmasq = _c_exec_loop(a, bd, mask.astype('int8'),
                                          self.X_ADJUSTED.shape[0],  c_pars)
