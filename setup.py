@@ -1,5 +1,18 @@
-from setuptools import setup
+from setuptools import setup, Extension
+from Cython.Distutils import build_ext
 from os.path import join
+import numpy as np
+
+import Cython.Compiler.Options
+
+Cython.Compiler.Options.annotate = True
+
+ext_modules=[
+        Extension("pykrige.lib.cuk",
+                ["pykrige/lib/cuk.pyx"],
+                extra_compile_args=['-g', '-O3', '-march=native'],
+                extra_link_args=['-g', '-O3', '-march=native']
+                )]
 
 setup(name='PyKrige',
       version='1.1.0',
@@ -20,5 +33,8 @@ setup(name='PyKrige',
                    'License :: OSI Approved :: BSD License',
                    'Programming Language :: Python',
                    'Topic :: Scientific/Engineering',
-                   'Topic :: Scientific/Engineering :: GIS']
+                   'Topic :: Scientific/Engineering :: GIS'],
+      ext_modules=ext_modules,
+      include_dirs=[np.get_include()],
+      cmdclass={'build_ext': build_ext},
       )
