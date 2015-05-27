@@ -368,142 +368,47 @@ class OrdinaryKriging:
 
         return a
 
-    def _exec_vector(self, style, xpoints, ypoints, mask):
+    def _exec_vector(self, style, a_inv, xpoints, ypoints, mask):
         """Solves the kriging system as a vectorized operation. This method
         can take a lot of memory for large grids and/or large datasets."""
 
-        nx = xpoints.shape[0]
-        ny = ypoints.shape[0]
+        npt = xpoints.shape[0]
         n = self.X_ADJUSTED.shape[0]
         zero_index = None
         zero_value = False
-        a_inv = scipy.linalg.inv(self._get_kriging_matrix(n))
 
-        if style == 'grid':
+        bd = cdist(np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1),
+                   np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
+                   'euclidean')
+        if np.any(np.absolute(bd) <= self.eps):
+            zero_value = True
+            zero_index = np.where(np.absolute(bd) <= self.eps)
+        b = np.zeros((npt, n+1, 1))
+        b[:, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+        if zero_value:
+            b[zero_index[0], zero_index[1], 0] = 0.0
+        b[:, n, 0] = 1.0
 
-            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
-            grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y, self.XCENTER, self.YCENTER,
-                                                        self.anisotropy_scaling, self.anisotropy_angle)
-
-            bd = cdist(np.concatenate((grid_x[:, :, np.newaxis], grid_y[:, :, np.newaxis]), axis=2).reshape((nx*ny, 2)),
-                       np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
-                       'euclidean').reshape((ny, nx, n))
-            if np.any(np.absolute(bd) <= self.eps):
-                zero_value = True
-                zero_index = np.where(np.absolute(bd) <= self.eps)
-            b = np.zeros((ny, nx, n+1, 1))
-            b[:, :, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
-                b[zero_index[0], zero_index[1], zero_index[2], 0] = 0.0
-            b[:, :, n, 0] = 1.0
-
-            x = np.dot(a_inv, b.reshape((nx*ny, n+1)).T).reshape((1, n+1, ny, nx)).T.swapaxes(0, 1)
-            zvalues = np.sum(x[:, :, :n, 0] * self.Z, axis=2)
-            sigmasq = np.sum(x[:, :, :, 0] * -b[:, :, :, 0], axis=2)
-
-        elif style == 'masked':
-
-            if mask is None:
-                raise IOError("Must specify boolean masking array.")
-            if mask.shape[0] != ny or mask.shape[1] != nx:
-                if mask.shape[0] == nx and mask.shape[1] == ny:
-                    mask = mask.T
-                else:
-                    raise ValueError("Mask dimensions do not match specified grid dimensions.")
-
-            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
-            grid_x, grid_y = core.adjust_for_anisotropy(grid_x, grid_y, self.XCENTER, self.YCENTER,
-                                                        self.anisotropy_scaling, self.anisotropy_angle)
-
-            bd = cdist(np.concatenate((grid_x[:, :, np.newaxis], grid_y[:, :, np.newaxis]), axis=2).reshape((nx*ny, 2)),
-                       np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
-                       'euclidean').reshape((ny, nx, n))
-            if np.any(np.absolute(bd) <= self.eps):
-                zero_value = True
-                zero_index = np.where(np.absolute(bd) <= self.eps)
-            b = np.zeros((ny, nx, n+1, 1))
-            b[:, :, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
-                b[zero_index[0], zero_index[1], zero_index[2], 0] = 0.0
-            b[:, :, n, 0] = 1.0
-            mask_b = np.repeat(mask[:, :, np.newaxis, np.newaxis], n+1, axis=2)
+        if (~mask).any():
+            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n+1, axis=2)
             b = np.ma.array(b, mask=mask_b)
 
-            x = np.dot(a_inv, b.reshape((nx*ny, n+1)).T).reshape((1, n+1, ny, nx)).T.swapaxes(0, 1)
-            zvalues = np.sum(x[:, :, :n, 0] * self.Z, axis=2)
-            sigmasq = np.sum(x[:, :, :, 0] * -b[:, :, :, 0], axis=2)
-
-        elif style == 'points':
-            if xpoints.shape != ypoints.shape:
-                raise ValueError("xpoints and ypoints must have same dimensions "
-                                 "when treated as listing discrete points.")
-
-            xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
-                                                          self.anisotropy_scaling, self.anisotropy_angle)
-            bd = cdist(np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1),
-                       np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
-                       'euclidean')
-            if np.any(np.absolute(bd) <= self.eps):
-                zero_value = True
-                zero_index = np.where(np.absolute(bd) <= self.eps)
-            b = np.zeros((nx, n+1, 1))
-            b[:, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
-                b[zero_index[0], zero_index[1], 0] = 0.0
-            b[:, n, 0] = 1.0
-
-            x = np.dot(a_inv, b.reshape((nx, n+1)).T).reshape((1, n+1, nx)).T
-            zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
-            sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
-
-        else:
-            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
+        x = np.dot(a_inv, b.reshape((npt, n+1)).T).reshape((1, n+1, npt)).T
+        zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
+        sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
 
         return zvalues, sigmasq
 
-    def _exec_loop(self, style, xpoints, ypoints, mask):
+    def _exec_loop(self, style, a_inv, xpoints, ypoints, mask):
         """Solves the kriging system by looping over all specified points.
         Less memory-intensive, but involves a Python-level loop."""
 
-        nx = xpoints.shape[0]
-        ny = ypoints.shape[0]
+
+        npt = xpoints.shape[0]
         n = self.X_ADJUSTED.shape[0]
-        a_inv = scipy.linalg.inv(self._get_kriging_matrix(n))
-
-        if style in ['grid', 'masked']:
-
-            if style == 'masked':
-                if mask is None:
-                    raise IOError("Must specify boolean masking array.")
-                if mask.shape[0] != ny or mask.shape[1] != nx:
-                    if mask.shape[0] == nx and mask.shape[1] == ny:
-                        mask = mask.T
-                    else:
-                        raise ValueError("Mask dimensions do not match specified grid dimensions.")
-                mask = mask.flatten()
-            npt = ny*nx
-            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
-            xpoints = grid_x.flatten()
-            ypoints = grid_y.flatten()
-
-
-        elif style == 'points':
-            if xpoints.shape != ypoints.shape:
-                raise ValueError("xpoints and ypoints must have same dimensions "
-                                 "when treated as listing discrete points.")
-
-            npt = nx
-        else:
-            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
-
-        xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
-                                                      self.anisotropy_scaling, self.anisotropy_angle)
-
         zvalues = np.zeros(npt)
         sigmasq = np.zeros(npt)
 
-        if style != 'masked':
-            mask = np.zeros(npt, dtype='bool')
 
         for i in np.nonzero(~mask)[0]:   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
             bd = np.sqrt((self.X_ADJUSTED - xpoints[i])**2 + (self.Y_ADJUSTED - ypoints[i])**2)
@@ -521,15 +426,6 @@ class OrdinaryKriging:
             x = np.dot(a_inv, b)
             zvalues[i] = np.sum(x[:n, 0] * self.Z)
             sigmasq[i] = np.sum(x[:, 0] * -b[:, 0])
-
-        if style == 'masked':
-            zvalues = np.ma.array(zvalues, mask=mask)
-            sigmasq = np.ma.array(sigmasq, mask=mask)
-
-        if style in ['masked', 'grid']:
-            zvalues = zvalues.reshape((ny, nx))
-            sigmasq = sigmasq.reshape((ny, nx))
-
 
         return zvalues, sigmasq
 
@@ -597,14 +493,63 @@ class OrdinaryKriging:
         if style != 'grid' and style != 'masked' and style != 'points':
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
-        xpoints = np.asarray(xpoints, copy=True)
-        ypoints = np.asarray(ypoints, copy=True)
+        xpoints = np.asarray(xpoints).flatten().copy()
+        ypoints = np.asarray(ypoints).flatten().copy()
+
+
+        n = self.X_ADJUSTED.shape[0]
+        nx = xpoints.shape[0]
+        ny = ypoints.shape[0]
+        a_inv = scipy.linalg.inv(self._get_kriging_matrix(n))
+
+        if style in ['grid', 'masked']:
+
+            if style == 'masked':
+                if mask is None:
+                    raise IOError("Must specify boolean masking array.")
+                if mask.shape[0] != ny or mask.shape[1] != nx:
+                    if mask.shape[0] == nx and mask.shape[1] == ny:
+                        mask = mask.T
+                    else:
+                        raise ValueError("Mask dimensions do not match specified grid dimensions.")
+                mask = mask.flatten()
+            npt = ny*nx
+            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
+            xpoints = grid_x.flatten()
+            ypoints = grid_y.flatten()
+
+
+        elif style == 'points':
+            if xpoints.shape != ypoints.shape:
+                raise ValueError("xpoints and ypoints must have same dimensions "
+                                 "when treated as listing discrete points.")
+
+            npt = nx
+        else:
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
+
+        xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
+                                                      self.anisotropy_scaling, self.anisotropy_angle)
+
+        if style != 'masked':
+            mask = np.zeros(npt, dtype='bool')
+
+
         if backend == 'vectorized':
-            zvalues, sigmasq = self._exec_vector(style, xpoints, ypoints, mask)
+            zvalues, sigmasq = self._exec_vector(style, a_inv, xpoints, ypoints, mask)
         elif backend == 'loop':
-            zvalues, sigmasq = self._exec_loop(style, xpoints, ypoints, mask)
+            zvalues, sigmasq = self._exec_loop('points', a_inv, xpoints, ypoints, mask)
         else:
             raise ValueError('Specified backend {} is not supported.'.format(backend))
+
+
+        if style == 'masked':
+            zvalues = np.ma.array(zvalues, mask=mask)
+            sigmasq = np.ma.array(sigmasq, mask=mask)
+
+        if style in ['masked', 'grid']:
+            zvalues = zvalues.reshape((ny, nx))
+            sigmasq = sigmasq.reshape((ny, nx))
 
         return zvalues, sigmasq
 
