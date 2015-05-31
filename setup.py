@@ -10,7 +10,7 @@ Cython.Compiler.Options.annotate = True
 ext_modules=[
         Extension("pykrige.lib.cok",
                 ["pykrige/lib/cok.pyx"],
-                extra_compile_args=['-O2', '-march=native'],
+                extra_compile_args=['-O3', '-march=native'],
                 ),
         Extension("pykrige.lib.lapack",
                 ["pykrige/lib/lapack.pyx"],
