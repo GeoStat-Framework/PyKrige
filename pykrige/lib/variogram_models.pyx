@@ -4,43 +4,78 @@
 # cython: cdivision=True
 import numpy as np
 cimport numpy as np
+from libc.math cimport exp
 
 # copied from variogram_model.py
 
 
 
-cdef variogram_model_t get_variogram_model(function_name):
-    cdef variogram_model_t c_variogram_function
+cdef variogram_model_t get_variogram_model(name):
+    cdef variogram_model_t c_func
 
-    if function_name == 'linear_variogram_model':
-        c_variogram_function = &_c_linear_variogram_model
+    if name == 'linear_variogram_model':
+        c_func = &_c_linear_variogram_model
+    elif name == 'power_variogram_model':
+        c_func = &_c_power_variogram_model
+    elif name == 'gaussian_variogram_model':
+        c_func = &_c_gaussian_variogram_model
+    elif name == 'exponential_variogram_model':
+        c_func = &_c_exponential_variogram_model
+    elif name == 'spherical_variogram_model':
+        c_func = &_c_spherical_variogram_model
     else:
         raise NotImplementedError
-    return c_variogram_function
+
+    return c_func
 
 
 cdef void _c_linear_variogram_model(double [::1] params, long n, double [::1]  dist, double[::1] out) nogil:
-    cdef int k
+    cdef long k
+    cdef double a, b
+    a = params[0]
+    b = params[1]
     for k in range(n):
-        out[k] =  params[0]*dist[k] + params[1]
+        out[k] = a*dist[k] + b
 
 
-cdef _c_power_variogram_model(params, dist, out):
-    out[:] =  float(params[0])*(dist**float(params[1])) + float(params[2])
+cdef void _c_power_variogram_model(double [::1] params, long n, double [::1] dist, double[::1] out) nogil:
+    cdef long k
+    cdef double a, b, c
+    a = params[0]
+    b = params[1]
+    c = params[2]
+    for k in range(n):
+        out[k] =  a*(dist[k]**b) + c
 
 
-cdef _c_gaussian_variogram_model(params, dist, out):
-    out[:] = (float(params[0]) - float(params[2]))*(1 - np.exp(-dist**2/(float(params[1])*4.0/7.0)**2)) + \
-            float(params[2])
+cdef void _c_gaussian_variogram_model(double [::1] params, long n, double [::1]  dist, double [::1] out) nogil:
+    cdef long k
+    cdef double a, b, c
+    a = params[0]
+    b = params[1]
+    c = params[2]
+    for k in range(n):
+        out[k] = (a - c)*(1 - exp(-(dist[k]/(b*4.0/7.0))**2)) + c
 
 
-cdef _c_exponential_variogram_model(params, dist, out):
-    out[:] = (float(params[0]) - float(params[2]))*(1 - np.exp(-dist/(float(params[1])/3.0))) + \
-            float(params[2])
+cdef void _c_exponential_variogram_model(double [::1] params, long n, double[::1] dist, double[::1] out) nogil:
+    cdef long k
+    cdef double a, b, c
+    a = params[0]
+    b = params[1]
+    c = params[2]
+    for k in range(n):
+        out[k] = (a - c)*(1 - exp(-dist[k]/(b/3.0))) + c
 
 
-cdef _c_spherical_variogram_model(params, dist, out):
-    out[:] =  np.piecewise(dist, [dist <= float(params[1]), dist > float(params[1])],
-                        [lambda x: (float(params[0]) - float(params[2])) *
-                                   ((3*x)/(2*float(params[1])) - (x**3)/(2*float(params[1])**3)) + float(params[2]),
-                         float(params[0])])
+cdef void _c_spherical_variogram_model(double [::1] params, long n, double[::1] dist, double[::1] out) nogil:
+    cdef long k
+    cdef double a, b, c
+    a = params[0]
+    b = params[1]
+    c = params[2]
+    for k in range(n):
+        if dist[k] < b:
+            out[k] = (a - c)*((3*dist[k])/(2*b) - (dist[k]**3)/(2*b**3)) + c
+        else:
+            out[k] = a
