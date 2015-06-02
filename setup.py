@@ -23,7 +23,7 @@ ext_modules=[
         ]
 
 setup(name='PyKrige',
-      version='1.1.0',
+      version='1.2.0',
       author='Benjamin S. Murphy',
       author_email='bscott.murphy@gmail.com',
       url='https://github.com/bsmurphy/PyKrige',
