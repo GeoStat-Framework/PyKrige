@@ -81,6 +81,7 @@ class OrdinaryKriging:
             kriging process. Default is False (off).
         enable_plotting (Boolean, optional): Enables plotting to display
             variogram. Default is False (off).
+        enable_statistics (Boolean, optional). Default is False
 
     Callable Methods:
         display_variogram_model(): Displays semivariogram and variogram model.
@@ -176,7 +177,8 @@ class OrdinaryKriging:
 
     def __init__(self, x, y, z, variogram_model='linear', variogram_parameters=None,
                  variogram_function=None, nlags=6, weight=False, anisotropy_scaling=1.0,
-                 anisotropy_angle=0.0, verbose=False, enable_plotting=False):
+                 anisotropy_angle=0.0, verbose=False, enable_plotting=False,
+                 enable_statistics=False):
 
         # Code assumes 1D input arrays. Ensures that this is the case.
         # Copies are created to avoid any problems with referencing
@@ -239,16 +241,19 @@ class OrdinaryKriging:
 
         if self.verbose:
             print "Calculating statistics on variogram model fit..."
-        self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED, self.Y_ADJUSTED,
-                                                                    self.Z, self.variogram_function,
-                                                                    self.variogram_model_parameters)
-        self.Q1 = core.calcQ1(self.epsilon)
-        self.Q2 = core.calcQ2(self.epsilon)
-        self.cR = core.calc_cR(self.Q2, self.sigma)
-        if self.verbose:
-            print "Q1 =", self.Q1
-            print "Q2 =", self.Q2
-            print "cR =", self.cR, '\n'
+        if enable_statistics:
+            self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED, self.Y_ADJUSTED,
+                                                                        self.Z, self.variogram_function,
+                                                                        self.variogram_model_parameters)
+            self.Q1 = core.calcQ1(self.epsilon)
+            self.Q2 = core.calcQ2(self.epsilon)
+            self.cR = core.calc_cR(self.Q2, self.sigma)
+            if self.verbose:
+                print "Q1 =", self.Q1
+                print "Q2 =", self.Q2
+                print "cR =", self.cR, '\n'
+        else:
+            self.delta, self.sigma, self.epsilon, self.Q1, self.Q2, self.cR = [None]*6
 
     def update_variogram_model(self, variogram_model, variogram_parameters=None,
                                variogram_function=None, nlags=6, weight=False,
@@ -368,7 +373,7 @@ class OrdinaryKriging:
 
         return a
 
-    def _exec_vector(self, a_inv, bd, mask):
+    def _exec_vector(self, a, bd, mask):
         """Solves the kriging system as a vectorized operation. This method
         can take a lot of memory for large grids and/or large datasets."""
 
@@ -376,6 +381,8 @@ class OrdinaryKriging:
         n = self.X_ADJUSTED.shape[0]
         zero_index = None
         zero_value = False
+
+        a_inv = scipy.linalg.inv(a)
 
         if np.any(np.absolute(bd) <= self.eps):
             zero_value = True
@@ -397,7 +404,7 @@ class OrdinaryKriging:
 
         return zvalues, sigmasq
 
-    def _exec_loop(self, a_inv, bd_all, mask):
+    def _exec_loop(self, a, bd_all, mask):
         """Solves the kriging system by looping over all specified points.
         Less memory-intensive, but involves a Python-level loop."""
 
@@ -407,6 +414,7 @@ class OrdinaryKriging:
         zvalues = np.zeros(npt)
         sigmasq = np.zeros(npt)
 
+        a_inv = scipy.linalg.inv(a)
 
         for i in np.nonzero(~mask)[0]:   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
             bd = bd_all[i]
@@ -427,7 +435,45 @@ class OrdinaryKriging:
 
         return zvalues, sigmasq
 
-    def execute(self, style, xpoints, ypoints, mask=None, backend='vectorized'):
+    def _exec_loop_mooving_window(self, a_all, bd_all, mask, bd_idx):
+        """Solves the kriging system by looping over all specified points.
+        Less memory-intensive, but involves a Python-level loop."""
+        import scipy.linalg.lapack
+
+
+        npt = bd_all.shape[0]
+        n = bd_idx.shape[1]
+        zvalues = np.zeros(npt)
+        sigmasq = np.zeros(npt)
+
+        for i in np.nonzero(~mask)[0]:   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
+            b_selector = bd_idx[i]
+            bd = bd_all[i]
+
+            a_selector = np.concatenate((b_selector, np.array([a_all.shape[0] - 1]) ))
+            a = a_all[a_selector[:, None], a_selector]
+
+            if np.any(np.absolute(bd) <= self.eps):
+                zero_value = True
+                zero_index = np.where(np.absolute(bd) <= self.eps)
+            else:
+                zero_index = None
+                zero_value = False
+            b = np.zeros((n+1, 1))
+            b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            if zero_value:
+                b[zero_index[0], 0] = 0.0
+            b[n, 0] = 1.0
+
+            x = scipy.linalg.solve(a, b)
+
+            zvalues[i] = x[:n, 0].dot(self.Z[b_selector])
+            sigmasq[i] = - x[:, 0].dot(b[:, 0])
+
+        return zvalues, sigmasq
+
+    def execute(self, style, xpoints, ypoints, mask=None,
+                            backend='vectorized', n_closest_points=None):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation. Note that currently
@@ -499,7 +545,6 @@ class OrdinaryKriging:
         nx = xpoints.shape[0]
         ny = ypoints.shape[0]
         a = self._get_kriging_matrix(n)
-        a_inv = scipy.linalg.inv(a)
 
         if style in ['grid', 'masked']:
 
@@ -533,17 +578,55 @@ class OrdinaryKriging:
         if style != 'masked':
             mask = np.zeros(npt, dtype='bool')
 
-        bd = cdist(np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1),
-                   np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1),
-                   'euclidean')
+
+        xy_points = np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1)
+        xy_adjusted = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
 
 
-        if backend == 'vectorized':
-            zvalues, sigmasq = self._exec_vector(a_inv, bd, mask)
-        elif backend == 'loop':
-            zvalues, sigmasq = self._exec_loop(a_inv, bd, mask)
+        if backend == 'C':
+            try:
+                from .lib.cok import _c_exec_loop, _c_exec_loop_mooving_window
+            except ImportError:
+                raise ImportError('C backend failed to load the Cython extension')
+            except:
+                raise
+            c_pars = {key: getattr(self, key) for key in ['Z', 'eps', 'variogram_model_parameters',
+                                                            'variogram_function']}
         else:
-            raise ValueError('Specified backend {} is not supported.'.format(backend))
+            c_pars = None
+
+
+        if n_closest_points is not None:
+            from scipy.spatial import cKDTree
+            tree = cKDTree(xy_adjusted)
+            bd, bd_idx = tree.query(xy_points, k=n_closest_points, eps=0.0)
+
+
+            if backend == 'loop':
+               zvalues, sigmasq = self._exec_loop_mooving_window(a, bd, mask, bd_idx)
+            elif backend == 'C':
+                zvalues, sigmasq = _c_exec_loop_mooving_window(a, bd, mask.astype('int8'),
+                                bd_idx, self.X_ADJUSTED.shape[0], c_pars)
+
+            else:
+                raise ValueError('Specified backend {} for a mooving window is not supported.'.format(backend))
+        else:
+
+            bd = cdist(xy_points,  xy_adjusted, 'euclidean')
+
+            if backend == 'vectorized':
+                zvalues, sigmasq = self._exec_vector(a, bd, mask)
+            elif backend == 'loop':
+                zvalues, sigmasq = self._exec_loop(a, bd, mask)
+            elif backend == 'C':
+
+                zvalues, sigmasq = _c_exec_loop(a, bd, mask.astype('int8'),
+                                         self.X_ADJUSTED.shape[0],  c_pars)
+
+            else:
+                raise ValueError('Specified backend {} is not supported.'.format(backend))
+
+
 
 
         if style == 'masked':

@@ -261,6 +261,22 @@ class TestPyKrige(unittest.TestCase):
         self.assertEqual(z.shape, (1,))
         self.assertEqual(ss.shape, (1,))
 
+    def test_cython_ok(self):
+        ok = OrdinaryKriging(self.simple_data[:, 0], self.simple_data[:, 1], self.simple_data[:, 2])
+        z1, ss1 = ok.execute('grid', self.simple_gridx, self.simple_gridy, backend='loop')
+        z2, ss2 = ok.execute('grid', self.simple_gridx, self.simple_gridy, backend='C')
+        self.assertTrue(np.allclose(z1, z2))
+        self.assertTrue(np.allclose(ss1,ss2))
+
+        closest_points = 4
+
+        z1, ss1 = ok.execute('grid', self.simple_gridx, self.simple_gridy, backend='loop', n_closest_points=closest_points)
+        z2, ss2 = ok.execute('grid', self.simple_gridx, self.simple_gridy, backend='C', n_closest_points=closest_points)
+        self.assertTrue(np.allclose(z1, z2))
+        self.assertTrue(np.allclose(ss1,ss2))
+
+
+
     def test_uk(self):
 
         # Test to compare UK with linear drift to results from KT3D_H2O.
