@@ -5,6 +5,7 @@ Dependencies:
     numpy
     scipy
     matplotlib
+    Cython
 
 Classes:
     OrdinaryKriging: Convenience class for easy access to 2D Ordinary Kriging.
@@ -134,7 +135,7 @@ class OrdinaryKriging:
                     x and y coordinates that define a rectangular grid.
                     Specifying 'points' treats xpoints and ypoints as two arrays
                     that provide coordinate pairs at which to solve the kriging system.
-                    Specifying 'masked' treats xpoints and ypoints as two arrays of
+                    Specifying 'masked' treats xpoints and ypoints as two arrays of)
                     x and y coordinates that define a rectangular grid and uses mask
                     to only evaluate specific points in the grid.
                 xpoints (array-like, dim Nx1): If style is specific as 'grid' or 'masked',
@@ -154,7 +155,12 @@ class OrdinaryKriging:
                     significant amount of memory for large grids and/or large datasets.
                     Specifying 'loop' will loop through each point at which the kriging system
                     is to be solved. This approach is slower but also less memory-intensive.
+                    Specifying 'C' will utilize a loop in Cython.
                     Default is 'vectorized'.
+                n_closest_points (int, optional): For kriging with a moving window, specifies the number
+                    of nearby points to use in the calculation. This can speed up the calculation for large
+                    datasets, but should be used with caution. As Kitanidis notes, kriging with a moving
+                    window can produce unexpected oddities if the variogram model is not carefully chosen.
             Outputs:
                 zvalues (numpy array, dim MxN or dim Nx1): Z-values of specified grid or at the
                     specified set of points. If style was specified as 'masked', zvalues will
@@ -180,12 +186,12 @@ class OrdinaryKriging:
                  anisotropy_angle=0.0, verbose=False, enable_plotting=False,
                  enable_statistics=False):
 
-        # Code assumes 1D input arrays. Ensures that this is the case.
-        # Copies are created to avoid any problems with referencing
-        # the original passed arguments.
-        self.X_ORIG = np.array(x, copy=True).flatten()
-        self.Y_ORIG = np.array(y, copy=True).flatten()
-        self.Z = np.array(z, copy=True).flatten()
+        # Code assumes 1D input arrays. Ensures that any extraneous dimensions
+        # don't get in the way. Copies are created to avoid any problems with
+        # referencing the original passed arguments.
+        self.X_ORIG = np.atleast_1d(np.squeeze(np.array(x, copy=True)))
+        self.Y_ORIG = np.atleast_1d(np.squeeze(np.array(y, copy=True)))
+        self.Z = np.atleast_1d(np.squeeze(np.array(z, copy=True)))
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
@@ -395,7 +401,7 @@ class OrdinaryKriging:
         b[:, n, 0] = 1.0
 
         if (~mask).any():
-            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n+1, axis=2)
+            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n+1, axis=1)
             b = np.ma.array(b, mask=mask_b)
 
         x = np.dot(a_inv, b.reshape((npt, n+1)).T).reshape((1, n+1, npt)).T
@@ -408,7 +414,6 @@ class OrdinaryKriging:
         """Solves the kriging system by looping over all specified points.
         Less memory-intensive, but involves a Python-level loop."""
 
-
         npt = bd_all.shape[0]
         n = self.X_ADJUSTED.shape[0]
         zvalues = np.zeros(npt)
@@ -416,41 +421,41 @@ class OrdinaryKriging:
 
         a_inv = scipy.linalg.inv(a)
 
-        for i in np.nonzero(~mask)[0]:   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
-            bd = bd_all[i]
+        for j in np.nonzero(~mask)[0]:   # Note that this is the same thing as range(npt) if mask is not defined,
+            bd = bd_all[j]               # otherwise it takes the non-masked elements.
             if np.any(np.absolute(bd) <= self.eps):
                 zero_value = True
                 zero_index = np.where(np.absolute(bd) <= self.eps)
             else:
                 zero_index = None
                 zero_value = False
+
             b = np.zeros((n+1, 1))
             b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
             if zero_value:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
             x = np.dot(a_inv, b)
-            zvalues[i] = np.sum(x[:n, 0] * self.Z)
-            sigmasq[i] = np.sum(x[:, 0] * -b[:, 0])
+            zvalues[j] = np.sum(x[:n, 0] * self.Z)
+            sigmasq[j] = np.sum(x[:, 0] * -b[:, 0])
 
         return zvalues, sigmasq
 
-    def _exec_loop_mooving_window(self, a_all, bd_all, mask, bd_idx):
+    def _exec_loop_moving_window(self, a_all, bd_all, mask, bd_idx):
         """Solves the kriging system by looping over all specified points.
         Less memory-intensive, but involves a Python-level loop."""
         import scipy.linalg.lapack
-
 
         npt = bd_all.shape[0]
         n = bd_idx.shape[1]
         zvalues = np.zeros(npt)
         sigmasq = np.zeros(npt)
 
-        for i in np.nonzero(~mask)[0]:   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
-            b_selector = bd_idx[i]
+        for i in np.nonzero(~mask)[0]:   # Note that this is the same thing as range(npt) if mask is not defined,
+            b_selector = bd_idx[i]       # otherwise it takes the non-masked elements.
             bd = bd_all[i]
 
-            a_selector = np.concatenate((b_selector, np.array([a_all.shape[0] - 1]) ))
+            a_selector = np.concatenate((b_selector, np.array([a_all.shape[0] - 1])))
             a = a_all[a_selector[:, None], a_selector]
 
             if np.any(np.absolute(bd) <= self.eps):
@@ -472,8 +477,7 @@ class OrdinaryKriging:
 
         return zvalues, sigmasq
 
-    def execute(self, style, xpoints, ypoints, mask=None,
-                            backend='vectorized', n_closest_points=None):
+    def execute(self, style, xpoints, ypoints, mask=None, backend='vectorized', n_closest_points=None):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation. Note that currently
@@ -500,10 +504,10 @@ class OrdinaryKriging:
                 Specifying 'masked' treats xpoints and ypoints as two arrays of
                 x and y coordinates that define a rectangular grid and uses mask
                 to only evaluate specific points in the grid.
-            xpoints (array-like, dim Nx1): If style is specific as 'grid' or 'masked',
+            xpoints (array-like, dim N): If style is specific as 'grid' or 'masked',
                 x-coordinates of MxN grid. If style is specified as 'points',
                 x-coordinates of specific points at which to solve kriging system.
-            ypoints (array-like, dim Mx1): If style is specified as 'grid' or 'masked',
+            ypoints (array-like, dim M): If style is specified as 'grid' or 'masked',
                 y-coordinates of MxN grid. If style is specified as 'points',
                 y-coordinates of specific points at which to solve kriging system.
                 Note that in this case, xpoints and ypoints must have the same dimensions
@@ -521,7 +525,12 @@ class OrdinaryKriging:
                 significant amount of memory for large grids and/or large datasets.
                 Specifying 'loop' will loop through each point at which the kriging system
                 is to be solved. This approach is slower but also less memory-intensive.
+                Specifying 'C' will utilize a loop in Cython.
                 Default is 'vectorized'.
+            n_closest_points (int, optional): For kriging with a moving window, specifies the number
+                of nearby points to use in the calculation. This can speed up the calculation for large
+                datasets, but should be used with caution. As Kitanidis notes, kriging with a moving
+                window can produce unexpected oddities if the variogram model is not carefully chosen.
         Outputs:
             zvalues (numpy array, dim MxN or dim Nx1): Z-values of specified grid or at the
                 specified set of points. If style was specified as 'masked', zvalues will
@@ -537,20 +546,17 @@ class OrdinaryKriging:
         if style != 'grid' and style != 'masked' and style != 'points':
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
-        xpoints = np.asarray(xpoints).flatten().copy()
-        ypoints = np.asarray(ypoints).flatten().copy()
-
-
+        xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
+        ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
         n = self.X_ADJUSTED.shape[0]
-        nx = xpoints.shape[0]
-        ny = ypoints.shape[0]
+        nx = xpts.size
+        ny = ypts.size
         a = self._get_kriging_matrix(n)
 
         if style in ['grid', 'masked']:
-
             if style == 'masked':
                 if mask is None:
-                    raise IOError("Must specify boolean masking array.")
+                    raise IOError("Must specify boolean masking array when style is 'masked'.")
                 if mask.shape[0] != ny or mask.shape[1] != nx:
                     if mask.shape[0] == nx and mask.shape[1] == ny:
                         mask = mask.T
@@ -558,76 +564,62 @@ class OrdinaryKriging:
                         raise ValueError("Mask dimensions do not match specified grid dimensions.")
                 mask = mask.flatten()
             npt = ny*nx
-            grid_x, grid_y = np.meshgrid(xpoints, ypoints)
-            xpoints = grid_x.flatten()
-            ypoints = grid_y.flatten()
-
+            grid_x, grid_y = np.meshgrid(xpts, ypts)
+            xpts = grid_x.flatten()
+            ypts = grid_y.flatten()
 
         elif style == 'points':
-            if xpoints.shape != ypoints.shape:
+            if xpts.size != ypts.size:
                 raise ValueError("xpoints and ypoints must have same dimensions "
                                  "when treated as listing discrete points.")
-
             npt = nx
         else:
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
-        xpoints, ypoints = core.adjust_for_anisotropy(xpoints, ypoints, self.XCENTER, self.YCENTER,
-                                                      self.anisotropy_scaling, self.anisotropy_angle)
+        xpts, ypts = core.adjust_for_anisotropy(xpts, ypts, self.XCENTER, self.YCENTER,
+                                                self.anisotropy_scaling, self.anisotropy_angle)
 
         if style != 'masked':
             mask = np.zeros(npt, dtype='bool')
 
-
-        xy_points = np.concatenate((xpoints[:, np.newaxis], ypoints[:, np.newaxis]), axis=1)
-        xy_adjusted = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
-
+        xy_points = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
+        xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
 
         if backend == 'C':
             try:
-                from .lib.cok import _c_exec_loop, _c_exec_loop_mooving_window
+                from .lib.cok import _c_exec_loop, _c_exec_loop_moving_window
             except ImportError:
                 raise ImportError('C backend failed to load the Cython extension')
             except:
-                raise
+                raise RuntimeError("Unknown error in trying to load Cython extension.")
+
             c_pars = {key: getattr(self, key) for key in ['Z', 'eps', 'variogram_model_parameters',
-                                                            'variogram_function']}
+                                                          'variogram_function']}
         else:
             c_pars = None
 
-
         if n_closest_points is not None:
             from scipy.spatial import cKDTree
-            tree = cKDTree(xy_adjusted)
+            tree = cKDTree(xy_data)
             bd, bd_idx = tree.query(xy_points, k=n_closest_points, eps=0.0)
 
-
             if backend == 'loop':
-               zvalues, sigmasq = self._exec_loop_mooving_window(a, bd, mask, bd_idx)
+                zvalues, sigmasq = self._exec_loop_moving_window(a, bd, mask, bd_idx)
             elif backend == 'C':
-                zvalues, sigmasq = _c_exec_loop_mooving_window(a, bd, mask.astype('int8'),
-                                bd_idx, self.X_ADJUSTED.shape[0], c_pars)
-
+                zvalues, sigmasq = _c_exec_loop_moving_window(a, bd, mask.astype('int8'),
+                                                              bd_idx, self.X_ADJUSTED.shape[0], c_pars)
             else:
-                raise ValueError('Specified backend {} for a mooving window is not supported.'.format(backend))
+                raise ValueError('Specified backend {} for a moving window is not supported.'.format(backend))
         else:
-
-            bd = cdist(xy_points,  xy_adjusted, 'euclidean')
-
+            bd = cdist(xy_points,  xy_data, 'euclidean')
             if backend == 'vectorized':
                 zvalues, sigmasq = self._exec_vector(a, bd, mask)
             elif backend == 'loop':
                 zvalues, sigmasq = self._exec_loop(a, bd, mask)
             elif backend == 'C':
-
-                zvalues, sigmasq = _c_exec_loop(a, bd, mask.astype('int8'),
-                                         self.X_ADJUSTED.shape[0],  c_pars)
-
+                zvalues, sigmasq = _c_exec_loop(a, bd, mask.astype('int8'), self.X_ADJUSTED.shape[0],  c_pars)
             else:
-                raise ValueError('Specified backend {} is not supported.'.format(backend))
-
-
-
+                raise ValueError('Specified backend {} is not supported for 2D ordinary kriging.'.format(backend))
 
         if style == 'masked':
             zvalues = np.ma.array(zvalues, mask=mask)
@@ -638,4 +630,3 @@ class OrdinaryKriging:
             sigmasq = sigmasq.reshape((ny, nx))
 
         return zvalues, sigmasq
-

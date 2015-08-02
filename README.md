@@ -3,7 +3,7 @@ PyKrige
 
 Kriging Toolkit for Python
 
-The code supports two-dimensional ordinary and universal kriging as well as three-dimensional ordinary kriging. The universal kriging code currently supports regional-linear, point-logarithmic, and external drift terms. Standard variogram models (linear, power, spherical, gaussian, exponential) are built in, but custom variogram models can also be used with the code. Three-dimensional ordinary kriging, two-dimensional ordinary kriging, and two-dimensional universal kriging are separated into three classes. Examples of their uses are shown below. The code also includes a module that contains functions that should be useful in working with ASCII grid files (*.asc).
+The code supports two- and three- dimensional ordinary and universal kriging. Standard variogram models (linear, power, spherical, gaussian, exponential) are built in, but custom variogram models can also be used with the code. The kriging methods are separated into four classes. Examples of their uses are shown below. The two-dimensional universal kriging code currently supports regional-linear, point-logarithmic, and external drift terms, while the three-dimensional universal kriging code supports a regional-linear drift term in all three spatial dimensions. Both universal kriging classes also support generic 'specified' and 'functional' drift capabilities. With the 'specified' drift capability, the user may manually specify the values of the drift(s) at each data point and all grid points. With the 'functional' drift capability, the user may provide callable function(s) of the spatial coordinates that define the drift(s). The package includes a module that contains functions that should be useful in working with ASCII grid files (*.asc).
 
 PyKrige is on PyPi, so installation is as simple as typing the following into a command line.
 ```shell
@@ -84,6 +84,58 @@ UK = UniversalKriging(data[:, 0], data[:, 1], data[:, 2], variogram_model='linea
 z, ss = UK.execute('grid', gridx, gridy)
 ```
 
-To Do...
---------
-Someday the code will implement more drift terms, such as stream (line) and pond (polygon) drifts (for hydrological applications) and higher order polynomial drifts.
+Three-Dimensional Kriging Example
+-------------------------
+
+```python
+from pykrige.ok3d import OrdinaryKriging3D
+from pykrige.uk3d import UniversalKriging3D
+import numpy as np
+
+data = np.array([[0.1, 0.1, 0.3, 0.9],
+				 [0.2, 0.1, 0.4, 0.8],
+				 [0.1, 0.3, 0.1, 0.9],
+				 [0.5, 0.4, 0.4, 0.5],
+				 [0.3, 0.3, 0.2, 0.7]])
+
+gridx = np.arange(0.0, 0.6, 0.05)
+gridy = np.arange(0.0, 0.6, 0.01)
+gridz = np.arange(0.0, 0.6, 0.1)
+
+# Create the 3D ordinary kriging object and solves for the three-dimension kriged 
+# volume and variance. Refer to OrdinaryKriging3D.__doc__ for more information.
+ok3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+						 variogram_model='linear')
+k3d, ss3d = ok3d.execute('grid', gridx, gridy, gridz)
+
+# Create the 3D universal kriging object and solves for the three-dimension kriged 
+# volume and variance. Refer to UniversalKriging3D.__doc__ for more information.
+uk3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3], 
+						  variogram_model='linear', drift_terms=['regional_linear'])
+k3d, ss3d = uk3d.execute('grid', gridx, gridy, gridz)
+
+# To use the generic 'specified' drift term, the user must provide the drift values 
+# at each data point and at every grid point. The following example is equivalent to 
+# using a linear drift only in the x- and y-directions. Refer to 
+# UniversalKriging3D.__doc__ for more information.
+xg, yg = np.meshgrid(gridx, gridy)
+uk3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3], 
+						  variogram_model='linear', drift_terms=['specified'],
+						  specified_drift=[data[:, 0], data[:, 1]])
+k3d, ss3d = uk3d.execute('grid', gridx, gridy, gridz, specified_drift_arrays=[xg, yg])
+
+# To use the generic 'functional' drift term, the user must provide a callable 
+# function that takes only the spatial dimensions as arguments. The following example 
+# is equivalent to using a linear drift only in the x-direction. Refer to 
+# UniversalKriging3D.__doc__ for more information.
+func = lambda x, y, z: x
+uk3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3], 
+						  variogram_model='linear', drift_terms=['functional'],
+						  functional_drift=[func])
+k3d, ss3d = uk3d.execute('grid', gridx, gridy, gridz)
+
+# Note that the use of the 'specified' and 'functional' generic drift capabilities is 
+# essentially identical in the two-dimensional universal kriging class (except for a 
+# difference in the number of spatial coordinates for the passed drift functions). 
+# See UniversalKriging.__doc__ for more information.
+```

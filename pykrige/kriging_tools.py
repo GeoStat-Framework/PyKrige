@@ -114,7 +114,6 @@ def write_asc_grid(x, y, z, filename='output.asc', style=1):
                 f.write('{:<16.2f}'.format(z[m, n]))
             if m != 0:
                 f.write('\n')
-    f.close()
 
 
 def read_asc_grid(filename, footer=0):
@@ -177,7 +176,6 @@ def read_asc_grid(filename, footer=0):
                ((cellsize is not None) or ((dx is not None) and (dy is not None))) and \
                (no_data is not None):
                 break
-    f.close()
 
     raw_grid_array = np.genfromtxt(filename, skip_header=header_lines, skip_footer=footer)
     grid_array = np.flipud(raw_grid_array)

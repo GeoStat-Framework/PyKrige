@@ -82,7 +82,7 @@ cpdef _c_exec_loop(double [:, ::1] a_all,
 
     return zvalues.base, sigmasq.base
 
-cpdef _c_exec_loop_mooving_window(double [:, ::1] a_all,
+cpdef _c_exec_loop_moving_window(double [:, ::1] a_all,
               double [:, ::1] bd_all,
               char [::1] mask,
               long [:,::1] bd_idx,

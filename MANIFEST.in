@@ -5,8 +5,9 @@ include setup.cfg
 include setup.py
 include pykrige/__init__.py
 include pykrige/kriging_tools.py
-include pykrige/k3d.py
+include pykrige/ok3d.py
 include pykrige/ok.py
+include pykrige/uk3d.py
 include pykrige/uk.py
 include pykrige/variogram_models.py
 include pykrige/core.py
@@ -21,3 +22,9 @@ include pykrige/test_data/test3_dem.asc
 include pykrige/test_data/test3_settings.txt
 include pykrige/test_data/test3d_answer.txt
 include pykrige/test_data/test3d_data.txt
+include pykrige/lib/__init__.py
+include pykrige/lib/cok.pyx
+include pykrige/lib/lapack.pxd
+include pykrige/lib/lapack.pyx
+include pykrige/lib/variogram_models.pxd
+include pykrige/lib/variogram_models.pyx

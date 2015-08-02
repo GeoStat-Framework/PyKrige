@@ -50,7 +50,7 @@ from scipy.optimize import minimize
 
 
 def adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
-    """ Adjusts data coordinates to take into account anisotropy.
+    """Adjusts data coordinates to take into account anisotropy.
     Can also be used to take into account data scaling."""
 
     x -= xcenter
@@ -75,7 +75,7 @@ def adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
 
 def adjust_for_anisotropy_3d(x, y, z, xcenter, ycenter, zcenter, scaling_y,
                              scaling_z, angle_x, angle_y, angle_z):
-    """ Adjusts data coordinates to take into account anisotropy.
+    """Adjusts data coordinates to take into account anisotropy.
     Can also be used to take into account data scaling."""
 
     x -= xcenter
