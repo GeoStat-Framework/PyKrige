@@ -20,7 +20,6 @@ before_install:
     # Learned the hard way: miniconda is not always up-to-date with conda.
     - conda update --yes conda
 
-# command to install dependencies
 install: 
 #    - sudo apt-get install packages_as_needed
     - conda install --yes -c conda conda-env
@@ -32,7 +31,6 @@ install:
     - cd ..
     - pwd
     - ls -R
-#- cd ./hedp/tests/
 
 
 # command to run tests
