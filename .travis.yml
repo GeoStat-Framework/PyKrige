@@ -35,7 +35,7 @@ install:
 
 # command to run tests
 script: 
-    - cd pykrige/
+    - cd ./PyKrige/pykrige/
     - python ./test.py #--with-coverage --cover-package=pykrige
 #    - coverage run --source=hedp ./hedp/tests/run.py
 
