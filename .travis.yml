@@ -1,14 +1,14 @@
 language: python
+sudo: false
 matrix:
     include:
-    - python: "3.4"
-      env: DEPS="numpy scipy nose matplotlib cython"
+#    - python: "3.4"
+#      env: DEPS="numpy scipy nose matplotlib cython"
     - python: "2.7"
       env: DEPS="numpy scipy nose matplotlib cython"
 
 # setup adapted from https://github.com/soft-matter/trackpy/blob/master/.travis.yml
 before_install:
-    - sudo apt-get update
     - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-3.16.0-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-3.16.0-Linux-x86_64.sh -O miniconda.sh; fi
     - chmod +x miniconda.sh
     - ./miniconda.sh -b
@@ -21,7 +21,6 @@ before_install:
     - conda update --yes conda
 
 install: 
-#    - sudo apt-get install packages_as_needed
     - conda install --yes -c conda conda-env
     - conda create -n krige-env --yes $DEPS pip python=${TRAVIS_PYTHON_VERSION}
     - source activate krige-env
@@ -36,7 +35,7 @@ install:
 # command to run tests
 script: 
     - cd ./PyKrige/pykrige/
-    - python ./test.py #--with-coverage --cover-package=pykrige
+    - nosetests ./test.py --with-coverage --cover-package=pykrige
 #    - coverage run --source=hedp ./hedp/tests/run.py
 
 #after_success:
