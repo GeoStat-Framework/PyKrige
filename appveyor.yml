@@ -1,0 +1,39 @@
+build: false
+
+environment:
+  global:
+    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+    # /E:ON and /V:ON options are not enabled in the batch script intepreter
+    # See: http://stackoverflow.com/a/13751649/163740
+    WITH_COMPILER: "cmd /E:ON /V:ON /C .\\appveyor\\run_with_compiler.cmd"
+  matrix:
+    - PYTHON_VERSION: 2.7
+      PYTHON_ARCH: "64"
+      MINICONDA: C:\Miniconda
+#    - PYTHON_VERSION: 3.4
+#      PYTHON_ARCH: "64"
+#      MINICONDA: C:\Miniconda3
+
+init:
+  - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH% %MINICONDA%"
+
+install:
+  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - "conda create -q -n krige-env python=%PYTHON_VERSION% numpy scipy nose matplotlib cython"
+  - activate krige-env
+  - pip install coverage
+
+  - dir 
+  - "cd C:\\projects\\pykrige"
+  - python setup.py build_ext --inplace
+  - python setup.py install
+
+
+
+test_script:
+  - "cd C:\\projects\\pykrige\\pykrige"
+  - nosetests
+
