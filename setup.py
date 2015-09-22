@@ -7,10 +7,32 @@ import Cython.Compiler.Options
 
 Cython.Compiler.Options.annotate = False
 
-ext_modules = [Extension("pykrige.lib.cok", ["pykrige/lib/cok.pyx"], extra_compile_args=['-O3', '-march=native']),
-               Extension("pykrige.lib.lapack", ["pykrige/lib/lapack.pyx"], extra_compile_args=['-O2', '-march=native']),
-               Extension("pykrige.lib.variogram_models", ["pykrige/lib/variogram_models.pyx"],
-                         extra_compile_args=['-O2', '-march=native'])]
+if sys.platform != 'win32':
+    compile_args =  dict( extra_compile_args=['-O2', '-march=core2', '-mtune=corei7'],
+                 extra_link_args=['-O2', '-march=core2', '-mtune=corei7'])
+else:
+    compile_args = {}
+
+
+ext_modules = [Extension("pykrige.lib.cok",
+                         ["pykrige/lib/cok.pyx"],
+                                   **compile_args),
+               Extension("pykrige.lib.lapack",
+                         ["pykrige/lib/lapack.pyx"],
+                                   **compile_args),
+               Extension("pykrige.lib.variogram_models",
+                         ["pykrige/lib/variogram_models.pyx"],
+                                   **compile_args),]
+
+class build_ext_compiler_check(build_ext):
+    def build_extensions(self):
+        compiler = self.compiler
+        print(compiler.compiler_cxx) # line for debugging, this 
+        if compiler.compiler_cxx:
+            build_ext.build_extensions(self)
+        else:
+            print("Warning: the C extensions will not be built since the compiler could not be found.\n"\
+                    "See https://github.com/bsmurphy/PyKrige/issues/8 ")
 
 setup(name='PyKrige',
       version='1.2.0',
@@ -32,5 +54,5 @@ setup(name='PyKrige',
                    'Topic :: Scientific/Engineering :: GIS'],
       ext_modules=ext_modules,
       include_dirs=[np.get_include()],
-      cmdclass={'build_ext': build_ext},
+      cmdclass={'build_ext': build_ext_compiler_check}, #build_ext},
       )

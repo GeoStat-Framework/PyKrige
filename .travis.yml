@@ -5,7 +5,7 @@ matrix:
 #    - python: "3.4"
 #      env: DEPS="numpy scipy nose matplotlib cython"
     - python: "2.7"
-      env: DEPS="numpy scipy nose matplotlib cython"
+      env: DEPS="numpy=1.9 scipy=0.16 nose matplotlib cython"
 
 # setup adapted from https://github.com/soft-matter/trackpy/blob/master/.travis.yml
 before_install:
