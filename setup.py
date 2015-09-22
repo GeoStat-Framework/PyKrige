@@ -28,8 +28,7 @@ ext_modules = [Extension("pykrige.lib.cok",
 class build_ext_compiler_check(build_ext):
     def build_extensions(self):
         compiler = self.compiler
-        print(compiler.compiler_cxx) # line for debugging, this 
-        if compiler.compiler_cxx:
+        if sys.platform != 'win32':
             build_ext.build_extensions(self)
         else:
             print("Warning: the C extensions will not be built since the compiler could not be found.\n"\
