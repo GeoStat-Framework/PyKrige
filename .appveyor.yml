@@ -1,0 +1,27 @@
+build: false
+
+environment:
+  matrix:
+    - PYTHON_VERSION: 2.7
+      MINICONDA: C:\Miniconda
+#    - PYTHON_VERSION: 3.4
+#      MINICONDA: C:\Miniconda3
+
+init:
+  - "ECHO %PYTHON_VERSION% %MINICONDA%"
+
+install:
+  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - "conda create -q -n krige-env python=%PYTHON_VERSION% numpy scipy nose matplotlib cython"
+  - activate test-environment
+  - pip install coverage
+  - dir 
+
+
+
+test_script:
+  - nosetests
+
