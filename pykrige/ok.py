@@ -585,18 +585,20 @@ class OrdinaryKriging:
         xy_points = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
         xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
 
+        c_pars = None
         if backend == 'C':
             try:
                 from .lib.cok import _c_exec_loop, _c_exec_loop_moving_window
             except ImportError:
-                raise ImportError('C backend failed to load the Cython extension')
+                print('Warning: failed to load Cython extensions.\n'\
+                      '   See https://github.com/bsmurphy/PyKrige/issues/8 \n'\
+                      '   Falling back to a pure python backend...')
+                backend = 'loop'
             except:
                 raise RuntimeError("Unknown error in trying to load Cython extension.")
 
             c_pars = {key: getattr(self, key) for key in ['Z', 'eps', 'variogram_model_parameters',
                                                           'variogram_function']}
-        else:
-            c_pars = None
 
         if n_closest_points is not None:
             from scipy.spatial import cKDTree
