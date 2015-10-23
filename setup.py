@@ -3,17 +3,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import sys
-import argparse
 from setuptools import setup, Extension
 from Cython.Distutils import build_ext
 from os.path import join
 import numpy as np
 
 import Cython.Compiler.Options
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--no_cython", help="Disable compilation of Cython extensions.", action='store_true')
-args = parser.parse_args()
 
 Cython.Compiler.Options.annotate = False
 
@@ -31,12 +26,7 @@ class BuildExtCompilerCheck(build_ext):
         else:
             build_ext.build_extensions(self)
 
-
-if args.no_cython:
-    print("DISABLING CYTHON EXTENSIONS.")
-    ext_modules = []
-    cmd = {}
-elif sys.version[0] == '3':
+if sys.version[0] == '3':
     print("WARNING: Currently, Cython extensions are not built when using Python 3. "
           "This will be changed in the future.")
     ext_modules = []
