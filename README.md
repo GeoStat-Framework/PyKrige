@@ -13,6 +13,14 @@ PyKrige is on PyPi, so installation is as simple as typing the following into a 
 pip install pykrige
 ```
 
+If you don't want to compile the Cython extensions, then you can tell the setup script to skip that part of the installation like so...
+```shell
+pip install --install-option="--no_cython" pykrige
+```
+This is particularly useful if you're working on Windows and you don't want to deal with the problems that you may encounter in trying to install the Cython extensions.
+
+Similarly, if you're installing PyKrige directly from the source code, then you can disable the Cython extensions by using the ```--no_cython``` flag.
+
 To update PyKrige from PyPi, type the following into a command line.
 ```shell
 pip install --upgrade pykrige
@@ -119,13 +127,13 @@ k3d, ss3d = uk3d.execute('grid', gridx, gridy, gridz)
 
 # To use the generic 'specified' drift term, the user must provide the drift values 
 # at each data point and at every grid point. The following example is equivalent to 
-# using a linear drift only in the x- and y-directions. Refer to 
+# using a linear drift in all three spatial dimensions. Refer to
 # UniversalKriging3D.__doc__ for more information.
-xg, yg = np.meshgrid(gridx, gridy)
+zg, yg, xg = np.meshgrid(gridz, gridy, gridx, indexing='ij')
 uk3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3], 
 						  variogram_model='linear', drift_terms=['specified'],
 						  specified_drift=[data[:, 0], data[:, 1]])
-k3d, ss3d = uk3d.execute('grid', gridx, gridy, gridz, specified_drift_arrays=[xg, yg])
+k3d, ss3d = uk3d.execute('grid', gridx, gridy, gridz, specified_drift_arrays=[xg, yg, zg])
 
 # To use the generic 'functional' drift term, the user must provide a callable 
 # function that takes only the spatial dimensions as arguments. The following example 

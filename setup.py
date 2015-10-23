@@ -1,4 +1,9 @@
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import sys
+import argparse
 from setuptools import setup, Extension
 from Cython.Distutils import build_ext
 from os.path import join
@@ -6,36 +11,49 @@ import numpy as np
 
 import Cython.Compiler.Options
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--no_cython", help="Disable compilation of Cython extensions.", action='store_true')
+args = parser.parse_args()
+
 Cython.Compiler.Options.annotate = False
 
-if sys.platform != 'win32':
-    compile_args =  dict( extra_compile_args=['-O2', '-march=core2', '-mtune=corei7'],
-                 extra_link_args=['-O2', '-march=core2', '-mtune=corei7'])
-else:
-    compile_args = {}
 
-
-ext_modules = [Extension("pykrige.lib.cok",
-                         ["pykrige/lib/cok.pyx"],
-                                   **compile_args),
-               Extension("pykrige.lib.lapack",
-                         ["pykrige/lib/lapack.pyx"],
-                                   **compile_args),
-               Extension("pykrige.lib.variogram_models",
-                         ["pykrige/lib/variogram_models.pyx"],
-                                   **compile_args),]
-
-class build_ext_compiler_check(build_ext):
+class BuildExtCompilerCheck(build_ext):
     def build_extensions(self):
-        compiler = self.compiler
-        if sys.platform != 'win32':
-            build_ext.build_extensions(self)
+        if sys.platform == 'win32' and ('MSC' in sys.version or 'MSVC' in sys.version):
+            print("COMPILER IS", self.compiler.compiler_type)
+            from distutils.msvccompiler import MSVCCompiler
+            if isinstance(self.compiler, MSVCCompiler):
+                build_ext.build_extensions(self)
+            else:
+                print("WARNING: The C extensions will not be built since the necessary compiler could not be found.\n"
+                      "See https://github.com/bsmurphy/PyKrige/issues/8")
         else:
-            print("Warning: the C extensions will not be built since the compiler could not be found.\n"\
-                    "See https://github.com/bsmurphy/PyKrige/issues/8 ")
+            build_ext.build_extensions(self)
+
+
+if args.no_cython:
+    print("DISABLING CYTHON EXTENSIONS.")
+    ext_modules = []
+    cmd = {}
+elif sys.version[0] == '3':
+    print("WARNING: Currently, Cython extensions are not built when using Python 3. "
+          "This will be changed in the future.")
+    ext_modules = []
+    cmd = {}
+else:
+    if sys.platform != 'win32':
+        compile_args = dict(extra_compile_args=['-O2', '-march=core2', '-mtune=corei7'],
+                            extra_link_args=['-O2', '-march=core2', '-mtune=corei7'])
+    else:
+        compile_args = {}
+    ext_modules = [Extension("pykrige.lib.cok", ["pykrige/lib/cok.pyx"], **compile_args),
+                   Extension("pykrige.lib.lapack", ["pykrige/lib/lapack.pyx"], **compile_args),
+                   Extension("pykrige.lib.variogram_models", ["pykrige/lib/variogram_models.pyx"], **compile_args)]
+    cmd = {'build_ext': BuildExtCompilerCheck}
 
 setup(name='PyKrige',
-      version='1.2.0',
+      version='1.3.0',
       author='Benjamin S. Murphy',
       author_email='bscott.murphy@gmail.com',
       url='https://github.com/bsmurphy/PyKrige',
@@ -54,5 +72,4 @@ setup(name='PyKrige',
                    'Topic :: Scientific/Engineering :: GIS'],
       ext_modules=ext_modules,
       include_dirs=[np.get_include()],
-      cmdclass={'build_ext': build_ext_compiler_check}, #build_ext},
-      )
+      cmdclass=cmd)

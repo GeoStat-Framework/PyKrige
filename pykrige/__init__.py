@@ -1,5 +1,5 @@
 __author__ = 'Benjamin S. Murphy'
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 __doc__ = """Code by Benjamin S. Murphy
 bscott.murphy@gmail.com
 
@@ -30,9 +30,8 @@ Modules:
         so the exact definition of the range (specifically, the associated
         scaling of that value) may differ slightly from other sources.
     core: Contains the backbone functions of the package that are called by
-        both the various kriging classes.
-        The functions were consolidated here in order to reduce redundancy
-        in the code.
+        both the various kriging classes. The functions were consolidated here
+        in order to reduce redundancy in the code.
     test: Contains the test script.
 
 References:

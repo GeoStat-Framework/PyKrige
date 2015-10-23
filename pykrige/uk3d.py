@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 __doc__ = """Code by Benjamin S. Murphy
 bscott.murphy@gmail.com
 
@@ -22,6 +27,7 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 import variogram_models
 import core
+import warnings
 
 
 class UniversalKriging3D:
@@ -246,7 +252,7 @@ class UniversalKriging3D:
         self.verbose = verbose
         self.enable_plotting = enable_plotting
         if self.enable_plotting and self.verbose:
-            print "Plotting Enabled\n"
+            print("Plotting Enabled\n")
 
         self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG))/2.0
         self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG))/2.0
@@ -257,7 +263,7 @@ class UniversalKriging3D:
         self.anisotropy_angle_y = anisotropy_angle_y
         self.anisotropy_angle_z = anisotropy_angle_z
         if self.verbose:
-            print "Adjusting data for anisotropy..."
+            print("Adjusting data for anisotropy...")
         self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = \
             core.adjust_for_anisotropy_3d(np.copy(self.X_ORIG), np.copy(self.Y_ORIG), np.copy(self.Z_ORIG),
                                           self.XCENTER, self.YCENTER, self.ZCENTER, self.anisotropy_scaling_y,
@@ -275,33 +281,33 @@ class UniversalKriging3D:
         else:
             self.variogram_function = self.variogram_dict[self.variogram_model]
         if self.verbose:
-            print "Initializing variogram model..."
+            print("Initializing variogram model...")
         self.lags, self.semivariance, self.variogram_model_parameters = \
             core.initialize_variogram_model_3d(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED, self.VALUES,
                                                self.variogram_model, variogram_parameters, self.variogram_function,
                                                nlags, weight)
         if self.verbose:
             if self.variogram_model == 'linear':
-                print "Using '%s' Variogram Model" % 'linear'
-                print "Slope:", self.variogram_model_parameters[0]
-                print "Nugget:", self.variogram_model_parameters[1], '\n'
+                print("Using '%s' Variogram Model" % 'linear')
+                print("Slope:", self.variogram_model_parameters[0])
+                print("Nugget:", self.variogram_model_parameters[1], '\n')
             elif self.variogram_model == 'power':
-                print "Using '%s' Variogram Model" % 'power'
-                print "Scale:", self.variogram_model_parameters[0]
-                print "Exponent:", self.variogram_model_parameters[1]
-                print "Nugget:", self.variogram_model_parameters[2], '\n'
+                print("Using '%s' Variogram Model" % 'power')
+                print("Scale:", self.variogram_model_parameters[0])
+                print("Exponent:", self.variogram_model_parameters[1])
+                print("Nugget:", self.variogram_model_parameters[2], '\n')
             elif self.variogram_model == 'custom':
-                print "Using Custom Variogram Model"
+                print("Using Custom Variogram Model")
             else:
-                print "Using '%s' Variogram Model" % self.variogram_model
-                print "Sill:", self.variogram_model_parameters[0]
-                print "Range:", self.variogram_model_parameters[1]
-                print "Nugget:", self.variogram_model_parameters[2], '\n'
+                print("Using '%s' Variogram Model" % self.variogram_model)
+                print("Sill:", self.variogram_model_parameters[0])
+                print("Range:", self.variogram_model_parameters[1])
+                print("Nugget:", self.variogram_model_parameters[2], '\n')
         if self.enable_plotting:
             self.display_variogram_model()
 
         if self.verbose:
-            print "Calculating statistics on variogram model fit..."
+            print("Calculating statistics on variogram model fit...")
         self.delta, self.sigma, self.epsilon = core.find_statistics_3d(self.X_ADJUSTED, self.Y_ADJUSTED,
                                                                        self.Z_ADJUSTED, self.VALUES,
                                                                        self.variogram_function,
@@ -310,19 +316,19 @@ class UniversalKriging3D:
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
         if self.verbose:
-            print "Q1 =", self.Q1
-            print "Q2 =", self.Q2
-            print "cR =", self.cR, '\n'
+            print("Q1 =", self.Q1)
+            print("Q2 =", self.Q2)
+            print("cR =", self.cR, '\n')
 
         if self.verbose:
-            print "Initializing drift terms..."
+            print("Initializing drift terms...")
 
         # Note that the regional linear drift values will be based on the adjusted coordinate system.
         # Really, it doesn't actually matter which coordinate system is used here.
         if 'regional_linear' in drift_terms:
             self.regional_linear_drift = True
             if self.verbose:
-                print "Implementing regional linear drift."
+                print("Implementing regional linear drift.")
         else:
             self.regional_linear_drift = False
 
@@ -364,7 +370,7 @@ class UniversalKriging3D:
            anisotropy_angle_x != self.anisotropy_angle_x or anisotropy_angle_y != self.anisotropy_angle_y or \
            anisotropy_angle_z != self.anisotropy_angle_z:
             if self.verbose:
-                print "Adjusting data for anisotropy..."
+                print("Adjusting data for anisotropy...")
             self.anisotropy_scaling_y = anisotropy_scaling_y
             self.anisotropy_scaling_z = anisotropy_scaling_z
             self.anisotropy_angle_x = anisotropy_angle_x
@@ -387,33 +393,33 @@ class UniversalKriging3D:
         else:
             self.variogram_function = self.variogram_dict[self.variogram_model]
         if self.verbose:
-            print "Updating variogram mode..."
+            print("Updating variogram mode...")
         self.lags, self.semivariance, self.variogram_model_parameters = \
             core.initialize_variogram_model_3d(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED, self.VALUES,
                                                self.variogram_model, variogram_parameters, self.variogram_function,
                                                nlags, weight)
         if self.verbose:
             if self.variogram_model == 'linear':
-                print "Using '%s' Variogram Model" % 'linear'
-                print "Slope:", self.variogram_model_parameters[0]
-                print "Nugget:", self.variogram_model_parameters[1], '\n'
+                print("Using '%s' Variogram Model" % 'linear')
+                print("Slope:", self.variogram_model_parameters[0])
+                print("Nugget:", self.variogram_model_parameters[1], '\n')
             elif self.variogram_model == 'power':
-                print "Using '%s' Variogram Model" % 'power'
-                print "Scale:", self.variogram_model_parameters[0]
-                print "Exponent:", self.variogram_model_parameters[1]
-                print "Nugget:", self.variogram_model_parameters[2], '\n'
+                print("Using '%s' Variogram Model" % 'power')
+                print("Scale:", self.variogram_model_parameters[0])
+                print("Exponent:", self.variogram_model_parameters[1])
+                print("Nugget:", self.variogram_model_parameters[2], '\n')
             elif self.variogram_model == 'custom':
-                print "Using Custom Variogram Model"
+                print("Using Custom Variogram Model")
             else:
-                print "Using '%s' Variogram Model" % self.variogram_model
-                print "Sill:", self.variogram_model_parameters[0]
-                print "Range:", self.variogram_model_parameters[1]
-                print "Nugget:", self.variogram_model_parameters[2], '\n'
+                print("Using '%s' Variogram Model" % self.variogram_model)
+                print("Sill:", self.variogram_model_parameters[0])
+                print("Range:", self.variogram_model_parameters[1])
+                print("Nugget:", self.variogram_model_parameters[2], '\n')
         if self.enable_plotting:
             self.display_variogram_model()
 
         if self.verbose:
-            print "Calculating statistics on variogram model fit..."
+            print("Calculating statistics on variogram model fit...")
         self.delta, self.sigma, self.epsilon = core.find_statistics_3d(self.X_ADJUSTED, self.Y_ADJUSTED,
                                                                        self.Z_ADJUSTED, self.VALUES,
                                                                        self.variogram_function,
@@ -422,9 +428,9 @@ class UniversalKriging3D:
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
         if self.verbose:
-            print "Q1 =", self.Q1
-            print "Q2 =", self.Q2
-            print "cR =", self.cR, '\n'
+            print("Q1 =", self.Q1)
+            print("Q2 =", self.Q2)
+            print("cR =", self.cR, '\n')
 
     def display_variogram_model(self):
         """Displays variogram model with the actual binned data"""
@@ -459,9 +465,9 @@ class UniversalKriging3D:
         return self.Q1, self.Q2, self.cR
 
     def print_statistics(self):
-        print "Q1 =", self.Q1
-        print "Q2 =", self.Q2
-        print "cR =", self.cR
+        print("Q1 =", self.Q1)
+        print("Q2 =", self.Q2)
+        print("cR =", self.cR)
 
     def _get_kriging_matrix(self, n, n_withdrifts):
         """Assembles the kriging matrix."""
@@ -498,7 +504,7 @@ class UniversalKriging3D:
                 a[i, :n] = func(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED)
                 i += 1
         if i != n_withdrifts:
-            print "WARNING: Error in creating kriging matrix. Kriging may fail."
+            warnings.warn("Error in creating kriging matrix. Kriging may fail.", RuntimeWarning)
         if self.UNBIAS:
             a[n_withdrifts, :n] = 1.0
             a[:n, n_withdrifts] = 1.0
@@ -546,7 +552,7 @@ class UniversalKriging3D:
                 b[:, i, 0] = func(xyz[:, 2], xyz[:, 1], xyz[:, 0])
                 i += 1
         if i != n_withdrifts:
-            print "WARNING: Error in setting up kriging system. Kriging may fail."
+            warnings.warn("Error in setting up kriging system. Kriging may fail.", RuntimeWarning)
         if self.UNBIAS:
             b[:, n_withdrifts, 0] = 1.0
 
@@ -608,7 +614,7 @@ class UniversalKriging3D:
                     b[i, 0] = func(xyz[j, 2], xyz[j, 1], xyz[j, 0])
                     i += 1
             if i != n_withdrifts:
-                print "WARNING: Error in setting up kriging system. Kriging may fail."
+                warnings.warn("Error in setting up kriging system. Kriging may fail.", RuntimeWarning)
             if self.UNBIAS:
                 b[n_withdrifts, 0] = 1.0
 
@@ -691,7 +697,7 @@ class UniversalKriging3D:
         """
 
         if self.verbose:
-            print "Executing Ordinary Kriging...\n"
+            print("Executing Ordinary Kriging...\n")
 
         if style != 'grid' and style != 'masked' and style != 'points':
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
@@ -769,8 +775,8 @@ class UniversalKriging3D:
                 raise ValueError("Inconsistent number of specified drift terms supplied.")
         else:
             if len(specified_drift_arrays) != 0:
-                print "WARNING: Provided specified drift values, but 'specified' drift was not initialized during " \
-                      "instantiation of UniversalKriging3D class."
+                warnings.warn("Provided specified drift values, but 'specified' drift was not initialized during "
+                              "instantiation of UniversalKriging3D class.", RuntimeWarning)
 
         xpts, ypts, zpts = core.adjust_for_anisotropy_3d(xpts, ypts, zpts, self.XCENTER, self.YCENTER, self.ZCENTER,
                                                          self.anisotropy_scaling_y, self.anisotropy_scaling_z,

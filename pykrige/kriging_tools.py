@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 __doc__ = """Code by Benjamin S. Murphy
 bscott.murphy@gmail.com
 
@@ -40,6 +45,8 @@ Copyright (c) 2015 Benjamin S. Murphy
 """
 
 import numpy as np
+import warnings
+import io
 
 
 def write_asc_grid(x, y, z, filename='output.asc', style=1):
@@ -57,26 +64,23 @@ def write_asc_grid(x, y, z, filename='output.asc', style=1):
     if z.ndim != 2:
         raise ValueError("Two-dimensional grid is required to write *.asc grid.")
     if x.ndim > 1 or y.ndim > 1:
-        raise ValueError("Dimensions of X and/or Y coordinate arrays are not as "
-                         "expected. Could not write *.asc grid.")
+        raise ValueError("Dimensions of X and/or Y coordinate arrays are not as expected. Could not write *.asc grid.")
     if z.shape != (y.size, x.size):
-        print "WARNING: Grid dimensions are not as expected. " \
-              "Incorrect *.asc file generation may result."
+        warnings.warn("Grid dimensions are not as expected. Incorrect *.asc file generation may result.",
+                      RuntimeWarning)
     if np.amin(x) != x[0] or np.amin(y) != y[0]:
-        print "WARNING: Order of X or Y coordinates is not as expected. " \
-              "Incorrect *.asc file generation may result."
+        warnings.warn("Order of X or Y coordinates is not as expected. Incorrect *.asc file generation may result.",
+                      RuntimeWarning)
 
     dx = abs(x[1] - x[0])
     dy = abs(y[1] - y[0])
     if abs((x[-1] - x[0])/(x.shape[0] - 1)) != dx or \
        abs((y[-1] - y[0])/(y.shape[0] - 1)) != dy:
-        raise ValueError("X or Y spacing is not constant; *.asc grid cannot "
-                         "be written.")
+        raise ValueError("X or Y spacing is not constant; *.asc grid cannot be written.")
     cellsize = -1
     if style == 2:
         if dx != dy:
-            raise ValueError("X and Y spacing is not the same. Cannot write "
-                             "*.asc file in the specified format.")
+            raise ValueError("X and Y spacing is not the same. Cannot write *.asc file in the specified format.")
         cellsize = dx
 
     xllcenter = x[0]
@@ -90,7 +94,7 @@ def write_asc_grid(x, y, z, filename='output.asc', style=1):
 
     no_data = -999.
 
-    with open(filename, 'w') as f:
+    with io.open(filename, 'w') as f:
         if style == 1:
             f.write("NCOLS          " + '{:<10n}'.format(ncols) + '\n')
             f.write("NROWS          " + '{:<10n}'.format(nrows) + '\n')
@@ -139,7 +143,7 @@ def read_asc_grid(filename, footer=0):
     dy = None
     no_data = None
     header_lines = 0
-    with open(filename, 'rU') as f:
+    with io.open(filename, 'r') as f:
         while True:
             string, value = f.readline().split()
             header_lines += 1
