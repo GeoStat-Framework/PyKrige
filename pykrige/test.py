@@ -11,13 +11,13 @@ Updated BSM August 2015
 import unittest
 import os
 import numpy as np
-import kriging_tools as kt
-import core
-import variogram_models
-from ok import OrdinaryKriging
-from uk import UniversalKriging
-from ok3d import OrdinaryKriging3D
-from uk3d import UniversalKriging3D
+from . import kriging_tools as kt
+from . import core
+from . import variogram_models
+from .ok import OrdinaryKriging
+from .uk import UniversalKriging
+from .ok3d import OrdinaryKriging3D
+from .uk3d import UniversalKriging3D
 
 
 class TestPyKrige(unittest.TestCase):

@@ -26,8 +26,8 @@ import numpy as np
 import scipy.linalg
 from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
-import variogram_models
-import core
+from . import variogram_models
+from . import core
 
 
 class OrdinaryKriging:
