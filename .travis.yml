@@ -2,8 +2,8 @@ language: python
 sudo: false
 matrix:
     include:
-#    - python: "3.4"
-#      env: DEPS="numpy scipy nose matplotlib cython"
+    - python: "3.4"
+      env: DEPS="numpy scipy nose matplotlib cython"
     - python: "2.7"
       env: DEPS="numpy=1.9 scipy=0.16 nose matplotlib cython"
 
