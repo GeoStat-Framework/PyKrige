@@ -372,12 +372,12 @@ class TestPyKrige(unittest.TestCase):
         self.assertAlmostEqual(ss_answer, ss[0], places=0)
 
         z, ss = uk.execute('points', np.array([61.0]), np.array([139.0]), backend='vectorized')
-        self.assertAlmostEqual(z, 477.0, 3)
-        self.assertAlmostEqual(ss, 0.0, 3)
+        self.assertAlmostEqual(z[0], 477.0, 3)
+        self.assertAlmostEqual(ss[0], 0.0, 3)
 
         z, ss = uk.execute('points', np.array([61.0]), np.array([139.0]), backend='loop')
-        self.assertAlmostEqual(z, 477.0, 3)
-        self.assertAlmostEqual(ss, 0.0, 3)
+        self.assertAlmostEqual(z[0], 477.0, 3)
+        self.assertAlmostEqual(ss[0], 0.0, 3)
 
     def test_uk_execute(self):
 
