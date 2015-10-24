@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 """
-Updated BSM 10/23/2015.
+Updated BSM 10/23/2015
 Cython extensions work-around adapted from simplejson setup script:
 https://github.com/simplejson/simplejson/blob/0bcdf20cc525c1343b796cb8f247ea5213c6557e/setup.py#L110
 """
@@ -39,8 +39,10 @@ CLSF = ['Development Status :: 5 - Production/Stable',
         'Topic :: Scientific/Engineering :: GIS']
 
 if sys.version_info[0] == 3:
-    print("*** WARNING: Currently, Cython extensions are not built when using Python 3. "
-          "This will be changed in the future. ***")
+    print("**************************************************")
+    print("WARNING: Currently, Cython extensions are not built when using Python 3. "
+          "This will be changed in the future. Falling back to pure Python implementation.")
+    print("**************************************************")
     try_cython = False
 else:
     try_cython = True
@@ -55,8 +57,10 @@ class TryBuildExt(build_ext):
         try:
             build_ext.build_extensions(self)
         except ext_errors:
+            print("**************************************************")
             print("WARNING: Cython extensions failed to build. Falling back to pure Python implementation.\n"
-                  "See https://github.com/bsmurphy/PyKrige/issues/8")
+                  "See https://github.com/bsmurphy/PyKrige/issues/8 for more information.")
+            print("**************************************************")
             raise BuildFailed()
 
 
