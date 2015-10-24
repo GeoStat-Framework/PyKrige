@@ -368,8 +368,8 @@ class TestPyKrige(unittest.TestCase):
         uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2], variogram_model='exponential',
                               variogram_parameters=[10.0, 9.99, 0.0], drift_terms=['regional_linear'])
         z, ss = uk.execute('points', np.array([point[0]]), np.array([point[1]]), backend='vectorized')
-        self.assertAlmostEqual(z_answer, z, places=0)
-        self.assertAlmostEqual(ss_answer, ss, places=0)
+        self.assertAlmostEqual(z_answer, z[0], places=0)
+        self.assertAlmostEqual(ss_answer, ss[0], places=0)
 
         z, ss = uk.execute('points', np.array([61.0]), np.array([139.0]), backend='vectorized')
         self.assertAlmostEqual(z, 477.0, 3)
