@@ -471,7 +471,44 @@ class OrdinaryKriging3D:
 
         return kvalues, sigmasq
 
-    def execute(self, style, xpoints, ypoints, zpoints, mask=None, backend='vectorized'):
+    def _exec_loop_moving_window(self, a_all, bd_all, mask, bd_idx):
+        """Solves the kriging system by looping over all specified points. Uses only a certain number of
+        closest points. Not very memory intensive, but the loop is done in pure Python.
+        """
+        import scipy.linalg.lapack
+
+        npt = bd_all.shape[0]
+        n = bd_idx.shape[1]
+        kvalues = np.zeros(npt)
+        sigmasq = np.zeros(npt)
+
+        for i in np.nonzero(~mask)[0]:
+            b_selector = bd_idx[i]
+            bd = bd_all[i]
+
+            a_selector = np.concatenate((b_selector, np.array([a_all.shape[0] - 1])))
+            a = a_all[a_selector[:, None], a_selector]
+
+            if np.any(np.absolute(bd) <= self.eps):
+                zero_value = True
+                zero_index = np.where(np.absolute(bd) <= self.eps)
+            else:
+                zero_value = False
+                zero_index = None
+            b = np.zeros((n+1, 1))
+            b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            if zero_value:
+                b[zero_index[0], 0] = 0.0
+            b[n, 0] = 1.0
+
+            x = scipy.linalg.solve(a, b)
+
+            kvalues[i] = x[:n, 0].dot(self.VALUES[b_selector])
+            sigmasq[i] = - x[:, 0].dot(b[:, 0])
+
+        return kvalues, sigmasq
+
+    def execute(self, style, xpoints, ypoints, zpoints, mask=None, backend='vectorized', n_closest_points=None):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation. Note that currently
@@ -499,7 +536,7 @@ class OrdinaryKriging3D:
                 x, y, and z coordinates that define a rectangular grid and uses mask
                 to only evaluate specific points in the grid.
             xpoints (array-like, dim N): If style is specific as 'grid' or 'masked',
-                x-coordinates of MxNxL grid. If style is specified as 'points',
+                x-coordinates of LxMxN grid. If style is specified as 'points',
                 x-coordinates of specific points at which to solve kriging system.
             ypoints (array-like, dim M): If style is specified as 'grid' or 'masked',
                 y-coordinates of LxMxN grid. If style is specified as 'points',
@@ -525,6 +562,10 @@ class OrdinaryKriging3D:
                 Specifying 'loop' will loop through each point at which the kriging system
                 is to be solved. This approach is slower but also less memory-intensive.
                 Default is 'vectorized'.
+            n_closest_points (int, optional): For kriging with a moving window, specifies the number
+                of nearby points to use in the calculation. This can speed up the calculation for large
+                datasets, but should be used with caution. As Kitanidis notes, kriging with a moving
+                window can produce unexpected oddities if the variogram model is not carefully chosen.
         Outputs:
             kvalues (numpy array, dim LxMxN or dim Nx1): Interpolated values of specified grid
                 or at the specified set of points. If style was specified as 'masked',
@@ -568,7 +609,7 @@ class OrdinaryKriging3D:
             zpts = grid_z.flatten()
         elif style == 'points':
             if xpts.size != ypts.size and ypts.size != zpts.size:
-                raise ValueError("xpoints and ypoints must have same dimensions "
+                raise ValueError("xpoints, ypoints, and zpoints must have same dimensions "
                                  "when treated as listing discrete points.")
             npt = nx
         else:
@@ -587,12 +628,21 @@ class OrdinaryKriging3D:
                                    self.X_ADJUSTED[:, np.newaxis]), axis=1)
         bd = cdist(xyz_points, xyz_data, 'euclidean')
 
-        if backend == 'vectorized':
-            kvalues, sigmasq = self._exec_vector(a, bd, mask)
-        elif backend == 'loop':
-            kvalues, sigmasq = self._exec_loop(a, bd, mask)
+        if n_closest_points is not None:
+            from scipy.spatial import cKDTree
+            tree = cKDTree(xyz_data)
+            bd, bd_idx = tree.query(xyz_points, k=n_closest_points, eps=0.0)
+            if backend == 'loop':
+                kvalues, sigmasq = self._exec_loop_moving_window(a, bd, mask, bd_idx)
+            else:
+                raise ValueError("Specified backend '{}' not supported for moving window.".format(backend))
         else:
-            raise ValueError('Specified backend {} is not supported for 3D ordinary kriging.'.format(backend))
+            if backend == 'vectorized':
+                kvalues, sigmasq = self._exec_vector(a, bd, mask)
+            elif backend == 'loop':
+                kvalues, sigmasq = self._exec_loop(a, bd, mask)
+            else:
+                raise ValueError('Specified backend {} is not supported for 3D ordinary kriging.'.format(backend))
 
         if style == 'masked':
             kvalues = np.ma.array(kvalues, mask=mask)

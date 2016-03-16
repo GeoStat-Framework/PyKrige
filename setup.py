@@ -80,6 +80,7 @@ class TryBuildExt(build_ext):
 #         else:
 #             build_ext.build_extensions(self)
 
+
 def run_setup(with_cython):
 
     if with_cython:
