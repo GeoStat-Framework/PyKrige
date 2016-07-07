@@ -9,14 +9,9 @@ https://github.com/simplejson/simplejson/blob/0bcdf20cc525c1343b796cb8f247ea5213
 
 import sys
 from os.path import join
-import numpy as np
 from setuptools import setup, Extension
-from Cython.Distutils import build_ext
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 
-import Cython.Compiler.Options
-
-Cython.Compiler.Options.annotate = False
 ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
 
 NAME = 'PyKrige'
@@ -45,23 +40,21 @@ if sys.version_info[0] == 3:
     print("**************************************************")
     try_cython = False
 else:
-    try_cython = True
+    try:
+        from Cython.Distutils import build_ext
+        import Cython.Compiler.Options
+        Cython.Compiler.Options.annotate = False
+        try_cython = True
+    except ImportError:
+        print("**************************************************")
+        print("WARNING: Cython is not currently installed. "
+              "Falling back to pure Python implementation.")
+        print("**************************************************")
+        try_cython = False
 
 
 class BuildFailed(Exception):
     pass
-
-
-class TryBuildExt(build_ext):
-    def build_extensions(self):
-        try:
-            build_ext.build_extensions(self)
-        except ext_errors:
-            print("**************************************************")
-            print("WARNING: Cython extensions failed to build. Falling back to pure Python implementation.\n"
-                  "See https://github.com/bsmurphy/PyKrige/issues/8 for more information.")
-            print("**************************************************")
-            raise BuildFailed()
 
 
 # This is how I was originally trying to get around the Cython extension troubles...
@@ -81,9 +74,8 @@ class TryBuildExt(build_ext):
 #             build_ext.build_extensions(self)
 
 def run_setup(with_cython):
-
     if with_cython:
-
+        import numpy as np
         if sys.platform != 'win32':
             compile_args = dict(extra_compile_args=['-O2', '-march=core2', '-mtune=corei7'],
                                 extra_link_args=['-O2', '-march=core2', '-mtune=corei7'])
@@ -92,16 +84,27 @@ def run_setup(with_cython):
         ext_modules = [Extension("pykrige.lib.cok", ["pykrige/lib/cok.pyx"], **compile_args),
                        Extension("pykrige.lib.lapack", ["pykrige/lib/lapack.pyx"], **compile_args),
                        Extension("pykrige.lib.variogram_models", ["pykrige/lib/variogram_models.pyx"], **compile_args)]
+
+        class TryBuildExt(build_ext):
+            def build_extensions(self):
+                try:
+                    build_ext.build_extensions(self)
+                except ext_errors:
+                    print("**************************************************")
+                    print("WARNING: Cython extensions failed to build. Falling back to pure Python implementation.\n"
+                         "See https://github.com/bsmurphy/PyKrige/issues/8 for more information.")
+                    print("**************************************************")
+                    raise BuildFailed()
+
         cmd = {'build_ext': TryBuildExt}
 
         setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL, url=URL, description=DESC,
-              long_description=LDESC, packages=PACKAGES, package_data=PCKG_DAT, requires=REQ, classifiers=CLSF,
+              long_description=LDESC, packages=PACKAGES, package_data=PCKG_DAT, requires=REQ, install_requires=REQ, classifiers=CLSF,
               ext_modules=ext_modules, include_dirs=[np.get_include()], cmdclass=cmd)
 
     else:
-
         setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL, url=URL, description=DESC,
-              long_description=LDESC, packages=PACKAGES, package_data=PCKG_DAT, requires=REQ, classifiers=CLSF)
+              long_description=LDESC, packages=PACKAGES, package_data=PCKG_DAT, requires=REQ, install_requires=REQ, classifiers=CLSF)
 
 try:
     run_setup(try_cython)
