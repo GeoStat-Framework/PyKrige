@@ -11,7 +11,6 @@ import sys
 from os.path import join
 from setuptools import setup, Extension
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
-
 ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
 
 NAME = 'PyKrige'
@@ -25,7 +24,21 @@ LDESC = 'PyKrige is a kriging toolkit for Python that supports two- and ' \
 PACKAGES = ['pykrige']
 PCKG_DAT = {'pykrige': ['README.md', 'CHANGELOG.md', 'LICENSE.txt', 'MANIFEST.in',
                         join('test_data', '*.txt'), join('test_data', '*.asc')]}
-REQ = ['numpy', 'scipy', 'matplotlib', 'Cython']
+REQ = ['numpy', 'scipy', 'matplotlib']
+
+for req in REQ:
+    try:
+        __import__(req)
+    except ImportError:
+        print("**************************************************")
+        print("Error: PyKrige relies on the installation of the SciPy stack "
+              "(Numpy, SciPy, matplotlib) to work. For instructions for "
+              "installation, please view https://www.scipy.org/install.html.")
+        print("**************************************************")
+        sys.exit(1)
+# python setup.py install goes through REQ in reverse order than pip
+
+
 CLSF = ['Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
@@ -99,12 +112,12 @@ def run_setup(with_cython):
         cmd = {'build_ext': TryBuildExt}
 
         setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL, url=URL, description=DESC,
-              long_description=LDESC, packages=PACKAGES, package_data=PCKG_DAT, requires=REQ, install_requires=REQ, classifiers=CLSF,
+              long_description=LDESC, packages=PACKAGES, package_data=PCKG_DAT, classifiers=CLSF,
               ext_modules=ext_modules, include_dirs=[np.get_include()], cmdclass=cmd)
 
     else:
         setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL, url=URL, description=DESC,
-              long_description=LDESC, packages=PACKAGES, package_data=PCKG_DAT, requires=REQ, install_requires=REQ, classifiers=CLSF)
+              long_description=LDESC, packages=PACKAGES, package_data=PCKG_DAT, classifiers=CLSF)
 
 try:
     run_setup(try_cython)
