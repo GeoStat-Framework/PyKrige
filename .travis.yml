@@ -22,7 +22,8 @@ before_install:
 install: 
     - conda install --yes -c conda conda-env
     - conda create -n krige-env --yes $DEPS pip python=${TRAVIS_PYTHON_VERSION}
-    - source activate krige-env
+    - echo $PATH
+    - source activate krige-env; which python
     - pip install coveralls 
     - which python
     - python -c 'import scipy; print("ok");'
