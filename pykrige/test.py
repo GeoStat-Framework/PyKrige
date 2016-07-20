@@ -5,19 +5,28 @@ from __future__ import unicode_literals
 
 """
 Testing code.
-Updated BSM August 2015
+Updated BSM March 2016
 """
 
 import unittest
 import os
 import numpy as np
-from . import kriging_tools as kt
-from . import core
-from . import variogram_models
-from .ok import OrdinaryKriging
-from .uk import UniversalKriging
-from .ok3d import OrdinaryKriging3D
-from .uk3d import UniversalKriging3D
+
+# from . import kriging_tools as kt
+# from . import core
+# from . import variogram_models
+# from .ok import OrdinaryKriging
+# from .uk import UniversalKriging
+# from .ok3d import OrdinaryKriging3D
+# from .uk3d import UniversalKriging3D
+
+from pykrige import kriging_tools as kt
+from pykrige import core
+from pykrige import variogram_models
+from pykrige.ok import OrdinaryKriging
+from pykrige.uk import UniversalKriging
+from pykrige.ok3d import OrdinaryKriging3D
+from pykrige.uk3d import UniversalKriging3D
 
 
 class TestPyKrige(unittest.TestCase):
@@ -947,6 +956,19 @@ class TestPyKrige(unittest.TestCase):
         k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
                                 variogram_model='linear', variogram_parameters=[1., 0.1])
         k, ss = k3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='loop')
+        self.assertTrue(np.allclose(k, ans_z, rtol=1e-3))
+        self.assertTrue(np.allclose(ss, ans_ss, rtol=1e-3))
+
+    def test_ok3d_moving_window(self):
+
+        # Test to compare K3D results to those obtained using KT3D.
+        data = np.genfromtxt('./test_data/test3d_data.txt', skip_header=1)
+        ans = np.genfromtxt('./test_data/test3d_answer.txt')
+        ans_z = ans[:, 0].reshape((10, 10, 10))
+        ans_ss = ans[:, 1].reshape((10, 10, 10))
+        k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+                                variogram_model='linear', variogram_parameters=[1., 0.1])
+        k, ss = k3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='loop', n_closest_points=10)
         self.assertTrue(np.allclose(k, ans_z, rtol=1e-3))
         self.assertTrue(np.allclose(ss, ans_ss, rtol=1e-3))
 

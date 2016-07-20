@@ -86,6 +86,7 @@ class BuildFailed(Exception):
 #         else:
 #             build_ext.build_extensions(self)
 
+
 def run_setup(with_cython):
     if with_cython:
         import numpy as np

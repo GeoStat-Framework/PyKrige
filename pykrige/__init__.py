@@ -1,5 +1,5 @@
 __author__ = 'Benjamin S. Murphy'
-__version__ = '1.3.0'
+__version__ = '1.3.1'
 __doc__ = """Code by Benjamin S. Murphy
 bscott.murphy@gmail.com
 
@@ -38,5 +38,13 @@ References:
     P.K. Kitanidis, Introduction to Geostatistics: Applications in Hydrogeology,
     (Cambridge University Press, 1997) 272 p.
     
-Copyright (c) 2015 Benjamin S. Murphy
+Copyright (c) 2015-2016 Benjamin S. Murphy
 """
+
+from . import kriging_tools as kt
+from .ok import OrdinaryKriging
+from .uk import UniversalKriging
+from .ok3d import OrdinaryKriging3D
+from .uk3d import UniversalKriging3D
+
+__all__ = ['ok', 'uk', 'ok3d', 'uk3d', 'kriging_tools']
