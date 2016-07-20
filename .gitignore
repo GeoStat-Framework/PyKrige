@@ -4,3 +4,5 @@ build/
 *.swp
 .idea/*
 dist/*
+*.c
+*.so
