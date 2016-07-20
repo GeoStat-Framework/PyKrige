@@ -23,6 +23,8 @@ install:
     - conda install --yes -c conda conda-env
     - conda create -n krige-env --yes $DEPS pip python=${TRAVIS_PYTHON_VERSION}
     - echo $PATH
+    - ls /home/travis/miniconda${TRAVIS_PYTHON_VERSION:0:1}/bin
+    - conda info -a
     - source activate krige-env; which python
     - pip install coveralls 
     - which python
