@@ -34,6 +34,7 @@ for req in REQ:
         print("Error: PyKrige relies on the installation of the SciPy stack "
               "(Numpy, SciPy, matplotlib) to work. For instructions for "
               "installation, please view https://www.scipy.org/install.html.")
+        print("       {}  not found!".format(req))
         print("**************************************************")
         sys.exit(1)
 # python setup.py install goes through REQ in reverse order than pip
