@@ -36,7 +36,7 @@ for req in REQ:
               "installation, please view https://www.scipy.org/install.html.")
         print("       {}  not found!".format(req))
         print("**************************************************")
-        sys.exit(1)
+        raise
 # python setup.py install goes through REQ in reverse order than pip
 
 
