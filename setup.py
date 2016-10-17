@@ -49,24 +49,18 @@ CLSF = ['Development Status :: 5 - Production/Stable',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: GIS']
 
-if sys.version_info[0] == 3:
+# Removed python 3 switch from here
+try:
+    from Cython.Distutils import build_ext
+    import Cython.Compiler.Options
+    Cython.Compiler.Options.annotate = False
+    try_cython = True
+except ImportError:
     print("**************************************************")
-    print("WARNING: Currently, Cython extensions are not built when using Python 3. "
-          "This will be changed in the future. Falling back to pure Python implementation.")
+    print("WARNING: Cython is not currently installed. "
+          "Falling back to pure Python implementation.")
     print("**************************************************")
     try_cython = False
-else:
-    try:
-        from Cython.Distutils import build_ext
-        import Cython.Compiler.Options
-        Cython.Compiler.Options.annotate = False
-        try_cython = True
-    except ImportError:
-        print("**************************************************")
-        print("WARNING: Cython is not currently installed. "
-              "Falling back to pure Python implementation.")
-        print("**************************************************")
-        try_cython = False
 
 
 class BuildFailed(Exception):
@@ -98,9 +92,16 @@ def run_setup(with_cython):
                                 extra_link_args=['-O2', '-march=core2', '-mtune=corei7'])
         else:
             compile_args = {}
+        
         ext_modules = [Extension("pykrige.lib.cok", ["pykrige/lib/cok.pyx"], **compile_args),
-                       Extension("pykrige.lib.lapack", ["pykrige/lib/lapack.pyx"], **compile_args),
                        Extension("pykrige.lib.variogram_models", ["pykrige/lib/variogram_models.pyx"], **compile_args)]
+        
+        # Transfered python 3 switch here. On python 3 machines, will use lapack_py3.pyx
+        # instead of lapack.pyx to build .lib.lapack
+        if sys.version_info[0] == 3:
+            ext_modules += [Extension("pykrige.lib.lapack", ["pykrige/lib/lapack_py3.pyx"], **compile_args)]
+        else:
+            ext_modules += [Extension("pykrige.lib.lapack", ["pykrige/lib/lapack.pyx"], **compile_args)]
 
         class TryBuildExt(build_ext):
             def build_extensions(self):
