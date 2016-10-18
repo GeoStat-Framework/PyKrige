@@ -90,24 +90,16 @@ def run_setup(with_cython):
                                 extra_link_args=['-O2', '-march=core2', '-mtune=corei7'])
         else:
             compile_args = {}
+        
+        ext_modules = [Extension("pykrige.lib.cok", ["pykrige/lib/cok.pyx"], **compile_args),
+                       Extension("pykrige.lib.variogram_models", ["pykrige/lib/variogram_models.pyx"], **compile_args)]
+        
         # Transfered python 3 switch here. On python 3 machines, will use lapack_py3.pyx
         # instead of lapack.pyx to build .lib.lapack
         if sys.version_info[0] == 3:
-            ext_modules = [Extension("pykrige.lib.cok", ["pykrige/lib/cok.pyx"],
-                                     **compile_args),
-                           Extension("pykrige.lib.lapack", 
-                                     ["pykrige/lib/lapack_py3.pyx"], **compile_args),
-                           Extension("pykrige.lib.variogram_models",
-                                     ["pykrige/lib/variogram_models.pyx"],
-                                     **compile_args)]
+            ext_modules += [Extension("pykrige.lib.lapack", ["pykrige/lib/lapack_py3.pyx"], **compile_args)]
         else:
-            ext_modules = [Extension("pykrige.lib.cok", ["pykrige/lib/cok.pyx"],
-                                     **compile_args),
-                           Extension("pykrige.lib.lapack", ["pykrige/lib/lapack.pyx"],
-                                     **compile_args),
-                           Extension("pykrige.lib.variogram_models",
-                                     ["pykrige/lib/variogram_models.pyx"],
-                                     **compile_args)]
+            ext_modules += [Extension("pykrige.lib.lapack", ["pykrige/lib/lapack.pyx"], **compile_args)]
 
         class TryBuildExt(build_ext):
             def build_extensions(self):
