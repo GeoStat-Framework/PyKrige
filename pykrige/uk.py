@@ -284,7 +284,8 @@ class UniversalKriging:
         self.lags, self.semivariance, self.variogram_model_parameters = \
             core.initialize_variogram_model(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z,
                                             self.variogram_model, variogram_parameters,
-                                            self.variogram_function, nlags, weight)
+                                            self.variogram_function, nlags, weight,
+                                            'euclidean')
         if self.verbose:
             if self.variogram_model == 'linear':
                 print("Using '%s' Variogram Model" % 'linear')
@@ -309,7 +310,8 @@ class UniversalKriging:
             print("Calculating statistics on variogram model fit...")
         self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED, self.Y_ADJUSTED,
                                                                     self.Z, self.variogram_function,
-                                                                    self.variogram_model_parameters)
+                                                                    self.variogram_model_parameters,
+                                                                    'euclidean')
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
@@ -531,7 +533,8 @@ class UniversalKriging:
         self.lags, self.semivariance, self.variogram_model_parameters = \
             core.initialize_variogram_model(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z,
                                             self.variogram_model, variogram_parameters,
-                                            self.variogram_function, nlags, weight)
+                                            self.variogram_function, nlags, weight,
+                                            'euclidean')
         if self.verbose:
             if self.variogram_model == 'linear':
                 print("Using '%s' Variogram Model" % 'linear')
@@ -556,7 +559,8 @@ class UniversalKriging:
             print("Calculating statistics on variogram model fit...")
         self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED, self.Y_ADJUSTED,
                                                                     self.Z, self.variogram_function,
-                                                                    self.variogram_model_parameters)
+                                                                    self.variogram_model_parameters,
+                                                                    'euclidean')
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)

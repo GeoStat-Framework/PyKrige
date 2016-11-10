@@ -189,7 +189,7 @@ class OrdinaryKriging:
     def __init__(self, x, y, z, variogram_model='linear', variogram_parameters=None,
                  variogram_function=None, nlags=6, weight=False, anisotropy_scaling=1.0,
                  anisotropy_angle=0.0, verbose=False, enable_plotting=False,
-                 enable_statistics=False):
+                 enable_statistics=False, coordinates_type='euclidean'):
 
         # Code assumes 1D input arrays. Ensures that any extraneous dimensions
         # don't get in the way. Copies are created to avoid any problems with
@@ -203,16 +203,30 @@ class OrdinaryKriging:
         if self.enable_plotting and self.verbose:
             print("Plotting Enabled\n")
 
-        self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG))/2.0
-        self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG))/2.0
-        self.anisotropy_scaling = anisotropy_scaling
-        self.anisotropy_angle = anisotropy_angle
-        if self.verbose:
-            print("Adjusting data for anisotropy...")
-        self.X_ADJUSTED, self.Y_ADJUSTED = \
-            core.adjust_for_anisotropy(np.copy(self.X_ORIG), np.copy(self.Y_ORIG),
-                                       self.XCENTER, self.YCENTER,
-                                       self.anisotropy_scaling, self.anisotropy_angle)
+        self.coordinates_type = coordinates_type
+        if coordinates_type == 'euclidean':
+            self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG))/2.0
+            self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG))/2.0
+            self.anisotropy_scaling = anisotropy_scaling
+            self.anisotropy_angle = anisotropy_angle
+            if self.verbose:
+                print("Adjusting data for anisotropy...")
+            self.X_ADJUSTED, self.Y_ADJUSTED = \
+                core.adjust_for_anisotropy(np.copy(self.X_ORIG), np.copy(self.Y_ORIG),
+                                           self.XCENTER, self.YCENTER,
+                                           self.anisotropy_scaling, self.anisotropy_angle)
+        elif coordinates_type == 'geographic':
+            # Leave everything as is in geographic case.
+            # May be open to discussion?
+            self.XCENTER= 0.0
+            self.YCENTER= 0.0
+            self.anisotropy_scaling = 1.0
+            self.anisotropy_angle = 0.0
+            self.X_ADJUSTED = self.X_ORIG
+            self.Y_ADJUSTED = self.Y_ORIG
+        else:
+            raise ValueError("Only 'euclidean' and 'geographic' are valid values for "
+                             "coordinates-keyword.")
 
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
@@ -229,8 +243,10 @@ class OrdinaryKriging:
         self.lags, self.semivariance, self.variogram_model_parameters = \
             core.initialize_variogram_model(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z,
                                             self.variogram_model, variogram_parameters,
-                                            self.variogram_function, nlags, weight)
+                                            self.variogram_function, nlags, weight,
+                                            self.coordinates_type)
         if self.verbose:
+            print("Coordinates type: '%s'" % self.coordinates_type,'\n')
             if self.variogram_model == 'linear':
                 print("Using '%s' Variogram Model" % 'linear')
                 print("Slope:", self.variogram_model_parameters[0])
@@ -255,7 +271,8 @@ class OrdinaryKriging:
         if enable_statistics:
             self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED, self.Y_ADJUSTED,
                                                                         self.Z, self.variogram_function,
-                                                                        self.variogram_model_parameters)
+                                                                        self.variogram_model_parameters,
+                                                                        self.coordinates_type)
             self.Q1 = core.calcQ1(self.epsilon)
             self.Q2 = core.calcQ2(self.epsilon)
             self.cR = core.calc_cR(self.Q2, self.sigma)
@@ -273,16 +290,22 @@ class OrdinaryKriging:
 
         if anisotropy_scaling != self.anisotropy_scaling or \
            anisotropy_angle != self.anisotropy_angle:
-            if self.verbose:
-                print("Adjusting data for anisotropy...")
-            self.anisotropy_scaling = anisotropy_scaling
-            self.anisotropy_angle = anisotropy_angle
-            self.X_ADJUSTED, self.Y_ADJUSTED = \
-                core.adjust_for_anisotropy(np.copy(self.X_ORIG),
-                                           np.copy(self.Y_ORIG),
-                                           self.XCENTER, self.YCENTER,
-                                           self.anisotropy_scaling,
-                                           self.anisotropy_angle)
+            if self.coordinates_type == 'euclidean':
+                if self.verbose:
+                    print("Adjusting data for anisotropy...")
+                self.anisotropy_scaling = anisotropy_scaling
+                self.anisotropy_angle = anisotropy_angle
+                self.X_ADJUSTED, self.Y_ADJUSTED = \
+                    core.adjust_for_anisotropy(np.copy(self.X_ORIG),
+                                               np.copy(self.Y_ORIG),
+                                               self.XCENTER, self.YCENTER,
+                                               self.anisotropy_scaling,
+                                               self.anisotropy_angle)
+            elif self.coordinates_type == 'geographic':
+                self.anisotropy_scaling = 1.0
+                self.anisotropy_angle = 0.0
+                self.X_ADJUSTED = self.X_ORIG
+                self.Y_ADJUSTED = self.Y_ORIG
 
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
@@ -299,8 +322,10 @@ class OrdinaryKriging:
         self.lags, self.semivariance, self.variogram_model_parameters = \
             core.initialize_variogram_model(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z,
                                             self.variogram_model, variogram_parameters,
-                                            self.variogram_function, nlags, weight)
+                                            self.variogram_function, nlags, weight,
+                                            self.coordinates_type)
         if self.verbose:
+            print("Coordinates type: '%s' \n" % self.coordinates_type)
             if self.variogram_model == 'linear':
                 print("Using '%s' Variogram Model" % 'linear')
                 print("Slope:", self.variogram_model_parameters[0])
@@ -324,7 +349,8 @@ class OrdinaryKriging:
             print("Calculating statistics on variogram model fit...")
         self.delta, self.sigma, self.epsilon = core.find_statistics(self.X_ADJUSTED, self.Y_ADJUSTED,
                                                                     self.Z, self.variogram_function,
-                                                                    self.variogram_model_parameters)
+                                                                    self.variogram_model_parameters,
+                                                                    self.coordinates_type)
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
@@ -581,14 +607,28 @@ class OrdinaryKriging:
         else:
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
-        xpts, ypts = core.adjust_for_anisotropy(xpts, ypts, self.XCENTER, self.YCENTER,
-                                                self.anisotropy_scaling, self.anisotropy_angle)
+        if self.coordinates_type == 'euclidean':
+            xpts, ypts = core.adjust_for_anisotropy(xpts, ypts, self.XCENTER, self.YCENTER,
+                                                    self.anisotropy_scaling, self.anisotropy_angle)
+            xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
+            xy_points = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
+        elif self.coordinates_type == 'geographic':
+            # Quick version:
+            # Only difference between euclidean and spherical space regarding kriging is the distance
+            # metric.
+            # Since the relationship between three dimensional euclidean distance and great circle distance
+            # on the sphere is monotonous, use the existing (euclidean) infrastructure for nearest neighbour
+            # search and distance calculation in euclidean three space and convert distances to
+            # great circle distances afterwards.
+            lon_d = self.X_ADJUSTED[:, np.newaxis] * np.pi / 180.0
+            lat_d = self.Y_ADJUSTED[:, np.newaxis] * np.pi / 180.0
+            xy_data = np.concatenate((np.cos(lon_d)*np.cos(lat_d), np.sin(lon_d)*np.cos(lat_d), np.sin(lat_d)), axis=1)
+            lon_p = xpts[:, np.newaxis] * np.pi / 180.0
+            lat_p = ypts[:, np.newaxis] * np.pi / 180.0
+            xy_points = np.concatenate((np.cos(lon_p)*np.cos(lat_p), np.sin(lon_p)*np.cos(lat_p), np.sin(lat_p)), axis=1)
 
         if style != 'masked':
             mask = np.zeros(npt, dtype='bool')
-
-        xy_points = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
-        xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
 
         c_pars = None
         if backend == 'C':
@@ -609,7 +649,10 @@ class OrdinaryKriging:
             from scipy.spatial import cKDTree
             tree = cKDTree(xy_data)
             bd, bd_idx = tree.query(xy_points, k=n_closest_points, eps=0.0)
-
+            if self.coordinates_type == 'geographic':
+                # Convert euclidean distances to great circle distances:
+                bd = core.euclid3_to_great_circle(bd)
+            
             if backend == 'loop':
                 zvalues, sigmasq = self._exec_loop_moving_window(a, bd, mask, bd_idx)
             elif backend == 'C':
@@ -619,6 +662,10 @@ class OrdinaryKriging:
                 raise ValueError('Specified backend {} for a moving window is not supported.'.format(backend))
         else:
             bd = cdist(xy_points,  xy_data, 'euclidean')
+            if self.coordinates_type == 'geographic':
+                # Convert euclidean distances to great circle distances:
+                bd = core.euclid3_to_great_circle(bd)
+            
             if backend == 'vectorized':
                 zvalues, sigmasq = self._exec_vector(a, bd, mask)
             elif backend == 'loop':
