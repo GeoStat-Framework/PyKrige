@@ -79,15 +79,24 @@ class OrdinaryKriging:
             into account anisotropy. Default is 1 (effectively no stretching).
             Scaling is applied in the y-direction in the rotated data frame
             (i.e., after adjusting for the anisotropy_angle, if anisotropy_angle
-            is not 0).
+            is not 0). This parameter has no effect if coordinate_types is set to
+            'geographic'.
         anisotropy_angle (float, optional): CCW angle (in degrees) by which to
             rotate coordinate system in order to take into account anisotropy.
             Default is 0 (no rotation). Note that the coordinate system is rotated.
+            This parameter has no effect if coordinate_types is set to 'geographic'.
         verbose (Boolean, optional): Enables program text output to monitor
             kriging process. Default is False (off).
         enable_plotting (Boolean, optional): Enables plotting to display
             variogram. Default is False (off).
         enable_statistics (Boolean, optional). Default is False
+        coordinates_type (string, optional): One of 'euclidean' or 'geographic'.
+            Determines if the x and y coordinates are interpreted as on a plane
+            ('euclidean') or as coordinates on a sphere ('geographic'). In
+            case of geographic coordinates, x is interpreted as longitude and
+            y as latitude coordinates, both given in degree. Longitudes are 
+            expected in [0, 360] and latitudes in [-90, 90].
+            Default is 'euclidean'.
 
     Callable Methods:
         display_variogram_model(): Displays semivariogram and variogram model.
@@ -203,7 +212,6 @@ class OrdinaryKriging:
         if self.enable_plotting and self.verbose:
             print("Plotting Enabled\n")
 
-        self.coordinates_type = coordinates_type
         if coordinates_type == 'euclidean':
             self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG))/2.0
             self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG))/2.0
@@ -218,6 +226,8 @@ class OrdinaryKriging:
         elif coordinates_type == 'geographic':
             # Leave everything as is in geographic case.
             # May be open to discussion?
+            print("Warning: Anisotropy is not compatible with geographic coordinates. "
+                  "Ignoring user set anisotropy.")
             self.XCENTER= 0.0
             self.YCENTER= 0.0
             self.anisotropy_scaling = 1.0
@@ -227,6 +237,7 @@ class OrdinaryKriging:
         else:
             raise ValueError("Only 'euclidean' and 'geographic' are valid values for "
                              "coordinates-keyword.")
+        self.coordinates_type = coordinates_type
 
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':

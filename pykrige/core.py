@@ -59,9 +59,40 @@ from scipy.optimize import minimize
 
 
 def great_circle_distance(lon1, lat1, lon2, lat2):
+    """
+    Calculate the great circle distance between one or multiple
+    pairs of points on a unit sphere.
+    
+    Parameters:
+    -----------
+    lon1: float scalar or numpy array
+        Longitude coordinate(s) of the first element(s) of the point
+        pair(s), given in degrees.
+    lat1: float scalar or numpy array
+        Latitude coordinate(s) of the first element(s) of the point
+        pair(s), given in degrees.
+    lon2: float scalar or numpy array
+        Longitude coordinate(s) of the second element(s) of the point
+        pair(s), given in degrees.
+    lat2: float scalar or numpy array
+        Latitude coordinate(s) of the second element(s) of the point
+        pair(s), given in degrees.
+    
+    Calculation of distances follows numpy elementwise semantics, so if
+    an array of length N is passed, all input parameters need to be
+    arrays of length N or scalars.
+    
+    
+    Returns:
+    --------
+    distance: float
+              The great circle distance(s) (in degrees) between the
+              given pair(s) of points.
+    
+    """
     # Calculate dot product of both vectors:
-    lat1 *= np.pi/180.0
-    lat2 *= np.pi/180.0
+    lat1 = np.array(lat1)*np.pi/180.0
+    lat2 = np.array(lat2)*np.pi/180.0
     d = np.cos((lon1-lon2)*np.pi/180.0)*np.cos(lat1)*np.cos(lat2) \
         + np.sin(lat1)*np.sin(lat2)
     # Angle is arccos of dot product. Avoid errors caused
@@ -71,8 +102,24 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
     return 180.0/np.pi*np.arccos(d)
 
 def euclid3_to_great_circle(euclid3_distance):
-    """Convert euclidean distance between points on a unit sphere to
-    the corresponding great circle distance."""
+    """
+    Convert euclidean distance between points on a unit sphere to
+    the corresponding great circle distance.
+    
+    
+    Parameters:
+    -----------
+    euclid3_distance: float scalar or numpy array
+        The euclidean three-space distance(s) between points on a
+        unit sphere, thus between [0,2].
+    
+    
+    Returns:
+    --------
+    great_circle_dist: float scalar or numpy array
+        The corresponding great circle distance(s) between the
+        points.
+    """
     # Eliminate some possible numerical errors:
     euclid3_distance[euclid3_distance>2.0] = 2.0
     return 180.0 - 360.0/np.pi*np.arccos(0.5*euclid3_distance)
