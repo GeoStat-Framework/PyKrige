@@ -24,7 +24,7 @@ LDESC = 'PyKrige is a kriging toolkit for Python that supports two- and ' \
 PACKAGES = ['pykrige']
 PCKG_DAT = {'pykrige': ['README.md', 'CHANGELOG.md', 'LICENSE.txt', 'MANIFEST.in',
                         join('test_data', '*.txt'), join('test_data', '*.asc')]}
-REQ = ['numpy', 'scipy', 'matplotlib']
+REQ = ['numpy', 'scipy', 'matplotlib', 'sklearn']
 
 for req in REQ:
     try:
