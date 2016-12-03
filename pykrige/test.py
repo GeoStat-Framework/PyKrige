@@ -1404,10 +1404,8 @@ class TestPyKrige(unittest.TestCase):
             dy = np.sin(np.pi/180.0*lon)*np.cos(np.pi/180.0*lat)- \
                  np.sin(np.pi/180.0*lon_ref[i])*np.cos(np.pi/180.0*lat_ref[i])
             dz = np.sin(np.pi/180.0*lat) - np.sin(np.pi/180.0*lat_ref[i])
-        
-            diff = np.abs(core.great_circle_distance(lon_ref[i], lat_ref[i], lon, lat) \
-                          -core.euclid3_to_great_circle(np.sqrt(dx**2+dy**2+dz**2)))
-            self.assertTrue(np.all(diff < 1e-3))
+            np.testing.assert_allclose(core.great_circle_distance(lon_ref[i], lat_ref[i], lon, lat),
+                core.euclid3_to_great_circle(np.sqrt(dx**2+dy**2+dz**2)), rtol=1e-5)
     
     def test_ok_geometric(self):
         # Generate random data:
