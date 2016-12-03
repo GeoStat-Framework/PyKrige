@@ -90,13 +90,15 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
               given pair(s) of points.
     
     """
-    # Calculate dot product of both vectors:
+    # Calculate dot product of both euclidean vectors:
     lat1 = np.array(lat1)*np.pi/180.0
     lat2 = np.array(lat2)*np.pi/180.0
     d = np.cos((lon1-lon2)*np.pi/180.0)*np.cos(lat1)*np.cos(lat2) \
         + np.sin(lat1)*np.sin(lat2)
-    # Angle is arccos of dot product. Avoid errors caused
-    # by numerics:
+    # Angle is arccos of euclidean dot product. Avoid errors caused
+    # by numerics (possibly d>1.0 or d<-1.0, resulting in NAN. This
+    # can, however, only be caused by numerical errors for real
+    # lat/lon):
     d[d>1.0] = 1.0
     d[d<-1.0]=-1.0
     return 180.0/np.pi*np.arccos(d)
