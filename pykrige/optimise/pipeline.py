@@ -7,7 +7,16 @@ from sklearn.pipeline import Pipeline
 
 from pykrige.optimise.krige import Krige
 config = configparser.ConfigParser()
-config.read('pykrige/optimise/optimise.conf')
+config.read_string(
+    """
+    [hyperparameters]
+    method = ordinary, universal
+    variogram_model = linear, power, gaussian, spherical, exponential
+    # insert other parameters
+    [output]
+    optimisation_output = optimisation.csv
+    """
+    )
 
 
 def setup_pipeline(config):
