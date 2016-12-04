@@ -32,8 +32,9 @@ for req in REQ:
     except ImportError:
         print("**************************************************")
         print("Error: PyKrige relies on the installation of the SciPy stack "
-              "(Numpy, SciPy, matplotlib) to work. For instructions for "
-              "installation, please view https://www.scipy.org/install.html."
+              "(Numpy, SciPy, matplotlib, scikit-learn) to work. "
+              "For instructions for installation, please view "
+              "https://www.scipy.org/install.html."
               "\n {} missing".format(req) 
               )
         print("**************************************************")
