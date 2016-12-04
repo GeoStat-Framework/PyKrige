@@ -11,7 +11,9 @@ Updated BSM March 2016
 import unittest
 import os
 import numpy as np
-
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from itertools import product
 # from . import kriging_tools as kt
 # from . import core
 # from . import variogram_models
@@ -27,6 +29,7 @@ from pykrige.ok import OrdinaryKriging
 from pykrige.uk import UniversalKriging
 from pykrige.ok3d import OrdinaryKriging3D
 from pykrige.uk3d import UniversalKriging3D
+from pykrige.optimise.krige import Krige
 
 
 class TestPyKrige(unittest.TestCase):
@@ -1384,6 +1387,38 @@ class TestPyKrige(unittest.TestCase):
         z_lin, ss_lin = uk_lin.execute('grid', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d)
         self.assertTrue(np.allclose(z_func, z_lin))
         self.assertTrue(np.allclose(ss_func, ss_lin))
+
+
+class TestKrige(unittest.TestCase):
+
+    def method_and_vergiogram(self):
+        method = ['ordinary', 'universal']
+        variogram_model = ['linear', 'power', 'gaussian', 'spherical',
+                                'exponential']
+        return product(method, variogram_model)
+
+    def test_ordinarykrige(self):
+
+        for m, v in self.method_and_vergiogram():
+            steps = [('krige', Krige(verbose=True, method=m))]
+            param_dict = {}
+            param_dict['krige__variogram_model'] = [v]
+
+            pipe = Pipeline(steps=steps)
+            estimator = GridSearchCV(pipe,
+                                     param_dict,
+                                     n_jobs=-1,
+                                     iid=False,
+                                     pre_dispatch='2*n_jobs',
+                                     verbose=True,
+                                     cv=5,
+                                     )
+            # dummy data
+            X = np.random.randint(0, 400, size=(10, 2)).astype(float)
+            y = 5 * np.random.rand(10)
+            # run the gridsearch
+            estimator.fit(X=X, y=y)
+
 
 if __name__ == '__main__':
     unittest.main()
