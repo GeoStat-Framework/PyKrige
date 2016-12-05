@@ -42,8 +42,34 @@ class TagsMixin():
 
 
 class KrigePredictProbaMixin():
+    """
+    Mixin class for providing a ``predict_proba`` method to the
+    Krige class.
 
+    This is especially for use with PyKrige Ordinary/UniversalKriging classes.
+    """
     def predict_proba(self, x, interval=0.95, *args, **kwargs):
+        """
+        Predictive mean and variance for a probabilistic regressor.
+
+        Parameters
+        ----------
+        X: ndarray
+            (Ns, d) array query dataset (Ns samples, d dimensions).
+        interval: float, optional
+            The percentile confidence interval (e.g. 95%) to return.
+        Returns
+        -------
+        Ey: ndarray
+            The expected value of ys for the query inputs, X of shape (Ns,).
+        Vy: ndarray
+            The expected variance of ys (excluding likelihood noise terms) for
+            the query inputs, X of shape (Ns,).
+        ql: ndarray
+            The lower end point of the interval with shape (Ns,)
+        qu: ndarray
+            The upper end point of the interval with shape (Ns,)
+        """
         prediction, variance = \
             self.model.execute('points', x[:, 0], x[:, 1])
 
@@ -56,7 +82,7 @@ class KrigePredictProbaMixin():
 
 class Krige(TagsMixin, RegressorMixin, BaseEstimator, KrigePredictProbaMixin):
     """
-    A scikitlearn wrapper class for Ordinary and Universal Kriging.
+    A scikit-learn wrapper class for Ordinary and Universal Kriging.
     This works for both Grid/RandomSearchCv for optimising the
     Krige parameters.
 
@@ -109,9 +135,3 @@ class Krige(TagsMixin, RegressorMixin, BaseEstimator, KrigePredictProbaMixin):
             raise Exception('Not trained. Train first')
 
         return self.model.execute('points', x[:, 0], x[:, 1])[0]
-
-
-
-
-
-
