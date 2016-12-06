@@ -7,7 +7,7 @@ matrix:
     - python: "3.4"                                                                                         
       env: DEPS="numpy=1.10.4 scipy=0.17 cython nose matplotlib scikit-learn=0.17.1"
     - python: "2.7"                                                                                         
-      env: DEPS="numpy=1.9.2 scipy=0.17 cython nose matplotlib scikit-learn=0.16.1"
+      env: DEPS="numpy=1.9.2 scipy=0.17 cython nose matplotlib scikit-learn=0.16.1" DEPS2="nomkl"
 
 # setup adapted from https://github.com/soft-matter/trackpy/blob/master/.travis.yml
 before_install:
@@ -20,7 +20,8 @@ before_install:
 
 install: 
     - conda install --yes $DEPS pip
-    - pip install coveralls 
+    - if [ -z ${DEPS2+x} ]; then echo "DEPS2 is unset"; else conda install --yes $DEPS2; fi
+    - pip install coveralls
     - which python
     - python setup.py build_ext --inplace
     - python setup.py install
