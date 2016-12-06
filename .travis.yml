@@ -5,9 +5,9 @@ matrix:
     - python: "3.5"
       env: DEPS="numpy=1.11.2 scipy=0.18.1 cython nose matplotlib scikit-learn=0.18.1"
     - python: "3.4"                                                                                         
-      env: DEPS="numpy=1.11.2 scipy=0.17 cython nose matplotlib scikit-learn=0.18.1"
+      env: DEPS="numpy=1.10.4 scipy=0.17 cython nose matplotlib scikit-learn=0.18.1"
     - python: "2.7"                                                                                         
-      env: DEPS="numpy=1.11.2 scipy=0.17 cython nose matplotlib scikit-learn=0.18.1"
+      env: DEPS="numpy=1.9.2 scipy=0.17 cython nose matplotlib scikit-learn=0.18.1"
 
 # setup adapted from https://github.com/soft-matter/trackpy/blob/master/.travis.yml
 before_install:
