@@ -142,3 +142,31 @@ k3d, ss3d = uk3d.execute('grid', gridx, gridy, gridz)
 # difference in the number of spatial coordinates for the passed drift functions). 
 # See UniversalKriging.__doc__ for more information.
 ```
+
+
+Ordinary Kriging Example
+------------------------
+To achieve best kriging result for your problem, one can optimise for the different kriging parameters including the kriging algorithm. For this we use the `optimise.Krige` class, which uses `scikit-learn` style cross-validation to rank various parameter combinations.
+
+Once `scikit-learn` is installed, one can use scikit-learn style `GridSearchCv`, and `RandomizedSearchCV` to optimise the vaious Krige parameters of both the `OrdinaryKriging` and `UniversalKriging`. 
+
+The optimise module uses scikit-learn's `GridSearchCv` and scans across the parameters. One could simply replace `GridSearchCV` with `RandomSearchCV`. 
+
+## How to use the optimise module
+
+An example to use the optimise module is provided in a simple config file object inside `pykrige/example/krige_optimiser.py`. A configfile is provided in the scrpt which can be used to manipulate parameters of the optimisation. 
+
+To run the example optimiser with random data, use the following command:
+    
+    python path/to/pykrige/example/krige_optimiser.py
+
+On `sklearn=0.18.1+` a typical optimisation output can look like the following:
+
+|mean_test_score|mean_train_score|rank_test_score|param_krige__variogram_model|param_krige__method|
+|---------------|----------------|---------------|----------------------------|-------------------|
+|-0.17|1.0|1|linear|ordinary|
+|-0.17|1.0|3|power|ordinary|
+|-1.41|1.0|5|gaussian|ordinary|
+|-0.17|1.0|1|linear|universal|
+|-0.17|1.0|3|power|universal|
+|-1.41|1.0|5|gaussian|universal|

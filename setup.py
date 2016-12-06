@@ -21,10 +21,10 @@ URL = 'https://github.com/bsmurphy/PyKrige'
 DESC = 'Kriging Toolkit for Python'
 LDESC = 'PyKrige is a kriging toolkit for Python that supports two- and ' \
         'three-dimensional ordinary and universal kriging.'
-PACKAGES = ['pykrige', 'pykrige.optimise']
+PACKAGES = ['pykrige']
 PCKG_DAT = {'pykrige': ['README.md', 'CHANGELOG.md', 'LICENSE.txt', 'MANIFEST.in',
                         join('test_data', '*.txt'), join('test_data', '*.asc')]}
-REQ = ['numpy', 'scipy', 'matplotlib', 'sklearn']
+REQ = ['numpy', 'scipy', 'matplotlib']
 
 for req in REQ:
     try:
@@ -32,7 +32,7 @@ for req in REQ:
     except ImportError:
         print("**************************************************")
         print("Error: PyKrige relies on the installation of the SciPy stack "
-              "(Numpy, SciPy, matplotlib, scikit-learn) to work. "
+              "(Numpy, SciPy, matplotlib) to work. "
               "For instructions for installation, please view "
               "https://www.scipy.org/install.html."
               "\n {} missing".format(req) 
