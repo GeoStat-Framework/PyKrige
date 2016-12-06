@@ -11,16 +11,7 @@ Updated BSM March 2016
 import unittest
 import os
 import numpy as np
-from sklearn.model_selection import GridSearchCV
-from sklearn.pipeline import Pipeline
 from itertools import product
-# from . import kriging_tools as kt
-# from . import core
-# from . import variogram_models
-# from .ok import OrdinaryKriging
-# from .uk import UniversalKriging
-# from .ok3d import OrdinaryKriging3D
-# from .uk3d import UniversalKriging3D
 
 from pykrige import kriging_tools as kt
 from pykrige import core
@@ -29,7 +20,11 @@ from pykrige.ok import OrdinaryKriging
 from pykrige.uk import UniversalKriging
 from pykrige.ok3d import OrdinaryKriging3D
 from pykrige.uk3d import UniversalKriging3D
-from pykrige.optimise.krige import Krige
+from pykrige.compat import SKLEARN_INSTALLED
+
+if SKLEARN_INSTALLED:
+    from pykrige.optimise import Krige
+    from pykrige.compat import GridSearchCV, Pipeline
 
 
 class TestPyKrige(unittest.TestCase):
@@ -1389,15 +1384,17 @@ class TestPyKrige(unittest.TestCase):
         self.assertTrue(np.allclose(ss_func, ss_lin))
 
 
+@unittest.skipUnless(SKLEARN_INSTALLED, "scikit-learn not installed")
 class TestKrige(unittest.TestCase):
 
-    def method_and_vergiogram(self):
+    @staticmethod
+    def method_and_vergiogram():
         method = ['ordinary', 'universal']
         variogram_model = ['linear', 'power', 'gaussian', 'spherical',
                            'exponential']
         return product(method, variogram_model)
 
-    def test_ordinarykrige(self):
+    def test_krige(self):
 
         for m, v in self.method_and_vergiogram():
             steps = [('krige', Krige(verbose=False, method=m))]
@@ -1416,10 +1413,14 @@ class TestKrige(unittest.TestCase):
             # dummy data
             X = np.random.randint(0, 400, size=(10, 2)).astype(float)
             y = 5 * np.random.rand(10)
+
             # run the gridsearch
             estimator.fit(X=X, y=y)
 
-            assert estimator.cv_results_['mean_train_score'] > 0
+            if hasattr(estimator, 'best_score_'):
+                assert estimator.best_score_ > -10000.0
+            if hasattr(estimator, 'cv_results_'):
+                assert estimator.cv_results_['mean_train_score'] > 0
 
 
 if __name__ == '__main__':
