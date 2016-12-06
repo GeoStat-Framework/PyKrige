@@ -1,11 +1,13 @@
 import configparser
-import csv
-from collections import OrderedDict
-
 import numpy as np
-from sklearn.model_selection import GridSearchCV
-from sklearn.pipeline import Pipeline
-from pykrige.optimise import Krige
+from pykrige.compat import SKLEARN_INSTALLED, Pipeline, GridSearchCV, \
+    validate_sklearn
+
+if SKLEARN_INSTALLED:
+    from pykrige.optimise import Krige
+
+validate_sklearn()
+
 
 config = configparser.ConfigParser()
 config.read_string(
@@ -45,4 +47,13 @@ y = 5*np.random.rand(100)
 
 # run the gridsearch
 estimator.fit(X=X, y=y)
-print(OrderedDict(estimator.cv_results_))
+if hasattr(estimator, 'best_score_'):
+    print(estimator.best_score_)
+    print(estimator.best_params_)
+
+if hasattr(estimator, 'cv_results_'):
+    print(estimator.cv_results_['mean_test_score'])
+    print(estimator.cv_results_['mean_train_score'])
+    print(estimator.cv_results_['param_krige__method'])
+    print(estimator.cv_results_['param_krige__variogram_model'])
+

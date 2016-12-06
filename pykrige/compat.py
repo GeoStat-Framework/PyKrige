@@ -28,6 +28,7 @@ except ImportError:
     RegressorMixin = object
     BaseEstimator = object
     Pipeline = object
+    GridSearchCV = object
 
 
 class SklearnException(Exception):
