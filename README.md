@@ -144,8 +144,8 @@ k3d, ss3d = uk3d.execute('grid', gridx, gridy, gridz)
 ```
 
 
-Ordinary Kriging Example
-------------------------
+Kriging Optimiser
+-----------------
 To achieve best kriging result for your problem, one can optimise for the different kriging parameters including the kriging algorithm. For this we use the `optimise.Krige` class, which uses `scikit-learn` style cross-validation to rank various parameter combinations.
 
 Once `scikit-learn` is installed, one can use scikit-learn style `GridSearchCv`, and `RandomizedSearchCV` to optimise the vaious Krige parameters of both the `OrdinaryKriging` and `UniversalKriging`. 

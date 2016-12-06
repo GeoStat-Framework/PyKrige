@@ -1411,14 +1411,14 @@ class TestKrige(unittest.TestCase):
                                      cv=5,
                                      )
             # dummy data
+            np.random.seed(2)
             X = np.random.randint(0, 400, size=(10, 2)).astype(float)
             y = 5 * np.random.rand(10)
 
             # run the gridsearch
             estimator.fit(X=X, y=y)
-
             if hasattr(estimator, 'best_score_'):
-                assert estimator.best_score_ > -10000.0
+                assert estimator.best_score_ > -2.0
             if hasattr(estimator, 'cv_results_'):
                 assert estimator.cv_results_['mean_train_score'] > 0
 
