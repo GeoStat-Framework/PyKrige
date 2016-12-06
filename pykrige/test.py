@@ -1394,13 +1394,13 @@ class TestKrige(unittest.TestCase):
     def method_and_vergiogram(self):
         method = ['ordinary', 'universal']
         variogram_model = ['linear', 'power', 'gaussian', 'spherical',
-                                'exponential']
+                           'exponential']
         return product(method, variogram_model)
 
     def test_ordinarykrige(self):
 
         for m, v in self.method_and_vergiogram():
-            steps = [('krige', Krige(verbose=True, method=m))]
+            steps = [('krige', Krige(verbose=False, method=m))]
             param_dict = {}
             param_dict['krige__variogram_model'] = [v]
 
@@ -1410,7 +1410,7 @@ class TestKrige(unittest.TestCase):
                                      n_jobs=-1,
                                      iid=False,
                                      pre_dispatch='2*n_jobs',
-                                     verbose=True,
+                                     verbose=False,
                                      cv=5,
                                      )
             # dummy data
@@ -1418,6 +1418,8 @@ class TestKrige(unittest.TestCase):
             y = 5 * np.random.rand(10)
             # run the gridsearch
             estimator.fit(X=X, y=y)
+
+            assert estimator.cv_results_['mean_train_score'] > 0
 
 
 if __name__ == '__main__':
