@@ -1,7 +1,10 @@
 import numpy as np
 import logging
 from scipy.stats import norm
-from sklearn.base import RegressorMixin, BaseEstimator
+from pykrige.compat import (RegressorMixin,
+                            BaseEstimator,
+                            validate_sklearn
+                            )
 
 from pykrige.ok import OrdinaryKriging
 from pykrige.uk import UniversalKriging
@@ -14,6 +17,12 @@ krige_methods = {'ordinary': OrdinaryKriging,
 
 class ConfigException(Exception):
     pass
+
+
+def validate_method(method):
+    if method not in krige_methods.keys():
+        raise ConfigException('Kirging method must be '
+                              'one of {}'.format(krige_methods.keys()))
 
 
 class TagsMixin():
@@ -93,9 +102,9 @@ class Krige(TagsMixin, RegressorMixin, BaseEstimator, KrigePredictProbaMixin):
                  variogram_model='linear',
                  verbose=False
                  ):
-        if method not in krige_methods.keys():
-            raise ConfigException('Kirging method must be '
-                                  'one of {}'.format(krige_methods.keys()))
+
+        validate_sklearn()
+        validate_method(method)
         self.variogram_model = variogram_model
         self.verbose = verbose
         self.model = None  # not trained
