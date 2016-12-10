@@ -9,7 +9,10 @@ validate_sklearn()
 import numpy as np
 
 param_dict = {"method": ["ordinary", "universal"],
-              "variogram_model": ["linear", "power", "gaussian", "spherical"]}
+              "variogram_model": ["linear", "power", "gaussian", "spherical"],
+              # "nlags": [4, 6, 8],
+              # "weight": [True, False]
+              }
 
 estimator = GridSearchCV(Krige(), param_dict, verbose=True)
 

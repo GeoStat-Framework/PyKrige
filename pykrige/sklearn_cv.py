@@ -22,14 +22,16 @@ def validate_method(method):
 class Krige(RegressorMixin, BaseEstimator):
     """
     A scikit-learn wrapper class for Ordinary and Universal Kriging.
-    This works for both Grid/RandomSearchCv for optimizing the
-    Krige parameters.
+    This works for both Grid/RandomSearchCv for finding the best
+    Krige parameters combination for a problem.
 
     """
 
     def __init__(self,
                  method='ordinary',
                  variogram_model='linear',
+                 nlags=6,
+                 weight=False,
                  verbose=False
                  ):
 
@@ -37,6 +39,8 @@ class Krige(RegressorMixin, BaseEstimator):
         validate_method(method)
         self.variogram_model = variogram_model
         self.verbose = verbose
+        self.nlags = nlags
+        self.weight = weight
         self.model = None  # not trained
         self.method = method
 
@@ -57,6 +61,8 @@ class Krige(RegressorMixin, BaseEstimator):
             y=x[:, 1],
             z=y,
             variogram_model=self.variogram_model,
+            nlags=self.nlags,
+            weight=self.weight,
             verbose=self.verbose
          )
 
