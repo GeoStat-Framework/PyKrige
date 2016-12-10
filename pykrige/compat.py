@@ -13,7 +13,6 @@ PY3 = (sys.version_info[0] == 3)
 # sklearn
 try:
     from sklearn.base import BaseEstimator, RegressorMixin
-    from sklearn.pipeline import Pipeline
     try:  # scikit-learn 1.18.+
         from sklearn.model_selection import GridSearchCV
     except ImportError:  # older scikit-learn versions
@@ -27,7 +26,6 @@ except ImportError:
     # used for compatibility without sklearn
     RegressorMixin = object
     BaseEstimator = object
-    Pipeline = object
     GridSearchCV = object
 
 

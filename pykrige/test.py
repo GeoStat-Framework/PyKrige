@@ -23,8 +23,8 @@ from pykrige.uk3d import UniversalKriging3D
 from pykrige.compat import SKLEARN_INSTALLED
 
 if SKLEARN_INSTALLED:
-    from pykrige.optimise import Krige
-    from pykrige.compat import GridSearchCV, Pipeline
+    from pykrige.sklearn_cv import Krige
+    from pykrige.compat import GridSearchCV
 
 
 class TestPyKrige(unittest.TestCase):
@@ -1397,12 +1397,9 @@ class TestKrige(unittest.TestCase):
     def test_krige(self):
 
         for m, v in self.method_and_vergiogram():
-            steps = [('krige', Krige(verbose=False, method=m))]
-            param_dict = {}
-            param_dict['krige__variogram_model'] = [v]
+            param_dict = {'method': [m], 'variogram_model': [v]}
 
-            pipe = Pipeline(steps=steps)
-            estimator = GridSearchCV(pipe,
+            estimator = GridSearchCV(Krige(),
                                      param_dict,
                                      n_jobs=-1,
                                      iid=False,

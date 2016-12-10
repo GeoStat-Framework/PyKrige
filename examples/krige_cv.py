@@ -2,7 +2,7 @@ from pykrige.compat import SKLEARN_INSTALLED, GridSearchCV, \
     validate_sklearn
 
 if SKLEARN_INSTALLED:
-    from pykrige.learn import Krige
+    from pykrige.sklearn_cv import Krige
 
 validate_sklearn()
 
