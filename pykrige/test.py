@@ -11,14 +11,7 @@ Updated BSM March 2016
 import unittest
 import os
 import numpy as np
-
-# from . import kriging_tools as kt
-# from . import core
-# from . import variogram_models
-# from .ok import OrdinaryKriging
-# from .uk import UniversalKriging
-# from .ok3d import OrdinaryKriging3D
-# from .uk3d import UniversalKriging3D
+from itertools import product
 
 from pykrige import kriging_tools as kt
 from pykrige import core
@@ -27,6 +20,11 @@ from pykrige.ok import OrdinaryKriging
 from pykrige.uk import UniversalKriging
 from pykrige.ok3d import OrdinaryKriging3D
 from pykrige.uk3d import UniversalKriging3D
+from pykrige.compat import SKLEARN_INSTALLED
+
+if SKLEARN_INSTALLED:
+    from pykrige.sklearn_cv import Krige
+    from pykrige.compat import GridSearchCV
 
 
 class TestPyKrige(unittest.TestCase):
@@ -1384,6 +1382,43 @@ class TestPyKrige(unittest.TestCase):
         z_lin, ss_lin = uk_lin.execute('grid', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d)
         self.assertTrue(np.allclose(z_func, z_lin))
         self.assertTrue(np.allclose(ss_func, ss_lin))
+
+
+@unittest.skipUnless(SKLEARN_INSTALLED, "scikit-learn not installed")
+class TestKrige(unittest.TestCase):
+
+    @staticmethod
+    def method_and_vergiogram():
+        method = ['ordinary', 'universal']
+        variogram_model = ['linear', 'power', 'gaussian', 'spherical',
+                           'exponential']
+        return product(method, variogram_model)
+
+    def test_krige(self):
+
+        for m, v in self.method_and_vergiogram():
+            param_dict = {'method': [m], 'variogram_model': [v]}
+
+            estimator = GridSearchCV(Krige(),
+                                     param_dict,
+                                     n_jobs=-1,
+                                     iid=False,
+                                     pre_dispatch='2*n_jobs',
+                                     verbose=False,
+                                     cv=5,
+                                     )
+            # dummy data
+            np.random.seed(2)
+            X = np.random.randint(0, 400, size=(10, 2)).astype(float)
+            y = 5 * np.random.rand(10)
+
+            # run the gridsearch
+            estimator.fit(X=X, y=y)
+            if hasattr(estimator, 'best_score_'):
+                assert estimator.best_score_ > -2.0
+            if hasattr(estimator, 'cv_results_'):
+                assert estimator.cv_results_['mean_train_score'] > 0
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -142,3 +142,12 @@ k3d, ss3d = uk3d.execute('grid', gridx, gridy, gridz)
 # difference in the number of spatial coordinates for the passed drift functions). 
 # See UniversalKriging.__doc__ for more information.
 ```
+
+
+Kriging Parameters Tuning
+-------------------------
+
+PyKrige also exposes a scikit learn compatible API, which can be used to perform parameter tuning including the krige algorithm using [`sklearn.model_selection.GridSearchCV`](http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html). Once `scikit-learn` is installed, you can run the corresponding example with
+`python path/to/examples/krige_cv.py`
+
+In it's current form, the `sklearn_cv.Krige` class can be used to optimise all the common parameters of `OrdinaryKriging` and `UniversalKriging` classes.
