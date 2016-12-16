@@ -23,8 +23,11 @@ from pykrige.uk3d import UniversalKriging3D
 from pykrige.compat import SKLEARN_INSTALLED
 
 if SKLEARN_INSTALLED:
-    from pykrige.rk import Krige
-    from pykrige.compat import GridSearchCV
+    from pykrige.rk import Krige, MLKrige
+    from pykrige.compat import GridSearchCV, train_test_split
+    from sklearn.svm import SVR
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.linear_model import LinearRegression, LogisticRegression
 
 
 class TestPyKrige(unittest.TestCase):
@@ -1395,11 +1398,10 @@ class TestKrige(unittest.TestCase):
         return product(method, variogram_model)
 
     def test_krige(self):
-
         # dummy data
         np.random.seed(2)
-        X = np.random.randint(0, 400, size=(10, 2)).astype(float)
-        y = 5 * np.random.rand(10)
+        X = np.random.randint(0, 400, size=(20, 2)).astype(float)
+        y = 5 * np.random.rand(20)
 
         for m, v in self.method_and_vergiogram():
             param_dict = {'method': [m], 'variogram_model': [v]}
@@ -1415,9 +1417,36 @@ class TestKrige(unittest.TestCase):
             # run the gridsearch
             estimator.fit(X=X, y=y)
             if hasattr(estimator, 'best_score_'):
-                assert estimator.best_score_ > -2.0
+                assert estimator.best_score_ > -3.0
             if hasattr(estimator, 'cv_results_'):
                 assert estimator.cv_results_['mean_train_score'] > 0
+
+
+@unittest.skipUnless(SKLEARN_INSTALLED, "scikit-learn not installed")
+class TestMLKrige(unittest.TestCase):
+
+    @staticmethod
+    def methods():
+        krige_methods = ['ordinary', 'universal']
+        ml_methods = [SVR(), RandomForestRegressor(), LinearRegression()]
+        return product(ml_methods, krige_methods)
+
+    def test_krige(self):
+        np.random.seed(2)
+        X = np.random.randint(0, 400, size=(100, 10)).astype(float)
+        y = 5 * np.random.rand(100)
+        lon_lat = np.random.randint(0, 400, size=(100, 2)).astype(float)
+
+        X_train, X_test, y_train, y_test, lon_lat_train, lon_lat_test = \
+            train_test_split(X, y, lon_lat, train_size=0.7)
+
+        for ml_model, krige_method in self.methods():
+            print(ml_model, krige_method)
+            reg_kr_model = MLKrige(ml_model=ml_model,
+                                   method=krige_method)
+
+            reg_kr_model.fit(X_train, lon_lat_train, y_train)
+            assert reg_kr_model.score(X_test, lon_lat_test, y_test) > -1.0
 
 
 if __name__ == '__main__':
