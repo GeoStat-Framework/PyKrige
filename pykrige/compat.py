@@ -3,7 +3,6 @@
 """For compatibility"""
 
 from __future__ import absolute_import
-
 import sys
 
 
@@ -13,10 +12,14 @@ PY3 = (sys.version_info[0] == 3)
 # sklearn
 try:
     from sklearn.base import BaseEstimator, RegressorMixin
+    from sklearn.metrics import r2_score
+    from sklearn.svm import SVR
     try:  # scikit-learn 1.18.+
         from sklearn.model_selection import GridSearchCV
+        from sklearn.model_selection import train_test_split
     except ImportError:  # older scikit-learn versions
         from sklearn.grid_search import GridSearchCV
+        from sklearn.cross_validation import train_test_split
 
     SKLEARN_INSTALLED = True
 
