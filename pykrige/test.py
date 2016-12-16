@@ -23,7 +23,7 @@ from pykrige.uk3d import UniversalKriging3D
 from pykrige.compat import SKLEARN_INSTALLED
 
 if SKLEARN_INSTALLED:
-    from pykrige.sklearn_cv import Krige
+    from pykrige.rk import Krige
     from pykrige.compat import GridSearchCV
 
 
@@ -1396,6 +1396,11 @@ class TestKrige(unittest.TestCase):
 
     def test_krige(self):
 
+        # dummy data
+        np.random.seed(2)
+        X = np.random.randint(0, 400, size=(10, 2)).astype(float)
+        y = 5 * np.random.rand(10)
+
         for m, v in self.method_and_vergiogram():
             param_dict = {'method': [m], 'variogram_model': [v]}
 
@@ -1407,11 +1412,6 @@ class TestKrige(unittest.TestCase):
                                      verbose=False,
                                      cv=5,
                                      )
-            # dummy data
-            np.random.seed(2)
-            X = np.random.randint(0, 400, size=(10, 2)).astype(float)
-            y = 5 * np.random.rand(10)
-
             # run the gridsearch
             estimator.fit(X=X, y=y)
             if hasattr(estimator, 'best_score_'):
