@@ -150,4 +150,13 @@ Kriging Parameters Tuning
 PyKrige also exposes a scikit learn compatible API, which can be used to perform parameter tuning including the krige algorithm using [`sklearn.model_selection.GridSearchCV`](http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html). Once `scikit-learn` is installed, you can run the corresponding example with
 `python path/to/examples/krige_cv.py`
 
-In it's current form, the `sklearn_cv.Krige` class can be used to optimise all the common parameters of `OrdinaryKriging` and `UniversalKriging` classes.
+In it's current form, the `pykrige.rk.Krige` class can be used to optimise all the common parameters of `OrdinaryKriging` and `UniversalKriging` classes.
+
+
+Regression Kriging
+------------------
+
+PyKrige exposes a class `pykrige.rk.MLKrige` that can be used to perform [regression kriging](https://en.wikipedia.org/wiki/Regression-Kriging). This class takes as parameters a `scikit-learn` regression model, and details of either the Ordinary/UniversalKriging class, and performs a correction steps on the ML regression prediction.
+ 
+ A demonstration of the regression kriging is provided in `examples.regression_kriging.py`. Once again, `scikit-learn` is required to use this functionality.
+

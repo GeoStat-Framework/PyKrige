@@ -27,7 +27,7 @@ if SKLEARN_INSTALLED:
     from pykrige.compat import GridSearchCV, train_test_split
     from sklearn.svm import SVR
     from sklearn.ensemble import RandomForestRegressor
-    from sklearn.linear_model import LinearRegression, LogisticRegression
+    from sklearn.linear_model import LinearRegression
 
 
 class TestPyKrige(unittest.TestCase):

@@ -30,6 +30,8 @@ except ImportError:
     RegressorMixin = object
     BaseEstimator = object
     GridSearchCV = object
+    SVR = object
+    r2_score = object
 
 
 class SklearnException(Exception):
