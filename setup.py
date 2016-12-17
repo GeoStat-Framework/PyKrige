@@ -14,7 +14,7 @@ from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatfo
 ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
 
 NAME = 'PyKrige'
-VERSION = '1.3.0'
+VERSION = '1.4.dev0'
 AUTHOR = 'Benjamin S. Murphy'
 EMAIL = 'bscott.murphy@gmail.com'
 URL = 'https://github.com/bsmurphy/PyKrige'
@@ -32,8 +32,9 @@ for req in REQ:
     except ImportError:
         print("**************************************************")
         print("Error: PyKrige relies on the installation of the SciPy stack "
-              "(Numpy, SciPy, matplotlib) to work. For instructions for "
-              "installation, please view https://www.scipy.org/install.html."
+              "(Numpy, SciPy, matplotlib) to work. "
+              "For instructions for installation, please view "
+              "https://www.scipy.org/install.html."
               "\n {} missing".format(req) 
               )
         print("**************************************************")
