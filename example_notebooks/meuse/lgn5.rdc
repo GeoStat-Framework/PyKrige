@@ -1,0 +1,65 @@
+file format : Idrisi Raster A.1
+file title  : lgn3.asc
+last update : 01.05.2009
+producer    : T. Hengl
+lineage     : The 25 m LGN5 land use map of the Netherlands was resampled to 20 m resolution.
+data type   : byte
+file type   : binary
+columns     : 78
+rows        : 104
+meas. scale : classes
+description : Water classes
+proj4string : +init=epsg:28992
+ref. system : plane
+ref. units  : m
+unit dist.  : 1
+min. X      : 178440
+max. X      : 181560
+min. Y      : 329600
+max. Y      : 333760
+pos'n error : 25
+resolution  : 20
+min. value  : 1
+max. value  : 25
+display min : 1
+display max : 25
+value units : NA
+value error : unspecified
+flag value  : 0
+flag def'n  : missing data
+src. Dutch  : Landelijk Grondgebruik Nederland LGN5
+src. English: Land use map of the Netherlands LGN5
+src. URL    : http://lgn.nl
+src. scale  : 25
+src. refs   : Hazeu, G.W., 2005. Landelijk Grondgebruiksbestand Nederland (LGN5). Vervaardiging, nauwkeurigheid en gebruik. Wageningen, Alterra. Alterra-report 1213, 92 pp.
+src. date   : 2003
+src. proj4s : +init=epsg:28992
+src. format : ARC/INFO GRID
+src. owner  : Wageningen UR
+src. contact: Gerard Hazeu (gerard.hazeu@wur.nl)
+legend cats : 25
+category   1: Agrarisch gras
+category   2: Maïs
+category   3: Aardappelen
+category   4: Bieten
+category   5: Granen
+category   6: Overige landbouwgewassen
+category   7: Glastuinbouw
+category   8: Boomgaarden
+category   9: Bloembollen
+category  10: Loofbos
+category  11: Naaldbos
+category  12: Droge heide
+category  13: Open begroeid natuurgebied
+category  14: Kale grond natuurgebied
+category  15: Zoet water
+category  16: Zoutwater
+category  17: Stedelijk bebouwd gebied
+category  18: Bebouwing in buitengebied
+category  19: Loofbos in bebouwd gebied
+category  20: Naaldbos in bebouwd gebied
+category  21: Bos met dichte bebouwing
+category  22: Gras in bebouwd gebied
+category  23: Kale grond in bebouwd buitengebied
+category  24: Hoofdwegen en spoorwegen
+category  25: Bebouwing in agrarisch gebied

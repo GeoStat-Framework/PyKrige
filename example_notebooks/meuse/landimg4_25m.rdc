@@ -1,0 +1,40 @@
+file format : GTiff
+file title  : landimg4_25m.tif
+last update : 14.05.2011
+producer    : T. Hengl
+lineage     : Seven landsat TM scenes (K23, L22, L23, L24, M21, M22, M23) were obtained from image2000.jrc.it and then mosaiced to produce a complete coverage for the whole NL.
+data type   : byte
+file type   : binary
+columns     : 125
+rows        : 166
+meas. scale : absolute
+description : Landsat Band #4 (NEAR INFRARED)
+proj4string : +init=epsg:28992
+ref. system : plane
+ref. units  : m
+unit dist.  : 1
+min. X      : 178440
+max. X      : 181560
+min. Y      : 329600
+max. Y      : 333760
+pos'n error : 1
+resolution  : 25
+min. value  : 2995
+max. value  : 6220
+display min : 2995
+display max : 6220
+value units : NA
+value error : unspecified
+flag value  : -1
+flag def'n  : missing data
+src. Dutch  : NA
+src. English: Image 2000 & Corine Land Cover 2000 Project
+src. URL    : http://image200.jrc.it
+src. scale  : 25
+src. refs   : NA
+src. date   : 2004
+src. proj4s : +init=epsg:4258
+src. format : ESRI BIL
+src. owner  : European Commission JRC
+src. contact: (stephen.peedell@jrc.it)
+legend cats : 0

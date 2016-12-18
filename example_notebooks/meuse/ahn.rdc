@@ -1,0 +1,40 @@
+file format : ArcInfo ASCII
+file title  : ahn
+last update : 01.05.2009
+producer    : T. Hengl
+lineage     : Map obtained from the AHN project. Resampled from 5 m to 20 m.
+data type   : byte
+file type   : binary
+columns     : 78
+rows        : 104
+meas. scale : ratio
+description : Elevation (LiDAR)
+proj4string : +init=epsg:28992
+ref. system : plane
+ref. units  : m
+unit dist.  : 1
+min. X      : 178440
+max. X      : 181560
+min. Y      : 329600
+max. Y      : 333760
+pos'n error : 1
+resolution  : 20
+min. value  : 2995
+max. value  : 6220
+display min : 2995
+display max : 6220
+value units : cm
+value error : unspecified
+flag value  : -1
+flag def'n  : missing data
+src. Dutch  : Het Actueel Hoogtebestand Nederland AHN2
+src. English: NA
+src. URL    : http://ahn.nl
+src. scale  : 5
+src. refs   : van Heerd, R.M. et al. 2005. Productspecificatie AHN 2000. Rijkswaterstaat, Adviesdienst Geo-informatie en ICT, Delft, 55 pp.
+src. date   : 2005
+src. proj4s : +init=epsg:28993
+src. format : ARC/INFO ASCII
+src. owner  : Rijkswaterstaat
+src. contact: (info@ahn.nl)
+legend cats : 0

@@ -1,0 +1,43 @@
+file format : ArcInfo ASCII
+file title  : soil.asc
+last update : 01.05.2009
+producer    : E. Pebesma
+lineage     : Soil map of Netherlands 1:50k rasterized to 20 m grid.
+data type   : byte
+file type   : binary
+columns     : 78
+rows        : 104
+meas. scale : classes
+description : Soil types
+proj4string : +init=epsg:28992
+ref. system : plane
+ref. units  : m
+unit dist.  : 1
+min. X      : 178440
+max. X      : 181560
+min. Y      : 329600
+max. Y      : 333760
+pos'n error : 1
+resolution  : 20
+min. value  : 1
+max. value  : 3
+display min : 1
+display max : 3
+value units : NA
+value error : unspecified
+flag value  : -1
+flag def'n  : missing data
+src. Dutch  : Bodemkaart van Nederland
+src. English: NA
+src. URL    : http://www.bodemdata.nl
+src. scale  : 1:50000
+src. refs   : de Fries, F., Groot, W.J.M., Hoogland, T., Denneboom, J., 2003. De Bodemkaart van Nederland digitaal. Alterra Rapport 811, 45 pp.
+src. date   : 2003
+src. proj4s : +init=epsg:28993
+src. format : ESRI SHAPEFILE
+src. owner  : Wageningen University and Research
+src. contact: (Folkert.deVries@wur.nl)
+legend cats : 3
+category   1: Rd10A kalkloze ooivaagronden; lichte zavel
+category   2: Rd90C-VIII kalkloze ooivaagronden; zware zavel en lichte klei
+category   3: Rd10C kalkloze ooivaagronden; lichte zavel
