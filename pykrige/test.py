@@ -22,13 +22,6 @@ from pykrige.ok3d import OrdinaryKriging3D
 from pykrige.uk3d import UniversalKriging3D
 from pykrige.compat import SKLEARN_INSTALLED
 
-if SKLEARN_INSTALLED:
-    from pykrige.rk import Krige, MLKrige
-    from pykrige.compat import GridSearchCV, train_test_split
-    from sklearn.svm import SVR
-    from sklearn.ensemble import RandomForestRegressor
-    from sklearn.linear_model import LinearRegression
-
 
 class TestPyKrige(unittest.TestCase):
 
@@ -1398,6 +1391,8 @@ class TestKrige(unittest.TestCase):
         return product(method, variogram_model)
 
     def test_krige(self):
+        from pykrige.rk import Krige
+        from pykrige.compat import GridSearchCV
         # dummy data
         np.random.seed(2)
         X = np.random.randint(0, 400, size=(20, 2)).astype(float)
@@ -1427,11 +1422,18 @@ class TestMLKrige(unittest.TestCase):
 
     @staticmethod
     def methods():
+        from sklearn.svm import SVR
+        from sklearn.ensemble import RandomForestRegressor
+        from sklearn.linear_model import LinearRegression
+
         krige_methods = ['ordinary', 'universal']
         ml_methods = [SVR(), RandomForestRegressor(), LinearRegression()]
         return product(ml_methods, krige_methods)
 
     def test_krige(self):
+        from pykrige.rk import RegressionKriging
+        from pykrige.compat import train_test_split
+
         np.random.seed(2)
         X = np.random.randint(0, 400, size=(100, 10)).astype(float)
         y = 5 * np.random.rand(100)
@@ -1442,8 +1444,8 @@ class TestMLKrige(unittest.TestCase):
 
         for ml_model, krige_method in self.methods():
             print(ml_model, krige_method)
-            reg_kr_model = MLKrige(ml_model=ml_model,
-                                   method=krige_method)
+            reg_kr_model = RegressionKriging(ml_model=ml_model,
+                                             method=krige_method)
 
             reg_kr_model.fit(X_train, lon_lat_train, y_train)
             assert reg_kr_model.score(X_test, lon_lat_test, y_test) > -1.0
