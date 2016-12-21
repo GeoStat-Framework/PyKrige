@@ -1,15 +1,11 @@
-import logging
-from pykrige.compat import (RegressorMixin,
-                            BaseEstimator,
-                            r2_score,
-                            SVR,
-                            validate_sklearn
-                            )
-
+# coding: utf-8
+from pykrige.compat import validate_sklearn
+validate_sklearn()
 from pykrige.ok import OrdinaryKriging
 from pykrige.uk import UniversalKriging
-
-log = logging.getLogger(__name__)
+from sklearn.base import RegressorMixin, BaseEstimator
+from sklearn.svm import SVR
+from sklearn.metrics import r2_score
 
 krige_methods = {'ordinary': OrdinaryKriging,
                  'universal': UniversalKriging}
@@ -35,10 +31,8 @@ class Krige(RegressorMixin, BaseEstimator):
                  nlags=6,
                  weight=False,
                  n_closest_points=10,
-                 verbose=False
-                 ):
+                 verbose=False):
 
-        validate_sklearn()
         validate_method(method)
         self.variogram_model = variogram_model
         self.verbose = verbose
@@ -104,7 +98,7 @@ class Krige(RegressorMixin, BaseEstimator):
                                    n_closest_points=self.n_closest_points,
                                    backend='loop')
         else:
-            log.warning('n_closest_points will be ignored for UniversalKriging')
+            print('n_closest_points will be ignored for UniversalKriging')
             prediction, variance = \
                 self.model.execute('points', x[:, 0], x[:, 1],
                                    backend='loop')
@@ -119,7 +113,7 @@ def check_sklearn_model(model):
                            'regression class.')
 
 
-class MLKrige(Krige):
+class RegressionKriging(Krige):
     """
     This is an implementation of Regression-Kriging as described here:
     https://en.wikipedia.org/wiki/Regression-Kriging
@@ -145,13 +139,14 @@ class MLKrige(Krige):
         check_sklearn_model(ml_model)
         self.ml_model = ml_model
         self.n_closest_points = n_closest_points
-        super(MLKrige, self).__init__(method=method,
-                                      variogram_model=variogram_model,
-                                      nlags=nlags,
-                                      weight=weight,
-                                      n_closest_points=n_closest_points,
-                                      verbose=verbose,
-                                      )
+        super(RegressionKriging, self).__init__(
+            method=method,
+            variogram_model=variogram_model,
+            nlags=nlags,
+            weight=weight,
+            n_closest_points=n_closest_points,
+            verbose=verbose,
+            )
 
     def fit(self, x, lon_lat, y):
         """
@@ -170,10 +165,10 @@ class MLKrige(Krige):
         """
         self.ml_model.fit(x, y)
         ml_pred = self.ml_model.predict(x)
-        log.info('Finished learning regression model')
+        print('Finished learning regression model')
         # residual=y-ml_pred
-        super(MLKrige, self).fit(x=lon_lat, y=y - ml_pred)
-        log.info('Finished kriging residuals')
+        super(RegressionKriging, self).fit(x=lon_lat, y=y - ml_pred)
+        print('Finished kriging residuals')
 
     def predict(self, x, lon_lat):
         """
@@ -193,7 +188,7 @@ class MLKrige(Krige):
 
         """
 
-        return super(MLKrige, self).predict(lon_lat) + \
+        return super(RegressionKriging, self).predict(lon_lat) + \
             self.ml_model.predict(x)
 
     def score(self, x, lon_lat, y, sample_weight=None):

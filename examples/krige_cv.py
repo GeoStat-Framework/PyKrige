@@ -1,11 +1,7 @@
+# coding: utf-8
 import numpy as np
-from pykrige.compat import SKLEARN_INSTALLED, GridSearchCV, \
-    validate_sklearn
-
-if SKLEARN_INSTALLED:
-    from pykrige.rk import Krige
-
-validate_sklearn()
+from pykrige.rk import Krige
+from pykrige.compat import GridSearchCV
 
 param_dict = {"method": ["ordinary", "universal"],
               "variogram_model": ["linear", "power", "gaussian", "spherical"],
