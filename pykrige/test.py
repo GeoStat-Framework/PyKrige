@@ -1423,32 +1423,45 @@ class TestMLKrige(unittest.TestCase):
     @staticmethod
     def methods():
         from sklearn.svm import SVR
+        from sklearn.linear_model import ElasticNet, Lasso
         from sklearn.ensemble import RandomForestRegressor
         from sklearn.linear_model import LinearRegression
 
         krige_methods = ['ordinary', 'universal']
-        ml_methods = [SVR(), RandomForestRegressor(), LinearRegression()]
+        ml_methods = [SVR(C=0.01),
+                      RandomForestRegressor(min_samples_split=5,
+                                            n_estimators=50),
+                      LinearRegression(),
+                      Lasso(),
+                      ElasticNet()
+                      ]
         return product(ml_methods, krige_methods)
 
     def test_krige(self):
         from pykrige.rk import RegressionKriging
         from pykrige.compat import train_test_split
+        from itertools import product
+        np.random.seed(1)
+        x = np.linspace(-1., 1., 100)
+        # create a feature matrix with 5 features
+        X = np.tile(x, reps=(5, 1)).T
+        y = 1 + 5*X[:, 0] - 2*X[:, 1] - 2*X[:, 2] + 3*X[:, 3] + 4*X[:, 4] + \
+            2*(np.random.rand(100) - 0.5)
 
-        np.random.seed(2)
-        X = np.random.randint(0, 400, size=(100, 10)).astype(float)
-        y = 5 * np.random.rand(100)
-        lon_lat = np.random.randint(0, 400, size=(100, 2)).astype(float)
+        # create lat/lon array
+        lon = np.linspace(-180., 180.0, 10)
+        lat = np.linspace(-90., 90., 10)
+        lon_lat = np.array(list(product(lon, lat)))
 
         X_train, X_test, y_train, y_test, lon_lat_train, lon_lat_test = \
-            train_test_split(X, y, lon_lat, train_size=0.7)
+            train_test_split(X, y, lon_lat, train_size=0.7, random_state=10)
 
         for ml_model, krige_method in self.methods():
-            print(ml_model, krige_method)
             reg_kr_model = RegressionKriging(ml_model=ml_model,
-                                             method=krige_method)
-
+                                             method=krige_method,
+                                             n_closest_points=2)
             reg_kr_model.fit(X_train, lon_lat_train, y_train)
-            assert reg_kr_model.score(X_test, lon_lat_test, y_test) > -1.0
+            assert reg_kr_model.score(X_test, lon_lat_test, y_test) > 0.25
 
 
 if __name__ == '__main__':
