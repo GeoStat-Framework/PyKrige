@@ -188,8 +188,19 @@ class RegressionKriging(Krige):
 
         """
 
-        return super(RegressionKriging, self).predict(lon_lat) + \
+        return self.krige_residual(lon_lat) + \
             self.ml_model.predict(x)
+
+    def krige_residual(self, lon_lat):
+        """
+        :param lon_lat:
+            ndarray of (x, y) points. Needs to be a (Ns, 2) array
+            corresponding to the lon/lat, for example.
+        :return:
+        residual: ndarray
+            kriged residual values
+        """
+        return super(RegressionKriging, self).predict(lon_lat)
 
     def score(self, x, lon_lat, y, sample_weight=None):
         """
