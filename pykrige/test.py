@@ -1463,6 +1463,32 @@ class TestMLKrige(unittest.TestCase):
             reg_kr_model.fit(X_train, lon_lat_train, y_train)
             assert reg_kr_model.score(X_test, lon_lat_test, y_test) > 0.25
 
+    def test_krige_housing(self):
+        from pykrige.rk import RegressionKriging
+        from pykrige.compat import train_test_split
+        from sklearn.datasets import fetch_california_housing
+        housing = fetch_california_housing()
+
+        # take only first 1000
+        X = housing['data'][:1000, :-2]
+        lat_lon = housing['data'][:1000, -2:]
+        target = housing['target'][:1000]
+
+        X_train, X_test, y_train, y_test, lon_lat_train, lon_lat_test = \
+            train_test_split(X, target, lat_lon, train_size=0.7,
+                             random_state=10)
+
+        for ml_model, krige_method in self.methods():
+
+            reg_kr_model = RegressionKriging(ml_model=ml_model,
+                                             method=krige_method,
+                                             n_closest_points=2)
+            reg_kr_model.fit(X_train, lon_lat_train, y_train)
+            if krige_method == 'ordinary':
+                assert reg_kr_model.score(X_test, lon_lat_test, y_test) > 0.5
+            else:
+                assert reg_kr_model.score(X_test, lon_lat_test, y_test) > 0.0
+
 
 if __name__ == '__main__':
     unittest.main()
