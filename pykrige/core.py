@@ -127,6 +127,61 @@ def euclid3_to_great_circle(euclid3_distance):
     return 180.0 - 360.0/np.pi*np.arccos(0.5*euclid3_distance)
 
 
+def _adjust_for_anisotropy(X, center, scaling, angle):
+    """Adjusts data coordinates to take into account anisotropy.
+    Can also be used to take into account data scaling.
+
+    Parameters
+    ----------
+    X : float array [n_samples, n_dim]
+       the input array of coordinates
+    center : float array [n_dim]
+       the coordinate of centers
+    scaling : float array [n_dim - 1]
+       the scaling of last two dimensions
+    angle : float array [2*n_dim - 3]
+       the anysotropy angle (degrees)
+
+    Returns
+    -------
+    X_adj : float array [n_samples, n_dim]
+      the X array adjusted for anisotropy
+    """
+
+    center = np.asarray(center)[None, :]
+    angle = np.asarray(angle)*np.pi/180
+
+    X -= center
+
+    Ndim = X.shape[1]
+
+    if Ndim == 1:
+        raise NotImplementedError('Not implemnented yet?')
+    elif Ndim == 2:
+        stretch = np.array([[1, 0], [0, scaling[0]]])
+        rot_tot = np.array([[np.cos(-angle[0]), -np.sin(-angle[0])],
+                           [np.sin(-angle[0]), np.cos(-angle[0])]])
+    elif Ndim == 3:
+        stretch = np.array([[1., 0., 0.], [0., scaling[0], 0.], [0., 0., scaling[1]]])
+        rotate_x = np.array([[1., 0., 0.],
+                             [0., np.cos(-angle[0]), -np.sin(-angle[0])],
+                             [0., np.sin(-angle[0]), np.cos(-angle[0])]])
+        rotate_y = np.array([[np.cos(-angle[1]), 0., np.sin(-angle[1])],
+                             [0., 1., 0.],
+                             [-np.sin(-angle[1]), 0., np.cos(-angle[1])]])
+        rotate_z = np.array([[np.cos(-angle[2]), -np.sin(-angle[2]), 0.],
+                             [np.sin(-angle[2]), np.cos(-angle[2]), 0.],
+                             [0., 0., 1.]])
+        rot_tot = np.dot(rotate_z, np.dot(rotate_y, rotate_x))
+    else:
+        raise ValueError("Adjust for anysotropy function doesn't support ND spaces where N>3")
+    X_adj = np.dot(stretch, np.dot(rot_tot, X.T)).T
+
+    X_adj += center
+
+    return X_adj
+
+
 def adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
     """Adjusts data coordinates to take into account anisotropy.
     Can also be used to take into account data scaling."""

@@ -57,29 +57,31 @@ class TestPyKrige(unittest.TestCase):
 
     def test_core_adjust_for_anisotropy(self):
 
-        x = np.array([1.0, 0.0, -1.0, 0.0])
-        y = np.array([0.0, 1.0, 0.0, -1.0])
-        rotated_x, rotated_y = core.adjust_for_anisotropy(x, y, 0.0, 0.0, 2.0, 90.0)
-        self.assertTrue(np.allclose(rotated_x, np.array([0.0, 1.0, 0.0, -1.0])))
-        self.assertTrue(np.allclose(rotated_y, np.array([-2.0, 0.0, 2.0, 0.0])))
+        X = np.array([[1.0, 0.0, -1.0, 0.0],
+                      [0.0, 1.0, 0.0, -1.0]]).T
+        X_adj = core._adjust_for_anisotropy(X, [0.0, 0.0], [2.0], [90.0])
+        self.assertTrue(np.allclose(X_adj[:, 0], np.array([0.0, 1.0, 0.0, -1.0])))
+        self.assertTrue(np.allclose(X_adj[:, 1], np.array([-2.0, 0.0, 2.0, 0.0])))
 
     def test_core_adjust_for_anisotropy_3d(self):
 
-        x = np.array([1.0, 0.0, 0.0])
-        y = np.array([0.0, 1.0, 0.0])
-        z = np.array([0.0, 0.0, 1.0])
-        rotated_x, rotated_y, rotated_z = core.adjust_for_anisotropy_3d(x, y, z, 0., 0., 0., 2., 2., 90., 0., 0.)
-        self.assertTrue(np.allclose(rotated_x, np.array([1., 0., 0.])))
-        self.assertTrue(np.allclose(rotated_y, np.array([0., 0., 2.])))
-        self.assertTrue(np.allclose(rotated_z, np.array([0., -2., 0.])))
-        rotated_x, rotated_y, rotated_z = core.adjust_for_anisotropy_3d(x, y, z, 0., 0., 0., 2., 2., 0., 90., 0.)
-        self.assertTrue(np.allclose(rotated_x, np.array([0., 0., -1.])))
-        self.assertTrue(np.allclose(rotated_y, np.array([0., 2., 0.])))
-        self.assertTrue(np.allclose(rotated_z, np.array([2., 0., 0.])))
-        rotated_x, rotated_y, rotated_z = core.adjust_for_anisotropy_3d(x, y, z, 0., 0., 0., 2., 2., 0., 0., 90.)
-        self.assertTrue(np.allclose(rotated_x, np.array([0., 1., 0.])))
-        self.assertTrue(np.allclose(rotated_y, np.array([-2., 0., 0.])))
-        self.assertTrue(np.allclose(rotated_z, np.array([0., 0., 2.])))
+        # this is a bad examples, as the X matrix is symmetric
+        # and insensitive to transpositions
+        X = np.array([[1.0, 0.0, 0.0],
+                      [0.0, 1.0, 0.0],
+                      [0.0, 0.0, 1.0]]).T
+        X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [90., 0., 0.])
+        self.assertTrue(np.allclose(X_adj[:, 0], np.array([1., 0., 0.])))
+        self.assertTrue(np.allclose(X_adj[:, 1], np.array([0., 0., 2.])))
+        self.assertTrue(np.allclose(X_adj[:, 2], np.array([0., -2., 0.])))
+        X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [0., 90., 0.])
+        self.assertTrue(np.allclose(X_adj[:, 0], np.array([0., 0., -1.])))
+        self.assertTrue(np.allclose(X_adj[:, 1], np.array([0., 2., 0.])))
+        self.assertTrue(np.allclose(X_adj[:, 2], np.array([2., 0., 0.])))
+        X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [0., 0., 90.])
+        self.assertTrue(np.allclose(X_adj[:, 0], np.array([0., 1., 0.])))
+        self.assertTrue(np.allclose(X_adj[:, 1], np.array([-2., 0., 0.])))
+        self.assertTrue(np.allclose(X_adj[:, 2], np.array([0., 0., 2.])))
 
     def test_core_initialize_variogram_model(self):
 
