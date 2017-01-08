@@ -3,7 +3,6 @@
 """For compatibility"""
 
 from __future__ import absolute_import
-
 import sys
 
 
@@ -12,21 +11,17 @@ PY3 = (sys.version_info[0] == 3)
 
 # sklearn
 try:
-    from sklearn.base import BaseEstimator, RegressorMixin
     try:  # scikit-learn 1.18.+
         from sklearn.model_selection import GridSearchCV
+        from sklearn.model_selection import train_test_split
     except ImportError:  # older scikit-learn versions
         from sklearn.grid_search import GridSearchCV
+        from sklearn.cross_validation import train_test_split
 
     SKLEARN_INSTALLED = True
 
 except ImportError:
     SKLEARN_INSTALLED = False
-
-    # used for compatibility without sklearn
-    RegressorMixin = object
-    BaseEstimator = object
-    GridSearchCV = object
 
 
 class SklearnException(Exception):

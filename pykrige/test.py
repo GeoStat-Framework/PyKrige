@@ -22,10 +22,6 @@ from pykrige.ok3d import OrdinaryKriging3D
 from pykrige.uk3d import UniversalKriging3D
 from pykrige.compat import SKLEARN_INSTALLED
 
-if SKLEARN_INSTALLED:
-    from pykrige.sklearn_cv import Krige
-    from pykrige.compat import GridSearchCV
-
 
 class TestPyKrige(unittest.TestCase):
 
@@ -1434,6 +1430,12 @@ class TestKrige(unittest.TestCase):
         return product(method, variogram_model)
 
     def test_krige(self):
+        from pykrige.rk import Krige
+        from pykrige.compat import GridSearchCV
+        # dummy data
+        np.random.seed(2)
+        X = np.random.randint(0, 400, size=(20, 2)).astype(float)
+        y = 5 * np.random.rand(20)
 
         for m, v in self.method_and_vergiogram():
             param_dict = {'method': [m], 'variogram_model': [v]}
@@ -1446,17 +1448,85 @@ class TestKrige(unittest.TestCase):
                                      verbose=False,
                                      cv=5,
                                      )
-            # dummy data
-            np.random.seed(2)
-            X = np.random.randint(0, 400, size=(10, 2)).astype(float)
-            y = 5 * np.random.rand(10)
-
             # run the gridsearch
             estimator.fit(X=X, y=y)
             if hasattr(estimator, 'best_score_'):
-                assert estimator.best_score_ > -2.0
+                assert estimator.best_score_ > -3.0
             if hasattr(estimator, 'cv_results_'):
                 assert estimator.cv_results_['mean_train_score'] > 0
+
+
+@unittest.skipUnless(SKLEARN_INSTALLED, "scikit-learn not installed")
+class TestRegressionKrige(unittest.TestCase):
+
+    @staticmethod
+    def methods():
+        from sklearn.svm import SVR
+        from sklearn.linear_model import ElasticNet, Lasso
+        from sklearn.ensemble import RandomForestRegressor
+        from sklearn.linear_model import LinearRegression
+
+        krige_methods = ['ordinary', 'universal']
+        ml_methods = [SVR(C=0.01),
+                      RandomForestRegressor(min_samples_split=5,
+                                            n_estimators=50),
+                      LinearRegression(),
+                      Lasso(),
+                      ElasticNet()
+                      ]
+        return product(ml_methods, krige_methods)
+
+    def test_krige(self):
+        from pykrige.rk import RegressionKriging
+        from pykrige.compat import train_test_split
+        from itertools import product
+        np.random.seed(1)
+        x = np.linspace(-1., 1., 100)
+        # create a feature matrix with 5 features
+        X = np.tile(x, reps=(5, 1)).T
+        y = 1 + 5*X[:, 0] - 2*X[:, 1] - 2*X[:, 2] + 3*X[:, 3] + 4*X[:, 4] + \
+            2*(np.random.rand(100) - 0.5)
+
+        # create lat/lon array
+        lon = np.linspace(-180., 180.0, 10)
+        lat = np.linspace(-90., 90., 10)
+        lon_lat = np.array(list(product(lon, lat)))
+
+        X_train, X_test, y_train, y_test, lon_lat_train, lon_lat_test = \
+            train_test_split(X, y, lon_lat, train_size=0.7, random_state=10)
+
+        for ml_model, krige_method in self.methods():
+            reg_kr_model = RegressionKriging(regression_model=ml_model,
+                                             method=krige_method,
+                                             n_closest_points=2)
+            reg_kr_model.fit(X_train, lon_lat_train, y_train)
+            assert reg_kr_model.score(X_test, lon_lat_test, y_test) > 0.25
+
+    def test_krige_housing(self):
+        from pykrige.rk import RegressionKriging
+        from pykrige.compat import train_test_split
+        from sklearn.datasets import fetch_california_housing
+        housing = fetch_california_housing()
+
+        # take only first 1000
+        p = housing['data'][:1000, :-2]
+        x = housing['data'][:1000, -2:]
+        target = housing['target'][:1000]
+
+        p_train, p_test, y_train, y_test, x_train, x_test = \
+            train_test_split(p, target, x, train_size=0.7,
+                             random_state=10)
+
+        for ml_model, krige_method in self.methods():
+
+            reg_kr_model = RegressionKriging(regression_model=ml_model,
+                                             method=krige_method,
+                                             n_closest_points=2)
+            reg_kr_model.fit(p_train, x_train, y_train)
+            if krige_method == 'ordinary':
+                assert reg_kr_model.score(p_test, x_test, y_test) > 0.5
+            else:
+                assert reg_kr_model.score(p_test, x_test, y_test) > 0.0
 
 
 if __name__ == '__main__':
