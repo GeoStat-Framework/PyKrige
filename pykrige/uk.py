@@ -368,10 +368,10 @@ class UniversalKriging:
             point_log = np.atleast_2d(np.squeeze(np.array(point_drift, copy=True)))
             self.point_log_array = np.zeros(point_log.shape)
             self.point_log_array[:, 2] = point_log[:, 2]
-            x_adj, y_adj = core.adjust_for_anisotropy(point_log[:, 0], point_log[:, 1], self.XCENTER, self.YCENTER,
-                                                      self.anisotropy_scaling, self.anisotropy_angle)
-            self.point_log_array[:, 0] = x_adj
-            self.point_log_array[:, 1] = y_adj
+            self.point_log_array[:, :2] = _adjust_for_anisotropy(np.vstack((point_log[:, 0], point_log[:, 1])).T,
+                                                  [self.XCENTER, self.YCENTER],
+                                                  [self.anisotropy_scaling],
+                                                  [self.anisotropy_angle])
             if self.verbose:
                 print("Implementing external point-logarithmic drift; number of points =",
                       self.point_log_array.shape[0], '\n')
@@ -514,11 +514,10 @@ class UniversalKriging:
             self.anisotropy_scaling = anisotropy_scaling
             self.anisotropy_angle = anisotropy_angle
             self.X_ADJUSTED, self.Y_ADJUSTED = \
-                core.adjust_for_anisotropy(np.copy(self.X_ORIG),
-                                           np.copy(self.Y_ORIG),
-                                           self.XCENTER, self.YCENTER,
-                                           self.anisotropy_scaling,
-                                           self.anisotropy_angle)
+                _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                                       [self.XCENTER, self.YCENTER],
+                                       [self.anisotropy_scaling],
+                                       [self.anisotropy_angle]).T
 
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
@@ -940,8 +939,10 @@ class UniversalKriging:
                               "instantiation of UniversalKriging class.", RuntimeWarning)
 
         xy_points_original = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
-        xpts, ypts = core.adjust_for_anisotropy(xpts, ypts, self.XCENTER, self.YCENTER,
-                                                self.anisotropy_scaling, self.anisotropy_angle)
+        xpts, ypts = _adjust_for_anisotropy(np.vstack((xpts, ypts)).T,
+                                           [self.XCENTER, self.YCENTER],
+                                           [self.anisotropy_scaling],
+                                           [self.anisotropy_angle]).T
         xy_points = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
         xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
 

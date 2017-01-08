@@ -11,11 +11,8 @@ Dependencies:
     scipy (scipy.optimize.minimize())
 
 Functions:
-    adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
-        Returns X and Y arrays of adjusted data coordinates. Angle is CCW.
-    adjust_for_anisotropy_3d(x, y, z, xcenter, ycenter, zcenter, scaling_y,
-                             scaling_z, angle_x, angle_y, angle_z):
-        Returns X, Y, Z arrays of adjusted data coordinates. Angles are CCW about
+    _adjust_for_anisotropy(X, y, center, scaling, angle):
+        Returns X_adj array of adjusted data coordinates. Angles are CCW about
         specified axes. Scaling is applied in rotated coordinate system.
     initialize_variogram_model(x, y, z, variogram_model, variogram_model_parameters,
                                variogram_function, nlags):
