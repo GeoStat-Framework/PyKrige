@@ -42,6 +42,10 @@ Functions:
         Returns the Q2 statistic for the variogram fit (see Kitanidis).
     calc_cR(Q2, sigma):
         Returns the cR statistic for the variogram fit (see Kitanidis).
+    great_circle_distance(lon1, lat1, lon2, lat2):
+        Returns the great circle distance between two arrays of points given in spherical
+        coordinates. Spherical coordinates are expected in degrees. Angle definition
+        follows standard longitude/latitude definition.
 
 References:
     P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
@@ -52,6 +56,75 @@ Copyright (c) 2015 Benjamin S. Murphy
 
 import numpy as np
 from scipy.optimize import minimize
+
+
+def great_circle_distance(lon1, lat1, lon2, lat2):
+    """
+    Calculate the great circle distance between one or multiple
+    pairs of points on a unit sphere.
+    
+    Parameters:
+    -----------
+    lon1: float scalar or numpy array
+        Longitude coordinate(s) of the first element(s) of the point
+        pair(s), given in degrees.
+    lat1: float scalar or numpy array
+        Latitude coordinate(s) of the first element(s) of the point
+        pair(s), given in degrees.
+    lon2: float scalar or numpy array
+        Longitude coordinate(s) of the second element(s) of the point
+        pair(s), given in degrees.
+    lat2: float scalar or numpy array
+        Latitude coordinate(s) of the second element(s) of the point
+        pair(s), given in degrees.
+    
+    Calculation of distances follows numpy elementwise semantics, so if
+    an array of length N is passed, all input parameters need to be
+    arrays of length N or scalars.
+    
+    
+    Returns:
+    --------
+    distance: float
+              The great circle distance(s) (in degrees) between the
+              given pair(s) of points.
+    
+    """
+    # Calculate dot product of both euclidean vectors:
+    lat1 = np.array(lat1)*np.pi/180.0
+    lat2 = np.array(lat2)*np.pi/180.0
+    d = np.cos((lon1-lon2)*np.pi/180.0)*np.cos(lat1)*np.cos(lat2) \
+        + np.sin(lat1)*np.sin(lat2)
+    # Angle is arccos of euclidean dot product. Avoid errors caused
+    # by numerics (possibly d>1.0 or d<-1.0, resulting in NAN. This
+    # can, however, only be caused by numerical errors for real
+    # lat/lon):
+    d[d>1.0] = 1.0
+    d[d<-1.0]=-1.0
+    return 180.0/np.pi*np.arccos(d)
+
+def euclid3_to_great_circle(euclid3_distance):
+    """
+    Convert euclidean distance between points on a unit sphere to
+    the corresponding great circle distance.
+    
+    
+    Parameters:
+    -----------
+    euclid3_distance: float scalar or numpy array
+        The euclidean three-space distance(s) between points on a
+        unit sphere, thus between [0,2].
+    
+    
+    Returns:
+    --------
+    great_circle_dist: float scalar or numpy array
+        The corresponding great circle distance(s) between the
+        points.
+    """
+    # Eliminate some possible numerical errors:
+    euclid3_distance[euclid3_distance>2.0] = 2.0
+    return 180.0 - 360.0/np.pi*np.arccos(0.5*euclid3_distance)
 
 
 def adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
@@ -117,7 +190,7 @@ def adjust_for_anisotropy_3d(x, y, z, xcenter, ycenter, zcenter, scaling_y,
 
 
 def initialize_variogram_model(x, y, z, variogram_model, variogram_model_parameters,
-                               variogram_function, nlags, weight):
+                               variogram_function, nlags, weight, coordinates_type):
     """Initializes the variogram model for kriging according
     to user specifications or to defaults"""
 
@@ -125,10 +198,16 @@ def initialize_variogram_model(x, y, z, variogram_model, variogram_model_paramet
     y1, y2 = np.meshgrid(y, y)
     z1, z2 = np.meshgrid(z, z)
 
-    dx = x1 - x2
-    dy = y1 - y2
     dz = z1 - z2
-    d = np.sqrt(dx**2 + dy**2)
+#GEO
+    if coordinates_type == 'euclidean':
+        dx = x1 - x2
+        dy = y1 - y2
+        d = np.sqrt(dx**2 + dy**2)
+    elif coordinates_type == 'geographic':
+        # Assume x => lon, y => lat
+        d = great_circle_distance(x1, y1, x2, y2)
+        
     g = 0.5 * dz**2
 
     indices = np.indices(d.shape)
@@ -300,7 +379,7 @@ def calculate_variogram_model(lags, semivariance, variogram_model, variogram_fun
     return res.x
 
 
-def krige(x, y, z, coords, variogram_function, variogram_model_parameters):
+def krige(x, y, z, coords, variogram_function, variogram_model_parameters, coordinates_type):
         """Sets up and solves the kriging matrix for the given coordinate pair.
         This function is now only used for the statistics calculations."""
 
@@ -309,8 +388,14 @@ def krige(x, y, z, coords, variogram_function, variogram_model_parameters):
 
         x1, x2 = np.meshgrid(x, x)
         y1, y2 = np.meshgrid(y, y)
-        d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-        bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2)
+#GEO
+        if coordinates_type == 'euclidean':
+            d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+            bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2)
+        elif coordinates_type == 'geographic':
+            d = great_circle_distance(x1, y1, x2, y2)
+            bd = great_circle_distane(x, y, coords[0]*np.ones(x.shape),
+                                      coords[1]*np.ones(y.shape))
         if np.any(np.absolute(bd) <= 1e-10):
             zero_value = True
             zero_index = np.where(bd <= 1e-10)[0][0]
@@ -373,7 +458,7 @@ def krige_3d(x, y, z, vals, coords, variogram_function, variogram_model_paramete
         return zinterp, sigmasq
 
 
-def find_statistics(x, y, z, variogram_function, variogram_model_parameters):
+def find_statistics(x, y, z, variogram_function, variogram_model_parameters, coordinates_type):
     """Calculates variogram fit statistics."""
 
     delta = np.zeros(z.shape)
@@ -384,7 +469,8 @@ def find_statistics(x, y, z, variogram_function, variogram_model_parameters):
             delta[n] = 0.0
             sigma[n] = 0.0
         else:
-            z_, ss_ = krige(x[:n], y[:n], z[:n], (x[n], y[n]), variogram_function, variogram_model_parameters)
+            z_, ss_ = krige(x[:n], y[:n], z[:n], (x[n], y[n]), variogram_function,
+                            variogram_model_parameters, coordinates_type)
             d = z[n] - z_
             delta[n] = d
             sigma[n] = np.sqrt(ss_)

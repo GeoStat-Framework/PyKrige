@@ -89,17 +89,19 @@ class TestPyKrige(unittest.TestCase):
 
         # Note the variogram_function argument is not a string in real life...
         self.assertRaises(ValueError, core.initialize_variogram_model, self.test_data[:, 0], self.test_data[:, 1],
-                          self.test_data[:, 2], 'linear', [0.0], 'linear', 6, False)
+                          self.test_data[:, 2], 'linear', [0.0], 'linear', 6, False,
+                          'euclidean')
 
         self.assertRaises(ValueError, core.initialize_variogram_model, self.test_data[:, 0], self.test_data[:, 1],
-                          self.test_data[:, 2], 'spherical', [0.0], 'spherical', 6, False)
+                          self.test_data[:, 2], 'spherical', [0.0], 'spherical', 6, False,
+                          'euclidean')
 
         x = np.array([1.0 + n/np.sqrt(2) for n in range(4)])
         y = np.array([1.0 + n/np.sqrt(2) for n in range(4)])
         z = np.arange(1.0, 5.0, 1.0)
         lags, semivariance, variogram_model_parameters = core.initialize_variogram_model(x, y, z, 'linear',
                                                                                          [0.0, 0.0], 'linear',
-                                                                                         6, False)
+                                                                                         6, False, 'euclidean')
 
         self.assertTrue(np.allclose(lags, np.array([1.0, 2.0, 3.0])))
         self.assertTrue(np.allclose(semivariance, np.array([0.5, 2.0, 4.5])))
@@ -156,12 +158,14 @@ class TestPyKrige(unittest.TestCase):
         data = np.array([[9.7, 47.6, 1.22],
                          [43.8, 24.6, 2.822]])
         z, ss = core.krige(data[:, 0], data[:, 1], data[:, 2], (18.8, 67.9),
-                           variogram_models.linear_variogram_model, [0.006, 0.1])
+                           variogram_models.linear_variogram_model, [0.006, 0.1],
+                           'euclidean')
         self.assertAlmostEqual(z, 1.6364, 4)
         self.assertAlmostEqual(ss, 0.4201, 4)
 
         z, ss = core.krige(data[:, 0], data[:, 1], data[:, 2], (43.8, 24.6),
-                           variogram_models.linear_variogram_model, [0.006, 0.1])
+                           variogram_models.linear_variogram_model, [0.006, 0.1],
+                           'euclidean')
         self.assertAlmostEqual(z, 2.822, 3)
         self.assertAlmostEqual(ss, 0.0, 3)
 
@@ -852,11 +856,13 @@ class TestPyKrige(unittest.TestCase):
         self.assertFalse(np.allclose(ss, 0.))
 
         z, ss = core.krige(data[:, 0], data[:, 1], data[:, 2], (1., 1.),
-                           variogram_models.linear_variogram_model, [1.0, 1.0])
+                           variogram_models.linear_variogram_model, [1.0, 1.0],
+                           'euclidean')
         self.assertAlmostEqual(z, 2.)
         self.assertAlmostEqual(ss, 0.)
         z, ss = core.krige(data[:, 0], data[:, 1], data[:, 2], (1., 2.),
-                           variogram_models.linear_variogram_model, [1.0, 1.0])
+                           variogram_models.linear_variogram_model, [1.0, 1.0],
+                           'euclidean')
         self.assertNotAlmostEqual(ss, 0.)
 
         data = np.zeros((50, 3))
@@ -1383,6 +1389,39 @@ class TestPyKrige(unittest.TestCase):
         self.assertTrue(np.allclose(z_func, z_lin))
         self.assertTrue(np.allclose(ss_func, ss_lin))
 
+    def test_geometric_code(self):
+        # Test great_circle_distance and euclid3_to_great_circle against each other:
+        lon_ref = [0.0, 175.0, 61.234, 267.5]
+        lat_ref = [0.0, -7.5,  77.3,   -23.5]
+        for i in range(len(lon_ref)):
+            lon, lat = np.meshgrid(np.linspace(0, 360.0, 20),
+                                   np.linspace(-90.0, 90.0, 20))
+            dx = np.cos(np.pi/180.0*lon)*np.cos(np.pi/180.0*lat)- \
+                 np.cos(np.pi/180.0*lon_ref[i])*np.cos(np.pi/180.0*lat_ref[i])
+            dy = np.sin(np.pi/180.0*lon)*np.cos(np.pi/180.0*lat)- \
+                 np.sin(np.pi/180.0*lon_ref[i])*np.cos(np.pi/180.0*lat_ref[i])
+            dz = np.sin(np.pi/180.0*lat) - np.sin(np.pi/180.0*lat_ref[i])
+            np.testing.assert_allclose(core.great_circle_distance(lon_ref[i], lat_ref[i], lon, lat),
+                core.euclid3_to_great_circle(np.sqrt(dx**2+dy**2+dz**2)), rtol=1e-5)
+    
+    def test_ok_geometric(self):
+        # Generate random data:
+        np.random.seed(89239413)
+        lon = 360.0*np.random.rand(50, 1)
+        lat = 180.0*np.random.rand(50, 1) - 90.0
+        z = np.random.rand(50, 1)
+        #data = np.concatenate((lon, lat, z), 1)
+        
+        # Generate grid:
+        grid_lon = 360.0*np.random.rand(120, 1)
+        grid_lat = 180.0*np.random.rand(120, 1) - 90.0
+        
+        # Create ordinary kriging object:
+        OK = OrdinaryKriging(lon, lat, z, variogram_model='linear', verbose=False,
+                             enable_plotting=False, coordinates_type='geographic')
+        
+        # Execute on grid:
+        z, ss = OK.execute('grid', grid_lon, grid_lat)
 
 @unittest.skipUnless(SKLEARN_INSTALLED, "scikit-learn not installed")
 class TestKrige(unittest.TestCase):
