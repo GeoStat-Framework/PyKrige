@@ -28,6 +28,7 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
+from .core import _adjust_for_anisotropy
 import warnings
 
 
@@ -265,9 +266,10 @@ class UniversalKriging:
         if self.verbose:
             print("Adjusting data for anisotropy...")
         self.X_ADJUSTED, self.Y_ADJUSTED = \
-            core.adjust_for_anisotropy(np.copy(self.X_ORIG), np.copy(self.Y_ORIG),
-                                       self.XCENTER, self.YCENTER,
-                                       self.anisotropy_scaling, self.anisotropy_angle)
+                _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                                       [self.XCENTER, self.YCENTER],
+                                       [self.anisotropy_scaling],
+                                       [self.anisotropy_angle]).T
 
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':

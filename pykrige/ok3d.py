@@ -27,6 +27,7 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
+from .core import _adjust_for_anisotropy
 
 
 class OrdinaryKriging3D:
@@ -230,10 +231,11 @@ class OrdinaryKriging3D:
         if self.verbose:
             print("Adjusting data for anisotropy...")
         self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = \
-            core.adjust_for_anisotropy_3d(np.copy(self.X_ORIG), np.copy(self.Y_ORIG), np.copy(self.Z_ORIG),
-                                          self.XCENTER, self.YCENTER, self.ZCENTER, self.anisotropy_scaling_y,
-                                          self.anisotropy_scaling_z, self.anisotropy_angle_x, self.anisotropy_angle_y,
-                                          self.anisotropy_angle_z)
+               _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
+                                          [self.XCENTER, self.YCENTER, self.ZCENTER],
+                                          [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+                                          [self.anisotropy_angle_x,
+                                           self.anisotropy_angle_y, self.anisotropy_angle_z]).T
 
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
@@ -301,10 +303,11 @@ class OrdinaryKriging3D:
             self.anisotropy_angle_y = anisotropy_angle_y
             self.anisotropy_angle_z = anisotropy_angle_z
             self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = \
-                core.adjust_for_anisotropy_3d(np.copy(self.X_ORIG), np.copy(self.Y_ORIG), np.copy(self.Z_ORIG),
-                                              self.XCENTER, self.YCENTER, self.ZCENTER, self.anisotropy_scaling_y,
-                                              self.anisotropy_scaling_z, self.anisotropy_angle_x,
-                                              self.anisotropy_angle_y, self.anisotropy_angle_z)
+                _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
+                                            [self.XCENTER, self.YCENTER, self.ZCENTER],
+                                            [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+                                            [self.anisotropy_angle_x,
+                                             self.anisotropy_angle_y, self.anisotropy_angle_z]).T
 
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
@@ -615,10 +618,11 @@ class OrdinaryKriging3D:
         else:
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
-        xpts, ypts, zpts = core.adjust_for_anisotropy_3d(xpts, ypts, zpts, self.XCENTER, self.YCENTER, self.ZCENTER,
-                                                         self.anisotropy_scaling_y, self.anisotropy_scaling_z,
-                                                         self.anisotropy_angle_x, self.anisotropy_angle_y,
-                                                         self.anisotropy_angle_z)
+        xpts, ypts, zpts = _adjust_for_anisotropy(np.vstack((xpts, ypts, zpts)).T,
+                                  [self.XCENTER, self.YCENTER, self.ZCENTER],
+                                  [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+                                  [self.anisotropy_angle_x, self.anisotropy_angle_y,
+                                                         self.anisotropy_angle_z]).T
 
         if style != 'masked':
             mask = np.zeros(npt, dtype='bool')
