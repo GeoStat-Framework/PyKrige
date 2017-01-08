@@ -113,14 +113,14 @@ def check_sklearn_model(model):
                            'regression class.')
 
 
-class RegressionKriging(Krige):
+class RegressionKriging:
     """
     This is an implementation of Regression-Kriging as described here:
     https://en.wikipedia.org/wiki/Regression-Kriging
     """
 
     def __init__(self,
-                 ml_model=SVR(),
+                 regression_model=SVR(),
                  method='ordinary',
                  variogram_model='linear',
                  n_closest_points=10,
@@ -128,7 +128,7 @@ class RegressionKriging(Krige):
                  weight=False,
                  verbose=False):
         """
-        :param ml_model: machine learning model instance from sklearn
+        :param regression_model: machine learning model instance from sklearn
         :param method:
         :param variogram_model:
         :param n_closest_points:
@@ -136,10 +136,10 @@ class RegressionKriging(Krige):
         :param weight:
         :param verbose:
         """
-        check_sklearn_model(ml_model)
-        self.ml_model = ml_model
+        check_sklearn_model(regression_model)
+        self.regression_model = regression_model
         self.n_closest_points = n_closest_points
-        super(RegressionKriging, self).__init__(
+        self.krige = Krige(
             method=method,
             variogram_model=variogram_model,
             nlags=nlags,
@@ -148,66 +148,66 @@ class RegressionKriging(Krige):
             verbose=verbose,
             )
 
-    def fit(self, x, lon_lat, y):
+    def fit(self, p, x, y):
         """
-        fit the ML method and also Krige the residual
+        fit the regression method and also Krige the residual
 
         Parameters
         ----------
-        x: ndarray
-            (Ns, d) array query dataset (Ns samples, d dimensions)
-            for ML regression
-        lon_lat:
-            ndarray of (x, y) points. Needs to be a (Ns, 2) array
+        p: ndarray
+            (Ns, d) array of predictor variables (Nt samples, d dimensions)
+            for regression
+        x:
+            ndarray of (x, y) points. Needs to be a (Nt, 2) array
             corresponding to the lon/lat, for example.
         y: ndarray
             array of targets (Nt, )
         """
-        self.ml_model.fit(x, y)
-        ml_pred = self.ml_model.predict(x)
+        self.regression_model.fit(p, y)
+        ml_pred = self.regression_model.predict(p)
         print('Finished learning regression model')
         # residual=y-ml_pred
-        super(RegressionKriging, self).fit(x=lon_lat, y=y - ml_pred)
+        self.krige.fit(x=x, y=y - ml_pred)
         print('Finished kriging residuals')
 
-    def predict(self, x, lon_lat):
+    def predict(self, p, x):
         """
         Parameters
         ----------
-        X: ndarray
-            (Ns, d) array query dataset (Ns samples, d dimensions)
-            for ML regression
-        lon_lat:
+        p: ndarray
+            (Ns, d) array of predictor variables (Ns samples, d dimensions)
+            for regression
+        x:
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
 
         Returns
         -------
         pred: ndarray
-            The expected value of ys for the query inputs, X of shape (Ns,).
+            The expected value of ys for the query inputs, of shape (Ns,).
 
         """
 
-        return self.krige_residual(lon_lat) + \
-            self.ml_model.predict(x)
+        return self.krige_residual(x) + \
+               self.regression_model.predict(p)
 
-    def krige_residual(self, lon_lat):
+    def krige_residual(self, x):
         """
-        :param lon_lat:
+        :param x:
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
         :return:
         residual: ndarray
             kriged residual values
         """
-        return super(RegressionKriging, self).predict(lon_lat)
+        return self.krige.predict(x)
 
-    def score(self, x, lon_lat, y, sample_weight=None):
+    def score(self, p, x, y, sample_weight=None):
         """
         Overloading default regression score method
         """
 
-        return r2_score(y_pred=self.predict(x, lon_lat),
+        return r2_score(y_pred=self.predict(p, x),
                         y_true=y,
                         sample_weight=sample_weight)
 

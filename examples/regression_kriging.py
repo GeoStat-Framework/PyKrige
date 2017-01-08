@@ -14,19 +14,19 @@ models = [svr_model, rf_model, lr_model]
 
 # take the first 5000 as Kriging is memory intensive
 housing = fetch_california_housing()
-X = housing['data'][:5000, :-2]
-lat_lon = housing['data'][:5000, -2:]
+p = housing['data'][:5000, :-2]
+x = housing['data'][:5000, -2:]
 target = housing['target'][:5000]
 
-X_train, X_test, lat_lon_train, lat_lon_test, target_train, target_test \
-    = train_test_split(X, lat_lon, target, test_size=0.3, random_state=42)
+p_train, p_test, x_train, x_test, target_train, target_test \
+    = train_test_split(p, x, target, test_size=0.3, random_state=42)
 
 for m in models:
     print('=' * 40, '\n', 'regression model:', m.__class__)
-    m_rk = RegressionKriging(ml_model=m, n_closest_points=10)
-    m_rk.fit(X_train, lat_lon_train, target_train)
-    print('Regression Score: ', m_rk.ml_model.score(X_test, target_test))
-    print('RK score: ', m_rk.score(X_test, lat_lon_test, target_test))
+    m_rk = RegressionKriging(regression_model=m, n_closest_points=10)
+    m_rk.fit(p_train, x_train, target_train)
+    print('Regression Score: ', m_rk.regression_model.score(p_test, target_test))
+    print('RK score: ', m_rk.score(p_test, x_test, target_test))
 
 ##====================================OUTPUT==================================
 
