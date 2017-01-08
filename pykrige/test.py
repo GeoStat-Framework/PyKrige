@@ -1418,7 +1418,7 @@ class TestKrige(unittest.TestCase):
 
 
 @unittest.skipUnless(SKLEARN_INSTALLED, "scikit-learn not installed")
-class TestMLKrige(unittest.TestCase):
+class TestRegressionKrige(unittest.TestCase):
 
     @staticmethod
     def methods():

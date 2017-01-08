@@ -156,7 +156,7 @@ In it's current form, the `pykrige.rk.Krige` class can be used to optimise all t
 Regression Kriging
 ------------------
 
-PyKrige exposes a class `pykrige.rk.MLKrige` that can be used to perform [regression kriging](https://en.wikipedia.org/wiki/Regression-Kriging). This class takes as parameters a `scikit-learn` regression model, and details of either the Ordinary/UniversalKriging class, and performs a correction steps on the ML regression prediction.
+PyKrige exposes a class `pykrige.rk.RegressionKriging` that can be used to perform [regression kriging](https://en.wikipedia.org/wiki/Regression-Kriging). This class takes as parameters a `scikit-learn` regression model, and details of either the Ordinary/UniversalKriging class, and performs a correction steps on the ML regression prediction.
  
  A demonstration of the regression kriging is provided in `examples.regression_kriging.py`. Once again, `scikit-learn` is required to use this functionality.
 
