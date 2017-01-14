@@ -130,19 +130,19 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
 
     Parameters
     ----------
-    X : float array [n_samples, n_dim]
-       the input array of coordinates
-    center : float array [n_dim]
-       the coordinate of centers
-    scaling : float array [n_dim - 1]
-       the scaling of last two dimensions
-    angle : float array [2*n_dim - 3]
-       the anysotropy angle (degrees)
+    X: ndarray
+        float array [n_samples, n_dim], the input array of coordinates
+    center: ndarray
+        float array [n_dim], the coordinate of centers
+    scaling: ndarray
+        float array [n_dim - 1], the scaling of last two dimensions
+    angle : ndarray
+        float array [2*n_dim - 3], the anysotropy angle (degrees)
 
     Returns
     -------
-    X_adj : float array [n_samples, n_dim]
-      the X array adjusted for anisotropy
+    X_adj : ndarray
+        float array [n_samples, n_dim], the X array adjusted for anisotropy.
     """
 
     center = np.asarray(center)[None, :]
