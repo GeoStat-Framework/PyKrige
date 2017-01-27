@@ -28,6 +28,7 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
+from .core import _adjust_for_anisotropy
 
 
 class OrdinaryKriging:
@@ -220,9 +221,10 @@ class OrdinaryKriging:
             if self.verbose:
                 print("Adjusting data for anisotropy...")
             self.X_ADJUSTED, self.Y_ADJUSTED = \
-                core.adjust_for_anisotropy(np.copy(self.X_ORIG), np.copy(self.Y_ORIG),
-                                           self.XCENTER, self.YCENTER,
-                                           self.anisotropy_scaling, self.anisotropy_angle)
+                    _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                                           [self.XCENTER, self.YCENTER],
+                                           [self.anisotropy_scaling],
+                                           [self.anisotropy_angle]).T
         elif coordinates_type == 'geographic':
             # Leave everything as is in geographic case.
             # May be open to discussion?
@@ -307,11 +309,10 @@ class OrdinaryKriging:
                 self.anisotropy_scaling = anisotropy_scaling
                 self.anisotropy_angle = anisotropy_angle
                 self.X_ADJUSTED, self.Y_ADJUSTED = \
-                    core.adjust_for_anisotropy(np.copy(self.X_ORIG),
-                                               np.copy(self.Y_ORIG),
-                                               self.XCENTER, self.YCENTER,
-                                               self.anisotropy_scaling,
-                                               self.anisotropy_angle)
+                    _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                                           [self.XCENTER, self.YCENTER],
+                                           [self.anisotropy_scaling],
+                                           [self.anisotropy_angle]).T
             elif self.coordinates_type == 'geographic':
                 self.anisotropy_scaling = 1.0
                 self.anisotropy_angle = 0.0
@@ -619,8 +620,10 @@ class OrdinaryKriging:
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         if self.coordinates_type == 'euclidean':
-            xpts, ypts = core.adjust_for_anisotropy(xpts, ypts, self.XCENTER, self.YCENTER,
-                                                    self.anisotropy_scaling, self.anisotropy_angle)
+            xpts, ypts = _adjust_for_anisotropy(np.vstack((xpts, ypts)).T,
+                                                [self.XCENTER, self.YCENTER],
+                                                [self.anisotropy_scaling],
+                                                [self.anisotropy_angle]).T
             xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
             xy_points = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
         elif self.coordinates_type == 'geographic':

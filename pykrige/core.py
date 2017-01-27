@@ -11,11 +11,8 @@ Dependencies:
     scipy (scipy.optimize.minimize())
 
 Functions:
-    adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
-        Returns X and Y arrays of adjusted data coordinates. Angle is CCW.
-    adjust_for_anisotropy_3d(x, y, z, xcenter, ycenter, zcenter, scaling_y,
-                             scaling_z, angle_x, angle_y, angle_z):
-        Returns X, Y, Z arrays of adjusted data coordinates. Angles are CCW about
+    _adjust_for_anisotropy(X, y, center, scaling, angle):
+        Returns X_adj array of adjusted data coordinates. Angles are CCW about
         specified axes. Scaling is applied in rotated coordinate system.
     initialize_variogram_model(x, y, z, variogram_model, variogram_model_parameters,
                                variogram_function, nlags):
@@ -127,66 +124,59 @@ def euclid3_to_great_circle(euclid3_distance):
     return 180.0 - 360.0/np.pi*np.arccos(0.5*euclid3_distance)
 
 
-def adjust_for_anisotropy(x, y, xcenter, ycenter, scaling, angle):
+def _adjust_for_anisotropy(X, center, scaling, angle):
     """Adjusts data coordinates to take into account anisotropy.
-    Can also be used to take into account data scaling."""
+    Can also be used to take into account data scaling.
 
-    x -= xcenter
-    y -= ycenter
-    xshape = x.shape
-    yshape = y.shape
-    x = x.flatten()
-    y = y.flatten()
+    Parameters
+    ----------
+    X: ndarray
+        float array [n_samples, n_dim], the input array of coordinates
+    center: ndarray
+        float array [n_dim], the coordinate of centers
+    scaling: ndarray
+        float array [n_dim - 1], the scaling of last two dimensions
+    angle : ndarray
+        float array [2*n_dim - 3], the anysotropy angle (degrees)
 
-    coords = np.vstack((x, y))
-    stretch = np.array([[1, 0], [0, scaling]])
-    rotate = np.array([[np.cos(-angle * np.pi/180.0), -np.sin(-angle * np.pi/180.0)],
-                       [np.sin(-angle * np.pi/180.0), np.cos(-angle * np.pi/180.0)]])
-    rotated_coords = np.dot(stretch, np.dot(rotate, coords))
-    x = rotated_coords[0, :].reshape(xshape)
-    y = rotated_coords[1, :].reshape(yshape)
-    x += xcenter
-    y += ycenter
+    Returns
+    -------
+    X_adj : ndarray
+        float array [n_samples, n_dim], the X array adjusted for anisotropy.
+    """
 
-    return x, y
+    center = np.asarray(center)[None, :]
+    angle = np.asarray(angle)*np.pi/180
 
+    X -= center
 
-def adjust_for_anisotropy_3d(x, y, z, xcenter, ycenter, zcenter, scaling_y,
-                             scaling_z, angle_x, angle_y, angle_z):
-    """Adjusts data coordinates to take into account anisotropy.
-    Can also be used to take into account data scaling."""
+    Ndim = X.shape[1]
 
-    x -= xcenter
-    y -= ycenter
-    z -= zcenter
-    xshape = x.shape
-    yshape = y.shape
-    zshape = z.shape
-    x = x.flatten()
-    y = y.flatten()
-    z = z.flatten()
+    if Ndim == 1:
+        raise NotImplementedError('Not implemnented yet?')
+    elif Ndim == 2:
+        stretch = np.array([[1, 0], [0, scaling[0]]])
+        rot_tot = np.array([[np.cos(-angle[0]), -np.sin(-angle[0])],
+                           [np.sin(-angle[0]), np.cos(-angle[0])]])
+    elif Ndim == 3:
+        stretch = np.array([[1., 0., 0.], [0., scaling[0], 0.], [0., 0., scaling[1]]])
+        rotate_x = np.array([[1., 0., 0.],
+                             [0., np.cos(-angle[0]), -np.sin(-angle[0])],
+                             [0., np.sin(-angle[0]), np.cos(-angle[0])]])
+        rotate_y = np.array([[np.cos(-angle[1]), 0., np.sin(-angle[1])],
+                             [0., 1., 0.],
+                             [-np.sin(-angle[1]), 0., np.cos(-angle[1])]])
+        rotate_z = np.array([[np.cos(-angle[2]), -np.sin(-angle[2]), 0.],
+                             [np.sin(-angle[2]), np.cos(-angle[2]), 0.],
+                             [0., 0., 1.]])
+        rot_tot = np.dot(rotate_z, np.dot(rotate_y, rotate_x))
+    else:
+        raise ValueError("Adjust for anysotropy function doesn't support ND spaces where N>3")
+    X_adj = np.dot(stretch, np.dot(rot_tot, X.T)).T
 
-    coords = np.vstack((x, y, z))
-    stretch = np.array([[1., 0., 0.], [0., scaling_y, 0.], [0., 0., scaling_z]])
-    rotate_x = np.array([[1., 0., 0.],
-                         [0., np.cos(-angle_x * np.pi/180.), -np.sin(-angle_x * np.pi/180.)],
-                         [0., np.sin(-angle_x * np.pi/180.), np.cos(-angle_x * np.pi/180.)]])
-    rotate_y = np.array([[np.cos(-angle_y * np.pi/180.), 0., np.sin(-angle_y * np.pi/180.)],
-                         [0., 1., 0.],
-                         [-np.sin(-angle_y * np.pi/180.), 0., np.cos(-angle_y * np.pi/180.)]])
-    rotate_z = np.array([[np.cos(-angle_z * np.pi/180.), -np.sin(-angle_z * np.pi/180.), 0.],
-                         [np.sin(-angle_z * np.pi/180.), np.cos(-angle_z * np.pi/180.), 0.],
-                         [0., 0., 1.]])
-    rot_tot = np.dot(rotate_z, np.dot(rotate_y, rotate_x))
-    rotated_coords = np.dot(stretch, np.dot(rot_tot, coords))
-    x = rotated_coords[0, :].reshape(xshape)
-    y = rotated_coords[1, :].reshape(yshape)
-    z = rotated_coords[2, :].reshape(zshape)
-    x += xcenter
-    y += ycenter
-    z += zcenter
+    X_adj += center
 
-    return x, y, z
+    return X_adj
 
 
 def initialize_variogram_model(x, y, z, variogram_model, variogram_model_parameters,
