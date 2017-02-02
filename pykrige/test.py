@@ -1403,7 +1403,7 @@ class TestPyKrige(unittest.TestCase):
         # has been calculated using geopy (v. 1.11.0) as follows:
         # >>>   from geopy.distance import great_circle
         # >>>   g = great_circle(radius=1.0)
-        # >>>   d = np.zeros((N,N))
+        # >>>   d = np.zeros((N,N), dtype=float)
         # >>>   for i in range(N):
         # >>>       for j in range(N):
         # >>>           d[i,j] = g.measure((lat[i],lon[i]),(lat[j],lon[j]))
