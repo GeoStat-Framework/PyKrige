@@ -196,7 +196,7 @@ class OrdinaryKriging:
                       'spherical': variogram_models.spherical_variogram_model,
                       'exponential': variogram_models.exponential_variogram_model}
 
-    def __init__(self, x, y, z, variogram_model='linear', variogram_parameters=None,
+    def __init__(self, x, y, val, variogram_model='linear', variogram_parameters=None,
                  variogram_function=None, nlags=6, weight=False, anisotropy_scaling=1.0,
                  anisotropy_angle=0.0, verbose=False, enable_plotting=False,
                  enable_statistics=False, coordinates_type='euclidean'):
@@ -206,7 +206,7 @@ class OrdinaryKriging:
         # referencing the original passed arguments.
         self.X_ORIG = np.atleast_1d(np.squeeze(np.array(x, copy=True)))
         self.Y_ORIG = np.atleast_1d(np.squeeze(np.array(y, copy=True)))
-        self.Z = np.atleast_1d(np.squeeze(np.array(z, copy=True)))
+        self.Z = np.atleast_1d(np.squeeze(np.array(val, copy=True)))
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting

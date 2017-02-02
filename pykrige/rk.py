@@ -61,7 +61,7 @@ class Krige(RegressorMixin, BaseEstimator):
 
         self.model = krige_methods[self.method](
             ** points,
-            z=y,
+            val=y,
             variogram_model=self.variogram_model,
             nlags=self.nlags,
             weight=self.weight,
@@ -71,12 +71,12 @@ class Krige(RegressorMixin, BaseEstimator):
     def _dimensionality_check(self, x):
         if self.method in ('ordinary', 'universal'):
             if x.shape[1] != 2:
-                raise ValueError('2d krige can use only 2 covariates')
+                raise ValueError('2d krige can use only 2d points')
             else:
                 return {'x': x[:, 0], 'y': x[:, 1]}
         if self.method in ('ordinary3d', 'universal3d'):
             if x.shape[1] != 3:
-                raise ValueError('3d krige can use only 3 covariates')
+                raise ValueError('3d krige can use only 3d points')
             else:
                 return {'x': x[:, 0], 'y': x[:, 1], 'z': x[:, 2]}
 
@@ -110,7 +110,8 @@ class Krige(RegressorMixin, BaseEstimator):
         Prediction array
         Variance array
         """
-        if isinstance(self.model, OrdinaryKriging):
+        if isinstance(self.model, OrdinaryKriging) or \
+                isinstance(self.model, OrdinaryKriging3D):
             prediction, variance = \
                 self.model.execute('points', **points,
                                    n_closest_points=self.n_closest_points,

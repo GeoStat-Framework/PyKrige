@@ -654,15 +654,15 @@ class UniversalKriging3D:
                 Specifying 'masked' treats xpoints, ypoints, and zpoints as arrays of
                 x, y, and z coordinates that define a rectangular grid and uses mask
                 to only evaluate specific points in the grid.
-            xpoints (array-like, dim N): If style is specific as 'grid' or 'masked',
+            x (array-like, dim N): If style is specific as 'grid' or 'masked',
                 x-coordinates of MxNxL grid. If style is specified as 'points',
                 x-coordinates of specific points at which to solve kriging system.
-            ypoints (array-like, dim M): If style is specified as 'grid' or 'masked',
+            y (array-like, dim M): If style is specified as 'grid' or 'masked',
                 y-coordinates of LxMxN grid. If style is specified as 'points',
                 y-coordinates of specific points at which to solve kriging system.
                 Note that in this case, xpoints, ypoints, and zpoints must have the
                 same dimensions (i.e., L = M = N).
-            zpoints (array-like, dim L): If style is specified as 'grid' or 'masked',
+            z (array-like, dim L): If style is specified as 'grid' or 'masked',
                 z-coordinates of LxMxN grid. If style is specified as 'points',
                 z-coordinates of specific points at which to solve kriging system.
                 Note that in this case, xpoints, ypoints, and zpoints must have the
