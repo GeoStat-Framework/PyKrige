@@ -3,12 +3,17 @@ from pykrige.compat import validate_sklearn
 validate_sklearn()
 from pykrige.ok import OrdinaryKriging
 from pykrige.uk import UniversalKriging
+from pykrige.ok3d import OrdinaryKriging3D
+from pykrige.uk3d import UniversalKriging3D
 from sklearn.base import RegressorMixin, BaseEstimator
 from sklearn.svm import SVR
 from sklearn.metrics import r2_score
 
 krige_methods = {'ordinary': OrdinaryKriging,
-                 'universal': UniversalKriging}
+                 'universal': UniversalKriging,
+                 'ordinary3d': OrdinaryKriging3D,
+                 'universal3d': UniversalKriging3D
+                 }
 
 
 def validate_method(method):
@@ -51,18 +56,29 @@ class Krige(RegressorMixin, BaseEstimator):
         y: ndarray
             array of targets (Nt, )
         """
-        if x.shape[1] != 2:
-            raise ValueError('krige can use only 2 covariates')
+
+        points = self._dimensionality_check(x)
 
         self.model = krige_methods[self.method](
-            x=x[:, 0],
-            y=x[:, 1],
+            ** points,
             z=y,
             variogram_model=self.variogram_model,
             nlags=self.nlags,
             weight=self.weight,
             verbose=self.verbose
          )
+
+    def _dimensionality_check(self, x):
+        if self.method in ('ordinary', 'universal'):
+            if x.shape[1] != 2:
+                raise ValueError('2d krige can use only 2 covariates')
+            else:
+                return {'x': x[:, 0], 'y': x[:, 1]}
+        if self.method in ('ordinary3d', 'universal3d'):
+            if x.shape[1] != 3:
+                raise ValueError('3d krige can use only 3 covariates')
+            else:
+                return {'x': x[:, 0], 'y': x[:, 1], 'z': x[:, 2]}
 
     def predict(self, x, *args, **kwargs):
         """
@@ -78,14 +94,16 @@ class Krige(RegressorMixin, BaseEstimator):
         if not self.model:
             raise Exception('Not trained. Train first')
 
-        return self.execute(x, *args, **kwargs)[0]
+        points = self._dimensionality_check(x)
 
-    def execute(self, x, *args, **kwargs):
+        return self.execute(points, *args, **kwargs)[0]
+
+    def execute(self, points, *args, **kwargs):
+        # TODO array of Points, (x, y) pairs of shape (N, 2)
         """
         Parameters
         ----------
-        x: ndarray
-            array of Points, (x, y) pairs of shape (N, 2)
+        points: dict
 
         Returns:
         -------
@@ -94,13 +112,13 @@ class Krige(RegressorMixin, BaseEstimator):
         """
         if isinstance(self.model, OrdinaryKriging):
             prediction, variance = \
-                self.model.execute('points', x[:, 0], x[:, 1],
+                self.model.execute('points', **points,
                                    n_closest_points=self.n_closest_points,
                                    backend='loop')
         else:
             print('n_closest_points will be ignored for UniversalKriging')
             prediction, variance = \
-                self.model.execute('points', x[:, 0], x[:, 1],
+                self.model.execute('points', **points,
                                    backend='loop')
 
         return prediction, variance

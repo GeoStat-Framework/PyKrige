@@ -511,7 +511,7 @@ class OrdinaryKriging3D:
 
         return kvalues, sigmasq
 
-    def execute(self, style, xpoints, ypoints, zpoints, mask=None, backend='vectorized', n_closest_points=None):
+    def execute(self, style, x, y, z, mask=None, backend='vectorized', n_closest_points=None):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation. Note that currently
@@ -584,9 +584,9 @@ class OrdinaryKriging3D:
         if style != 'grid' and style != 'masked' and style != 'points':
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
-        xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
-        ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
-        zpts = np.atleast_1d(np.squeeze(np.array(zpoints, copy=True)))
+        xpts = np.atleast_1d(np.squeeze(np.array(x, copy=True)))
+        ypts = np.atleast_1d(np.squeeze(np.array(y, copy=True)))
+        zpts = np.atleast_1d(np.squeeze(np.array(z, copy=True)))
         n = self.X_ADJUSTED.shape[0]
         nx = xpts.size
         ny = ypts.size
