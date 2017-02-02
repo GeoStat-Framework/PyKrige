@@ -1388,16 +1388,11 @@ class TestPyKrige(unittest.TestCase):
         self.assertTrue(np.allclose(ss_func, ss_lin))
 
     def test_geometric_code(self):
-        # NOTE: This test code uses precalculated reference values. If numpy
-        #       RNG changes in future versions the generated coordinate pairs
-        #       might change as well so that reference values need to be
-        #       recalculated.
         
-        # Create points uniformly distributed across the sphere:
-        np.random.seed(2022017)
-        N=200
-        lon = 360.0*np.random.random(N)
-        lat = 180.0/np.pi*np.arcsin(2.0*np.random.random(N)-1)
+        # Create selected points distributed across the sphere:
+        N=4
+        lon = np.array([7.0,   7.0,     187.0,  73.231])
+        lat = np.array([13.23, 13.2301, -13.23, -79.3])
         
         # For the points generated with this reference seed, the distance matrix
         # has been calculated using geopy (v. 1.11.0) as follows:
@@ -1409,6 +1404,12 @@ class TestPyKrige(unittest.TestCase):
         # >>>           d[i,j] = g.measure((lat[i],lon[i]),(lat[j],lon[j]))
         # >>>   d *= 180.0/np.pi
         # From that distance matrix, the reference values have been obtained.
+        d_ref = np.array(
+                [[0.0, 1e-4, 180.0, 98.744848317171801],
+                 [1e-4, 0.0, 179.9999, 98.744946828324345],
+                 [180.0, 179.9999, 0.0, 81.255151682828213],
+                 [98.744848317171801, 98.744946828324345, 81.255151682828213, 0.0]]
+                )
         
         # Calculate distance matrix using the PyKrige code:
         d = np.zeros((N,N))
@@ -1417,20 +1418,8 @@ class TestPyKrige(unittest.TestCase):
                 d[i,j] = core.great_circle_distance(lon[i],lat[i],lon[j],lat[j])
         
         # Test agains reference values:
-        np.testing.assert_allclose([d.max(), d[d>0.0].min(), d.sum(),
-                                    d.std(), np.median(d),
-                                    np.percentile(d, 0.7), d[17,133],
-                                    d[83,33], d[2,76], d[17,45]],
-                                   [179.39827328486047, # max
-                                    0.49781321229536524, # min != 0
-                                    3577568.5670485105, # sum
-                                    39.42686179130957, # std
-                                    90.011132985696634, # median
-                                    5.2851101415176212, # percentile
-                                    106.42435552834375,
-                                    75.241117692324522,
-                                    109.48819700842446,
-                                    40.639971012523361])
+        
+        np.testing.assert_allclose(d, d_ref)
         
         # Test general features:
         np.testing.assert_allclose(d[np.eye(N,dtype=bool)], 0.0)
