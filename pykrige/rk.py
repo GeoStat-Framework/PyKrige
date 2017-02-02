@@ -3,12 +3,19 @@ from pykrige.compat import validate_sklearn
 validate_sklearn()
 from pykrige.ok import OrdinaryKriging
 from pykrige.uk import UniversalKriging
+from pykrige.ok3d import OrdinaryKriging3D
+from pykrige.uk3d import UniversalKriging3D
 from sklearn.base import RegressorMixin, BaseEstimator
 from sklearn.svm import SVR
 from sklearn.metrics import r2_score
 
 krige_methods = {'ordinary': OrdinaryKriging,
-                 'universal': UniversalKriging}
+                 'universal': UniversalKriging,
+                 'ordinary3d': OrdinaryKriging3D,
+                 'universal3d': UniversalKriging3D
+                 }
+
+threed_krige = ('ordinary3d', 'universal3d')
 
 
 def validate_method(method):
@@ -47,61 +54,90 @@ class Krige(RegressorMixin, BaseEstimator):
         Parameters
         ----------
         x: ndarray
-            array of Points, (x, y) pairs, (x, y) pairs of shape (Nt, 2)
+            array of Points, (x, y) pairs of shape (N, 2) for 2d kriging
+            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
         y: ndarray
-            array of targets (Nt, )
+            array of targets (N, )
         """
-        if x.shape[1] != 2:
-            raise ValueError('krige can use only 2 covariates')
 
-        self.model = krige_methods[self.method](
-            x=x[:, 0],
-            y=x[:, 1],
-            z=y,
-            variogram_model=self.variogram_model,
-            nlags=self.nlags,
-            weight=self.weight,
-            verbose=self.verbose
-         )
+        points = self._dimensionality_check(x)
+
+        # if condition required to address backward compatibility
+        if self.method in threed_krige:
+            self.model = krige_methods[self.method](
+                val=y,
+                variogram_model=self.variogram_model,
+                nlags=self.nlags,
+                weight=self.weight,
+                verbose=self.verbose,
+                **points
+            )
+        else:
+            self.model = krige_methods[self.method](
+                z=y,
+                variogram_model=self.variogram_model,
+                nlags=self.nlags,
+                weight=self.weight,
+                verbose=self.verbose,
+                **points
+            )
+
+    def _dimensionality_check(self, x, ext=''):
+        if self.method in ('ordinary', 'universal'):
+            if x.shape[1] != 2:
+                raise ValueError('2d krige can use only 2d points')
+            else:
+                return {'x' + ext: x[:, 0], 'y' + ext: x[:, 1]}
+        if self.method in ('ordinary3d', 'universal3d'):
+            if x.shape[1] != 3:
+                raise ValueError('3d krige can use only 3d points')
+            else:
+                return {'x' + ext: x[:, 0],
+                        'y' + ext: x[:, 1],
+                        'z' + ext: x[:, 2]}
 
     def predict(self, x, *args, **kwargs):
         """
         Parameters
         ----------
         x: ndarray
-            array of Points, (x, y) pairs of shape (N, 2)
+            array of Points, (x, y) pairs of shape (N, 2) for 2d kriging
+            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
 
-        Returns:
+        Returns
         -------
         Prediction array
         """
         if not self.model:
             raise Exception('Not trained. Train first')
 
-        return self.execute(x, *args, **kwargs)[0]
+        points = self._dimensionality_check(x, ext='points')
 
-    def execute(self, x, *args, **kwargs):
+        return self.execute(points, *args, **kwargs)[0]
+
+    def execute(self, points, *args, **kwargs):
+        # TODO array of Points, (x, y) pairs of shape (N, 2)
         """
         Parameters
         ----------
-        x: ndarray
-            array of Points, (x, y) pairs of shape (N, 2)
+        points: dict
 
         Returns:
         -------
         Prediction array
         Variance array
         """
-        if isinstance(self.model, OrdinaryKriging):
+        if isinstance(self.model, OrdinaryKriging) or \
+                isinstance(self.model, OrdinaryKriging3D):
             prediction, variance = \
-                self.model.execute('points', x[:, 0], x[:, 1],
+                self.model.execute('points',
                                    n_closest_points=self.n_closest_points,
-                                   backend='loop')
+                                   backend='loop',
+                                   **points)
         else:
             print('n_closest_points will be ignored for UniversalKriging')
             prediction, variance = \
-                self.model.execute('points', x[:, 0], x[:, 1],
-                                   backend='loop')
+                self.model.execute('points', backend='loop', **points)
 
         return prediction, variance
 
@@ -128,13 +164,21 @@ class RegressionKriging:
                  weight=False,
                  verbose=False):
         """
-        :param regression_model: machine learning model instance from sklearn
-        :param method:
-        :param variogram_model:
-        :param n_closest_points:
-        :param nlags:
-        :param weight:
-        :param verbose:
+        Parameters
+        ----------
+        regression_model: machine learning model instance from sklearn
+        method: str, optional
+            type of kriging to be performed
+        variogram_model: str, optional
+            variogram model to be used during Kriging
+        n_closest_points: int
+            number of closest points to be used during Ordinary Kriging
+        nlags: int
+            see OK/UK class description
+        weight: bool
+            see OK/UK class description
+        verbose: bool
+            see OK/UK class description
         """
         check_sklearn_model(regression_model)
         self.regression_model = regression_model
@@ -155,13 +199,14 @@ class RegressionKriging:
         Parameters
         ----------
         p: ndarray
-            (Ns, d) array of predictor variables (Nt samples, d dimensions)
+            (Ns, d) array of predictor variables (Ns samples, d dimensions)
             for regression
-        x:
-            ndarray of (x, y) points. Needs to be a (Nt, 2) array
-            corresponding to the lon/lat, for example.
+        x: ndarray
+            ndarray of (x, y) points. Needs to be a (Ns, 2) array
+            corresponding to the lon/lat, for example 2d regression kriging.
+            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
         y: ndarray
-            array of targets (Nt, )
+            array of targets (Ns, )
         """
         self.regression_model.fit(p, y)
         ml_pred = self.regression_model.predict(p)
@@ -177,9 +222,10 @@ class RegressionKriging:
         p: ndarray
             (Ns, d) array of predictor variables (Ns samples, d dimensions)
             for regression
-        x:
+        x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
+            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
 
         Returns
         -------
@@ -188,15 +234,18 @@ class RegressionKriging:
 
         """
 
-        return self.krige_residual(x) + \
-               self.regression_model.predict(p)
+        return self.krige_residual(x) + self.regression_model.predict(p)
 
     def krige_residual(self, x):
         """
-        :param x:
+        Parameters
+        ----------
+        x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
-        :return:
+
+        Returns
+        -------
         residual: ndarray
             kriged residual values
         """
@@ -205,6 +254,18 @@ class RegressionKriging:
     def score(self, p, x, y, sample_weight=None):
         """
         Overloading default regression score method
+
+        Parameters
+        ----------
+        p: ndarray
+            (Ns, d) array of predictor variables (Ns samples, d dimensions)
+            for regression
+        x: ndarray
+            ndarray of (x, y) points. Needs to be a (Ns, 2) array
+            corresponding to the lon/lat, for example.
+            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
+        y: ndarray
+            array of targets (Ns, )
         """
 
         return r2_score(y_pred=self.predict(p, x),
