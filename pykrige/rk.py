@@ -52,9 +52,10 @@ class Krige(RegressorMixin, BaseEstimator):
         Parameters
         ----------
         x: ndarray
-            array of Points, (x, y) pairs, (x, y) pairs of shape (Nt, 2)
+            array of Points, (x, y) pairs of shape (N, 2) for 2d kriging
+            array of Points, (x, y, z) pairs of shape (N, 2) for 3d kriging
         y: ndarray
-            array of targets (Nt, )
+            array of targets (N, )
         """
 
         points = self._dimensionality_check(x)
@@ -85,7 +86,8 @@ class Krige(RegressorMixin, BaseEstimator):
         Parameters
         ----------
         x: ndarray
-            array of Points, (x, y) pairs of shape (N, 2)
+            array of Points, (x, y) pairs of shape (N, 2) for 2d kriging
+            array of Points, (x, y, z) pairs of shape (N, 2) for 3d kriging
 
         Returns:
         -------
@@ -147,13 +149,21 @@ class RegressionKriging:
                  weight=False,
                  verbose=False):
         """
-        :param regression_model: machine learning model instance from sklearn
-        :param method:
-        :param variogram_model:
-        :param n_closest_points:
-        :param nlags:
-        :param weight:
-        :param verbose:
+        Parameters
+        ----------
+        regression_model: machine learning model instance from sklearn
+        method: str, optional
+            type of kriging to be performed
+        variogram_model: str, optional
+            variogram model to be used during Kriging
+        n_closest_points: int
+            number of closest points to be used during Ordinary Kriging
+        nlags: int
+            see OK/UK class description
+        weight: bool
+            see OK/UK class description
+        verbose: bool
+            see OK/UK class description
         """
         check_sklearn_model(regression_model)
         self.regression_model = regression_model
@@ -176,9 +186,10 @@ class RegressionKriging:
         p: ndarray
             (Ns, d) array of predictor variables (Ns samples, d dimensions)
             for regression
-        x:
+        x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
-            corresponding to the lon/lat, for example.
+            corresponding to the lon/lat, for example 2d regression kriging.
+            array of Points, (x, y, z) pairs of shape (N, 2) for 3d kriging
         y: ndarray
             array of targets (Ns, )
         """
@@ -199,6 +210,7 @@ class RegressionKriging:
         x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
+            array of Points, (x, y, z) pairs of shape (N, 2) for 3d kriging
 
         Returns
         -------
@@ -207,8 +219,7 @@ class RegressionKriging:
 
         """
 
-        return self.krige_residual(x) + \
-               self.regression_model.predict(p)
+        return self.krige_residual(x) + self.regression_model.predict(p)
 
     def krige_residual(self, x):
         """
@@ -237,6 +248,7 @@ class RegressionKriging:
         x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
+            array of Points, (x, y, z) pairs of shape (N, 2) for 3d kriging
         y: ndarray
             array of targets (Ns, )
         """
