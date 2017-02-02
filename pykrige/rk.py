@@ -61,12 +61,12 @@ class Krige(RegressorMixin, BaseEstimator):
         points = self._dimensionality_check(x)
 
         self.model = krige_methods[self.method](
-            ** points,
             val=y,
             variogram_model=self.variogram_model,
             nlags=self.nlags,
             weight=self.weight,
-            verbose=self.verbose
+            verbose=self.verbose,
+            **points
          )
 
     def _dimensionality_check(self, x):
@@ -115,14 +115,14 @@ class Krige(RegressorMixin, BaseEstimator):
         if isinstance(self.model, OrdinaryKriging) or \
                 isinstance(self.model, OrdinaryKriging3D):
             prediction, variance = \
-                self.model.execute('points', **points,
+                self.model.execute('points',
                                    n_closest_points=self.n_closest_points,
-                                   backend='loop')
+                                   backend='loop',
+                                   **points)
         else:
             print('n_closest_points will be ignored for UniversalKriging')
             prediction, variance = \
-                self.model.execute('points', **points,
-                                   backend='loop')
+                self.model.execute('points', backend='loop', **points)
 
         return prediction, variance
 
