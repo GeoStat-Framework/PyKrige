@@ -196,7 +196,7 @@ class OrdinaryKriging:
                       'spherical': variogram_models.spherical_variogram_model,
                       'exponential': variogram_models.exponential_variogram_model}
 
-    def __init__(self, x, y, val, variogram_model='linear', variogram_parameters=None,
+    def __init__(self, x, y, z, variogram_model='linear', variogram_parameters=None,
                  variogram_function=None, nlags=6, weight=False, anisotropy_scaling=1.0,
                  anisotropy_angle=0.0, verbose=False, enable_plotting=False,
                  enable_statistics=False, coordinates_type='euclidean'):
@@ -206,7 +206,7 @@ class OrdinaryKriging:
         # referencing the original passed arguments.
         self.X_ORIG = np.atleast_1d(np.squeeze(np.array(x, copy=True)))
         self.Y_ORIG = np.atleast_1d(np.squeeze(np.array(y, copy=True)))
-        self.Z = np.atleast_1d(np.squeeze(np.array(val, copy=True)))
+        self.Z = np.atleast_1d(np.squeeze(np.array(z, copy=True)))
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
@@ -520,7 +520,7 @@ class OrdinaryKriging:
 
         return zvalues, sigmasq
 
-    def execute(self, style, x, y, mask=None, backend='vectorized', n_closest_points=None):
+    def execute(self, style, xpoints, ypoints, mask=None, backend='vectorized', n_closest_points=None):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation. Note that currently
@@ -547,10 +547,10 @@ class OrdinaryKriging:
                 Specifying 'masked' treats xpoints and ypoints as two arrays of
                 x and y coordinates that define a rectangular grid and uses mask
                 to only evaluate specific points in the grid.
-            x (array-like, dim N): If style is specific as 'grid' or 'masked',
+            xpoints (array-like, dim N): If style is specific as 'grid' or 'masked',
                 x-coordinates of MxN grid. If style is specified as 'points',
                 x-coordinates of specific points at which to solve kriging system.
-            y (array-like, dim M): If style is specified as 'grid' or 'masked',
+            ypoints (array-like, dim M): If style is specified as 'grid' or 'masked',
                 y-coordinates of MxN grid. If style is specified as 'points',
                 y-coordinates of specific points at which to solve kriging system.
                 Note that in this case, xpoints and ypoints must have the same dimensions
@@ -589,8 +589,8 @@ class OrdinaryKriging:
         if style != 'grid' and style != 'masked' and style != 'points':
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
-        xpts = np.atleast_1d(np.squeeze(np.array(x, copy=True)))
-        ypts = np.atleast_1d(np.squeeze(np.array(y, copy=True)))
+        xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
+        ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
         n = self.X_ADJUSTED.shape[0]
         nx = xpts.size
         ny = ypts.size

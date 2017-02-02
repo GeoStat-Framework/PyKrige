@@ -627,7 +627,7 @@ class UniversalKriging3D:
 
         return kvalues, sigmasq
 
-    def execute(self, style, x, y, z, mask=None, backend='vectorized', specified_drift_arrays=None):
+    def execute(self, style, xpoints, ypoints, zpoints, mask=None, backend='vectorized', specified_drift_arrays=None):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation. Note that currently
@@ -654,15 +654,15 @@ class UniversalKriging3D:
                 Specifying 'masked' treats xpoints, ypoints, and zpoints as arrays of
                 x, y, and z coordinates that define a rectangular grid and uses mask
                 to only evaluate specific points in the grid.
-            x (array-like, dim N): If style is specific as 'grid' or 'masked',
+            xpoints (array-like, dim N): If style is specific as 'grid' or 'masked',
                 x-coordinates of MxNxL grid. If style is specified as 'points',
                 x-coordinates of specific points at which to solve kriging system.
-            y (array-like, dim M): If style is specified as 'grid' or 'masked',
+            ypoints (array-like, dim M): If style is specified as 'grid' or 'masked',
                 y-coordinates of LxMxN grid. If style is specified as 'points',
                 y-coordinates of specific points at which to solve kriging system.
                 Note that in this case, xpoints, ypoints, and zpoints must have the
                 same dimensions (i.e., L = M = N).
-            z (array-like, dim L): If style is specified as 'grid' or 'masked',
+            zpoints (array-like, dim L): If style is specified as 'grid' or 'masked',
                 z-coordinates of LxMxN grid. If style is specified as 'points',
                 z-coordinates of specific points at which to solve kriging system.
                 Note that in this case, xpoints, ypoints, and zpoints must have the
@@ -705,9 +705,9 @@ class UniversalKriging3D:
         if style != 'grid' and style != 'masked' and style != 'points':
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
-        xpts = np.atleast_1d(np.squeeze(np.array(x, copy=True)))
-        ypts = np.atleast_1d(np.squeeze(np.array(y, copy=True)))
-        zpts = np.atleast_1d(np.squeeze(np.array(z, copy=True)))
+        xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
+        ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
+        zpts = np.atleast_1d(np.squeeze(np.array(zpoints, copy=True)))
         n = self.X_ADJUSTED.shape[0]
         n_withdrifts = n
         if self.regional_linear_drift:

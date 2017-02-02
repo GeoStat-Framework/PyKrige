@@ -15,6 +15,8 @@ krige_methods = {'ordinary': OrdinaryKriging,
                  'universal3d': UniversalKriging3D
                  }
 
+threed_krige = ('ordinary3d', 'universal3d')
+
 
 def validate_method(method):
     if method not in krige_methods.keys():
@@ -53,33 +55,46 @@ class Krige(RegressorMixin, BaseEstimator):
         ----------
         x: ndarray
             array of Points, (x, y) pairs of shape (N, 2) for 2d kriging
-            array of Points, (x, y, z) pairs of shape (N, 2) for 3d kriging
+            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
         y: ndarray
             array of targets (N, )
         """
 
         points = self._dimensionality_check(x)
 
-        self.model = krige_methods[self.method](
-            val=y,
-            variogram_model=self.variogram_model,
-            nlags=self.nlags,
-            weight=self.weight,
-            verbose=self.verbose,
-            **points
-         )
+        # if condition required to address backward compatibility
+        if self.method in threed_krige:
+            self.model = krige_methods[self.method](
+                val=y,
+                variogram_model=self.variogram_model,
+                nlags=self.nlags,
+                weight=self.weight,
+                verbose=self.verbose,
+                **points
+            )
+        else:
+            self.model = krige_methods[self.method](
+                z=y,
+                variogram_model=self.variogram_model,
+                nlags=self.nlags,
+                weight=self.weight,
+                verbose=self.verbose,
+                **points
+            )
 
-    def _dimensionality_check(self, x):
+    def _dimensionality_check(self, x, ext=''):
         if self.method in ('ordinary', 'universal'):
             if x.shape[1] != 2:
                 raise ValueError('2d krige can use only 2d points')
             else:
-                return {'x': x[:, 0], 'y': x[:, 1]}
+                return {'x' + ext: x[:, 0], 'y' + ext: x[:, 1]}
         if self.method in ('ordinary3d', 'universal3d'):
             if x.shape[1] != 3:
                 raise ValueError('3d krige can use only 3d points')
             else:
-                return {'x': x[:, 0], 'y': x[:, 1], 'z': x[:, 2]}
+                return {'x' + ext: x[:, 0],
+                        'y' + ext: x[:, 1],
+                        'z' + ext: x[:, 2]}
 
     def predict(self, x, *args, **kwargs):
         """
@@ -87,16 +102,16 @@ class Krige(RegressorMixin, BaseEstimator):
         ----------
         x: ndarray
             array of Points, (x, y) pairs of shape (N, 2) for 2d kriging
-            array of Points, (x, y, z) pairs of shape (N, 2) for 3d kriging
+            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
 
-        Returns:
+        Returns
         -------
         Prediction array
         """
         if not self.model:
             raise Exception('Not trained. Train first')
 
-        points = self._dimensionality_check(x)
+        points = self._dimensionality_check(x, ext='points')
 
         return self.execute(points, *args, **kwargs)[0]
 
@@ -189,7 +204,7 @@ class RegressionKriging:
         x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example 2d regression kriging.
-            array of Points, (x, y, z) pairs of shape (N, 2) for 3d kriging
+            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
         y: ndarray
             array of targets (Ns, )
         """
@@ -210,7 +225,7 @@ class RegressionKriging:
         x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
-            array of Points, (x, y, z) pairs of shape (N, 2) for 3d kriging
+            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
 
         Returns
         -------
@@ -248,7 +263,7 @@ class RegressionKriging:
         x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
-            array of Points, (x, y, z) pairs of shape (N, 2) for 3d kriging
+            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
         y: ndarray
             array of targets (Ns, )
         """
