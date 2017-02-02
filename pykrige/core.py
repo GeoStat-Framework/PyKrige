@@ -45,8 +45,12 @@ Functions:
         follows standard longitude/latitude definition.
 
 References:
-    P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
+[1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
     (Cambridge University Press, 1997) 272 p.
+
+[2] T. Vincenty, Direct and Inverse Solutions of Geodesics on the Ellipsoid
+    with Application of Nested Equations, Survey Review 23 (176),
+    (Directorate of Overseas Survey, Kingston Road, Tolworth, Surrey 1975)
 
 Copyright (c) 2015 Benjamin S. Murphy
 """
@@ -87,18 +91,29 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
               given pair(s) of points.
     
     """
-    # Calculate dot product of both euclidean vectors:
+    # Convert to radians:
     lat1 = np.array(lat1)*np.pi/180.0
     lat2 = np.array(lat2)*np.pi/180.0
-    d = np.cos((lon1-lon2)*np.pi/180.0)*np.cos(lat1)*np.cos(lat2) \
-        + np.sin(lat1)*np.sin(lat2)
-    # Angle is arccos of euclidean dot product. Avoid errors caused
-    # by numerics (possibly d>1.0 or d<-1.0, resulting in NAN. This
-    # can, however, only be caused by numerical errors for real
-    # lat/lon):
-    d[d>1.0] = 1.0
-    d[d<-1.0]=-1.0
-    return 180.0/np.pi*np.arccos(d)
+    dlon = (lon1-lon2)*np.pi/180.0
+    
+    # Evaluate trigonometric functions that need to be evaluated more
+    # than once:
+    c1 = np.cos(lat1)
+    s1 = np.sin(lat1)
+    c2 = np.cos(lat2)
+    s2 = np.sin(lat2)
+    cd = np.cos(dlon)
+    
+    # This uses the arctan version of the great-circle distance function
+    # from en.wikipedia.org/wiki/Great-circle_distance for increased
+    # numerical stability.
+    # Formula can be obtained from [2] combining eqns. (14)-(16)
+    # for spherical geometry (f=0).
+    
+    return 180.0/np.pi*np.arctan2(
+               np.sqrt((c2*np.sin(dlon))**2 + 
+                       (c1*s2-s1*c2*cd)**2),
+               s1*s2+c1*c2*cd)
 
 def euclid3_to_great_circle(euclid3_distance):
     """
