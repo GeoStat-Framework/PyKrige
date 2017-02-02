@@ -155,13 +155,13 @@ class RegressionKriging:
         Parameters
         ----------
         p: ndarray
-            (Ns, d) array of predictor variables (Nt samples, d dimensions)
+            (Ns, d) array of predictor variables (Ns samples, d dimensions)
             for regression
         x:
-            ndarray of (x, y) points. Needs to be a (Nt, 2) array
+            ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
         y: ndarray
-            array of targets (Nt, )
+            array of targets (Ns, )
         """
         self.regression_model.fit(p, y)
         ml_pred = self.regression_model.predict(p)
@@ -177,7 +177,7 @@ class RegressionKriging:
         p: ndarray
             (Ns, d) array of predictor variables (Ns samples, d dimensions)
             for regression
-        x:
+        x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
 
@@ -193,10 +193,14 @@ class RegressionKriging:
 
     def krige_residual(self, x):
         """
-        :param x:
+        Parameters
+        ----------
+        x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
-        :return:
+
+        Returns
+        -------
         residual: ndarray
             kriged residual values
         """
@@ -205,6 +209,17 @@ class RegressionKriging:
     def score(self, p, x, y, sample_weight=None):
         """
         Overloading default regression score method
+
+        Parameters
+        ----------
+        p: ndarray
+            (Ns, d) array of predictor variables (Ns samples, d dimensions)
+            for regression
+        x: ndarray
+            ndarray of (x, y) points. Needs to be a (Ns, 2) array
+            corresponding to the lon/lat, for example.
+        y: ndarray
+            array of targets (Ns, )
         """
 
         return r2_score(y_pred=self.predict(p, x),
