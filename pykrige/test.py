@@ -1388,9 +1388,48 @@ class TestPyKrige(unittest.TestCase):
         self.assertTrue(np.allclose(ss_func, ss_lin))
 
     def test_geometric_code(self):
+        
+        # Create selected points distributed across the sphere:
+        N=4
+        lon = np.array([7.0,   7.0,     187.0,  73.231])
+        lat = np.array([13.23, 13.2301, -13.23, -79.3])
+        
+        # For the points generated with this reference seed, the distance matrix
+        # has been calculated using geopy (v. 1.11.0) as follows:
+        # >>>   from geopy.distance import great_circle
+        # >>>   g = great_circle(radius=1.0)
+        # >>>   d = np.zeros((N,N), dtype=float)
+        # >>>   for i in range(N):
+        # >>>       for j in range(N):
+        # >>>           d[i,j] = g.measure((lat[i],lon[i]),(lat[j],lon[j]))
+        # >>>   d *= 180.0/np.pi
+        # From that distance matrix, the reference values have been obtained.
+        d_ref = np.array(
+                [[0.0, 1e-4, 180.0, 98.744848317171801],
+                 [1e-4, 0.0, 179.9999, 98.744946828324345],
+                 [180.0, 179.9999, 0.0, 81.255151682828213],
+                 [98.744848317171801, 98.744946828324345, 81.255151682828213, 0.0]]
+                )
+        
+        # Calculate distance matrix using the PyKrige code:
+        d = np.zeros((N,N))
+        for i in range(N):
+            for j in range(N):
+                d[i,j] = core.great_circle_distance(lon[i],lat[i],lon[j],lat[j])
+        
+        # Test agains reference values:
+        
+        np.testing.assert_allclose(d, d_ref)
+        
+        # Test general features:
+        np.testing.assert_allclose(d[np.eye(N,dtype=bool)], 0.0)
+        np.testing.assert_equal(d>=0.0, np.ones((N,N),dtype=bool))
+        np.testing.assert_allclose(d,d.T)
+        np.testing.assert_equal(d<=180.0,np.ones((N,N),dtype=bool))
+    
         # Test great_circle_distance and euclid3_to_great_circle against each other:
-        lon_ref = [0.0, 175.0, 61.234, 267.5]
-        lat_ref = [0.0, -7.5,  77.3,   -23.5]
+        lon_ref = lon
+        lat_ref = lat
         for i in range(len(lon_ref)):
             lon, lat = np.meshgrid(np.linspace(0, 360.0, 20),
                                    np.linspace(-90.0, 90.0, 20))
