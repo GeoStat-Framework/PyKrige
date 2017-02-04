@@ -16,27 +16,27 @@ def make_benchark(n_train, n_test, n_dim=2):
 
     Parameters
     ----------
-    n_train: int
+    n_train : int
       number of points in the training set
-    n_test: int
+    n_test : int
       number of points in the test set
-    n_dim: int
+    n_dim : int
       number of dimensions (default=2)
 
     Returns
     -------
-    res: dict
+    res : dict
       a dictionary with the timing results
     """
-    x_train = np.random.rand(n_train, n_dim)
+    X_train = np.random.rand(n_train, n_dim)
     y_train = np.random.rand(n_train)
-    x_test = np.random.rand(n_test, n_dim)
+    X_test = np.random.rand(n_test, n_dim)
 
     res = {}
 
     for variogram_model in VARIOGRAM_MODELS:
         tic = time()
-        OK = OrdinaryKriging(x_train[:, 0], x_train[:, 1], y_train,
+        OK = OrdinaryKriging(X_train[:, 0], X_train[:, 1], y_train,
                              variogram_model='linear',
                              verbose=False, enable_plotting=False)
         res['t_train_{}'.format(variogram_model)] = time() - tic
@@ -49,7 +49,7 @@ def make_benchark(n_train, n_test, n_dim=2):
                 continue  # this is not supported
 
             tic = time()
-            OK.execute('points', x_test[:, 0], x_test[:, 1],
+            OK.execute('points', X_test[:, 0], X_test[:, 1],
                        backend=backend,
                        n_closest_points=n_closest_points)
             res['t_test_{}_{}'.format(backend, n_closest_points)] = time() - tic
@@ -62,13 +62,13 @@ def print_benchmark(n_train, n_test, n_dim, res):
 
     Parameters
     ----------
-    n_train: int
+    n_train : int
       number of points in the training set
-    n_test: int
+    n_test : int
       number of points in the test set
-    n_dim: int
+    n_dim : int
       number of dimensions (default=2)
-    res: dict
+    res : dict
       a dictionary with the timing results
     """
     print('='*80)
