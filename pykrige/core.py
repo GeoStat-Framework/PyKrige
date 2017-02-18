@@ -63,7 +63,7 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
     """
     Calculate the great circle distance between one or multiple
     pairs of points on a unit sphere.
-    
+
     Parameters:
     -----------
     lon1: float scalar or numpy array
@@ -78,24 +78,24 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
     lat2: float scalar or numpy array
         Latitude coordinate(s) of the second element(s) of the point
         pair(s), given in degrees.
-    
+
     Calculation of distances follows numpy elementwise semantics, so if
     an array of length N is passed, all input parameters need to be
     arrays of length N or scalars.
-    
-    
+
+
     Returns:
     --------
     distance: float
               The great circle distance(s) (in degrees) between the
               given pair(s) of points.
-    
+
     """
     # Convert to radians:
     lat1 = np.array(lat1)*np.pi/180.0
     lat2 = np.array(lat2)*np.pi/180.0
     dlon = (lon1-lon2)*np.pi/180.0
-    
+
     # Evaluate trigonometric functions that need to be evaluated more
     # than once:
     c1 = np.cos(lat1)
@@ -103,15 +103,15 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
     c2 = np.cos(lat2)
     s2 = np.sin(lat2)
     cd = np.cos(dlon)
-    
+
     # This uses the arctan version of the great-circle distance function
     # from en.wikipedia.org/wiki/Great-circle_distance for increased
     # numerical stability.
     # Formula can be obtained from [2] combining eqns. (14)-(16)
     # for spherical geometry (f=0).
-    
+
     return 180.0/np.pi*np.arctan2(
-               np.sqrt((c2*np.sin(dlon))**2 + 
+               np.sqrt((c2*np.sin(dlon))**2 +
                        (c1*s2-s1*c2*cd)**2),
                s1*s2+c1*c2*cd)
 
@@ -119,15 +119,15 @@ def euclid3_to_great_circle(euclid3_distance):
     """
     Convert euclidean distance between points on a unit sphere to
     the corresponding great circle distance.
-    
-    
+
+
     Parameters:
     -----------
     euclid3_distance: float scalar or numpy array
         The euclidean three-space distance(s) between points on a
         unit sphere, thus between [0,2].
-    
-    
+
+
     Returns:
     --------
     great_circle_dist: float scalar or numpy array
@@ -199,12 +199,11 @@ def initialize_variogram_model(x, y, z, variogram_model, variogram_model_paramet
     """Initializes the variogram model for kriging according
     to user specifications or to defaults"""
 
-    x1, x2 = np.meshgrid(x, x)
-    y1, y2 = np.meshgrid(y, y)
-    z1, z2 = np.meshgrid(z, z)
-
+    x1, x2 = np.meshgrid(x, x, sparse=True)
+    y1, y2 = np.meshgrid(y, y, sparse=True)
+    z1, z2 = np.meshgrid(z, z, sparse=True)
     dz = z1 - z2
-#GEO
+
     if coordinates_type == 'euclidean':
         dx = x1 - x2
         dy = y1 - y2
@@ -212,7 +211,7 @@ def initialize_variogram_model(x, y, z, variogram_model, variogram_model_paramet
     elif coordinates_type == 'geographic':
         # Assume x => lon, y => lat
         d = great_circle_distance(x1, y1, x2, y2)
-        
+
     g = 0.5 * dz**2
 
     indices = np.indices(d.shape)
@@ -290,9 +289,9 @@ def initialize_variogram_model_3d(x, y, z, values, variogram_model, variogram_mo
     """Initializes the variogram model for kriging according
     to user specifications or to defaults"""
 
-    x1, x2 = np.meshgrid(x, x)
-    y1, y2 = np.meshgrid(y, y)
-    z1, z2 = np.meshgrid(z, z)
+    x1, x2 = np.meshgrid(x, x, sparse=True)
+    y1, y2 = np.meshgrid(y, y, sparse=True)
+    z1, z2 = np.meshgrid(z, z, sparse=True)
     val1, val2 = np.meshgrid(values, values)
     d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
     g = 0.5 * (val1 - val2)**2
@@ -391,16 +390,16 @@ def krige(x, y, z, coords, variogram_function, variogram_model_parameters, coord
         zero_index = None
         zero_value = False
 
-        x1, x2 = np.meshgrid(x, x)
-        y1, y2 = np.meshgrid(y, y)
-#GEO
+        x1, x2 = np.meshgrid(x, x, sparse=True)
+        y1, y2 = np.meshgrid(y, y, sparse=True)
+
         if coordinates_type == 'euclidean':
             d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
             bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2)
         elif coordinates_type == 'geographic':
             d = great_circle_distance(x1, y1, x2, y2)
-            bd = great_circle_distane(x, y, coords[0]*np.ones(x.shape),
-                                      coords[1]*np.ones(y.shape))
+            bd = great_circle_distance(x, y, coords[0]*np.ones(x.shape),
+                                       coords[1]*np.ones(y.shape))
         if np.any(np.absolute(bd) <= 1e-10):
             zero_value = True
             zero_index = np.where(bd <= 1e-10)[0][0]
@@ -433,9 +432,9 @@ def krige_3d(x, y, z, vals, coords, variogram_function, variogram_model_paramete
         zero_index = None
         zero_value = False
 
-        x1, x2 = np.meshgrid(x, x)
-        y1, y2 = np.meshgrid(y, y)
-        z1, z2 = np.meshgrid(z, z)
+        x1, x2 = np.meshgrid(x, x, sparse=True)
+        y1, y2 = np.meshgrid(y, y, sparse=True)
+        z1, z2 = np.meshgrid(z, z, sparse=True)
         d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
         bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2 + (z - coords[2])**2)
         if np.any(np.absolute(bd) <= 1e-10):
