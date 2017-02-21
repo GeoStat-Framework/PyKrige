@@ -498,10 +498,9 @@ def find_statistics_3d(x, y, z, vals, variogram_function, variogram_model_parame
             delta[n] = 0.0
             sigma[n] = 0.0
         else:
-            z_, ss_ = krige_3d(x[:n], y[:n], z[:n], vals[:n], (x[n], y[n], z[n]),
+            val_, ss_ = krige_3d(x[:n], y[:n], z[:n], vals[:n], (x[n], y[n], z[n]),
                                variogram_function, variogram_model_parameters)
-            d = z[n] - z_
-            delta[n] = d
+            delta[n] = vals[n] - val_
             sigma[n] = np.sqrt(ss_)
 
     delta = delta[1:]
