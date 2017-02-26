@@ -1460,22 +1460,24 @@ class TestPyKrige(unittest.TestCase):
         # Execute on grid:
         z, ss = OK.execute('grid', grid_lon, grid_lat)
 
+
 @unittest.skipUnless(SKLEARN_INSTALLED, "scikit-learn not installed")
 class TestKrige(unittest.TestCase):
 
     @staticmethod
     def method_and_vergiogram():
-        method = ['ordinary', 'universal']
+        method = ['ordinary', 'universal', 'ordinary3d', 'universal3d']
         variogram_model = ['linear', 'power', 'gaussian', 'spherical',
                            'exponential']
         return product(method, variogram_model)
 
     def test_krige(self):
         from pykrige.rk import Krige
+        from pykrige.rk import threed_krige
         from pykrige.compat import GridSearchCV
         # dummy data
-        np.random.seed(2)
-        X = np.random.randint(0, 400, size=(20, 2)).astype(float)
+        np.random.seed(1)
+        X = np.random.randint(0, 400, size=(20, 3)).astype(float)
         y = 5 * np.random.rand(20)
 
         for m, v in self.method_and_vergiogram():
@@ -1490,9 +1492,15 @@ class TestKrige(unittest.TestCase):
                                      cv=5,
                                      )
             # run the gridsearch
-            estimator.fit(X=X, y=y)
+            if m in ['ordinary', 'universal']:
+                estimator.fit(X=X[:, :2], y=y)
+            else:
+                estimator.fit(X=X, y=y)
             if hasattr(estimator, 'best_score_'):
-                assert estimator.best_score_ > -3.0
+                if m in threed_krige:
+                    assert estimator.best_score_ > -10.0
+                else:
+                    assert estimator.best_score_ > -3.0
             if hasattr(estimator, 'cv_results_'):
                 assert estimator.cv_results_['mean_train_score'] > 0
 
