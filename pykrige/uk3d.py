@@ -18,7 +18,7 @@ References:
     P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
     (Cambridge University Press, 1997) 272 p.
 
-Copyright (c) 2015 Benjamin S. Murphy
+Copyright (c) 2015-2017 Benjamin S. Murphy
 """
 
 import numpy as np
@@ -27,7 +27,7 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
-from .core import _adjust_for_anisotropy
+from .core import adjust_for_anisotropy, initialize_variogram_model
 import warnings
 
 
@@ -60,11 +60,15 @@ class UniversalKriging3D:
                 gaussian - [sill, range, nugget]
                 spherical - [sill, range, nugget]
                 exponential - [sill, range, nugget]
+                hole-effect - [sill, range, nugget]
             For a custom variogram model, the parameters are required, as custom variogram
             models currently will not automatically be fit to the data. The code does not
             check that the provided list contains the appropriate number of parameters for
             the custom variogram model, so an incorrect parameter list in such a case will
             probably trigger an esoteric exception someplace deep in the code.
+            NOTE that, by default, the code expects the full sill rather than the partial sill.
+            The user can specify the partial sill (psill) instead of the full sill
+            here by setting the 'use_psill' flag to True (see below).
         variogram_function (callable, optional): A callable function that must be provided
             if variogram_model is specified as 'custom'. The function must take only two
             arguments: first, a list of parameters for the variogram model; second, the
@@ -77,6 +81,12 @@ class UniversalKriging3D:
             True indicates that weights will be applied. Default is False.
             (Kitanidis suggests that the values at smaller lags are more important in
             fitting a variogram model, so the option is provided to enable such weighting.)
+        use_psill (boolean, optional): Flag that specified whether the user has specified the full sill
+            or the partial sill (psill). Only used if the user specifies the variogram model parameters
+            and if the variogram model is specified as gaussian, spherical, exponential, or hole-effect.
+            If True, the code will interpret the variogram model parameters in terms of the partial sill;
+            if False, the code will interpret the variogram model parameters in terms of the full sill.
+            Default is False, as it is generally easier for the user to think in terms of the full sill.
         anisotropy_scaling_y (float, optional): Scalar stretching value to take
             into account anisotropy in the y direction. Default is 1 (effectively no stretching).
             Scaling is applied in the y direction in the rotated data frame
@@ -121,8 +131,8 @@ class UniversalKriging3D:
     Callable Methods:
         display_variogram_model(): Displays semivariogram and variogram model.
 
-        update_variogram_model(variogram_model, variogram_parameters=None, nlags=6,
-            anisotropy_scaling=1.0, anisotropy_angle=0.0):
+        update_variogram_model(variogram_model, variogram_parameters=None, nlags=6, weight=False,
+            use_psill=False, anisotropy_scaling=1.0, anisotropy_angle=0.0):
             Changes the variogram model and variogram parameters for
             the kriging system.
             Inputs:
@@ -140,6 +150,9 @@ class UniversalKriging3D:
                 weight (boolean, optional): Flag that specifies if semivariance at smaller lags
                     should be weighted more heavily when automatically calculating variogram model.
                     True indicates that weights will be applied. Default is False.
+                use_psill (boolean, optional): Flag that specified whether the user has specified
+                    the full sill or the partial sill (psill) in the variogram_parameters list.
+                    Default is False.
                 anisotropy_scaling (float, optional): Scalar stretching value to
                     take into account anisotropy. Default is 1 (effectively no
                     stretching). Scaling is applied in the y-direction.
@@ -226,13 +239,15 @@ class UniversalKriging3D:
                       'power': variogram_models.power_variogram_model,
                       'gaussian': variogram_models.gaussian_variogram_model,
                       'spherical': variogram_models.spherical_variogram_model,
-                      'exponential': variogram_models.exponential_variogram_model}
+                      'exponential': variogram_models.exponential_variogram_model,
+                      'hole-effect': variogram_models.hole_effect_variogram_model}
 
     def __init__(self, x, y, z, val, variogram_model='linear', variogram_parameters=None,
-                 variogram_function=None, nlags=6, weight=False, anisotropy_scaling_y=1.0,
-                 anisotropy_scaling_z=1.0, anisotropy_angle_x=0.0, anisotropy_angle_y=0.0,
-                 anisotropy_angle_z=0.0, drift_terms=None, specified_drift=None,
-                 functional_drift=None, verbose=False, enable_plotting=False):
+                 variogram_function=None, nlags=6, weight=False, use_psill=False,
+                 anisotropy_scaling_y=1.0, anisotropy_scaling_z=1.0,
+                 anisotropy_angle_x=0.0, anisotropy_angle_y=0.0, anisotropy_angle_z=0.0,
+                 drift_terms=None, specified_drift=None, functional_drift=None,
+                 verbose=False, enable_plotting=False):
 
         # Deal with mutable default argument
         if drift_terms is None:
@@ -245,10 +260,10 @@ class UniversalKriging3D:
         # Code assumes 1D input arrays. Ensures that any extraneous dimensions
         # don't get in the way. Copies are created to avoid any problems with
         # referencing the original passed arguments.
-        self.X_ORIG = np.atleast_1d(np.squeeze(np.array(x, copy=True)))
-        self.Y_ORIG = np.atleast_1d(np.squeeze(np.array(y, copy=True)))
-        self.Z_ORIG = np.atleast_1d(np.squeeze(np.array(z, copy=True)))
-        self.VALUES = np.atleast_1d(np.squeeze(np.array(val, copy=True)))
+        self.X_ORIG = np.atleast_1d(np.squeeze(np.array(x, copy=True, dtype=np.float64)))
+        self.Y_ORIG = np.atleast_1d(np.squeeze(np.array(y, copy=True, dtype=np.float64)))
+        self.Z_ORIG = np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float64)))
+        self.VALUES = np.atleast_1d(np.squeeze(np.array(val, copy=True, dtype=np.float64)))
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
@@ -266,12 +281,12 @@ class UniversalKriging3D:
         if self.verbose:
             print("Adjusting data for anisotropy...")
         self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = \
-             _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
-                                    [self.XCENTER, self.YCENTER, self.ZCENTER],
-                                    [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
-                                    [self.anisotropy_angle_x, self.anisotropy_angle_y,
-                                    self.anisotropy_angle_z]).T
+            adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
+                                  [self.XCENTER, self.YCENTER, self.ZCENTER],
+                                  [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+                                  [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z]).T
 
+        # set up variogram...
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
             raise ValueError("Specified variogram model '%s' is not supported." % variogram_model)
@@ -282,12 +297,26 @@ class UniversalKriging3D:
                 self.variogram_function = variogram_function
         else:
             self.variogram_function = self.variogram_dict[self.variogram_model]
+
         if self.verbose:
             print("Initializing variogram model...")
+
+        # set note in ok.py about 'use_psill' kwarg
+        if variogram_parameters is None:
+            vp_temp = None
+        elif use_psill:
+            vp_temp = variogram_parameters
+        else:
+            if self.variogram_model in ['gaussian', 'spherical', 'exponential', 'hole-effect']:
+                vp_temp = [variogram_parameters[0] - variogram_parameters[2],
+                           variogram_parameters[1], variogram_parameters[2]]
+            else:
+                vp_temp = variogram_parameters
         self.lags, self.semivariance, self.variogram_model_parameters = \
-            core.initialize_variogram_model_3d(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED, self.VALUES,
-                                               self.variogram_model, variogram_parameters, self.variogram_function,
-                                               nlags, weight)
+            initialize_variogram_model(np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED)).T, self.VALUES,
+                                       self.variogram_model, vp_temp, self.variogram_function,
+                                       nlags, weight, 'euclidean')
+
         if self.verbose:
             if self.variogram_model == 'linear':
                 print("Using '%s' Variogram Model" % 'linear')
@@ -302,7 +331,8 @@ class UniversalKriging3D:
                 print("Using Custom Variogram Model")
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
-                print("Sill:", self.variogram_model_parameters[0])
+                print("Partial Sill:", self.variogram_model_parameters[0])
+                print("Full Sill:", self.variogram_model_parameters[0] + self.variogram_model_parameters[2])
                 print("Range:", self.variogram_model_parameters[1])
                 print("Nugget:", self.variogram_model_parameters[2], '\n')
         if self.enable_plotting:
@@ -364,7 +394,8 @@ class UniversalKriging3D:
             self.functional_drift = False
 
     def update_variogram_model(self, variogram_model, variogram_parameters=None, variogram_function=None,
-                               nlags=6, weight=False, anisotropy_scaling_y=1.0, anisotropy_scaling_z=1.0,
+                               nlags=6, weight=False, use_psill=False,
+                               anisotropy_scaling_y=1.0, anisotropy_scaling_z=1.0,
                                anisotropy_angle_x=0.0, anisotropy_angle_y=0.0, anisotropy_angle_z=0.0):
         """Allows user to update variogram type and/or variogram model parameters."""
 
@@ -379,11 +410,10 @@ class UniversalKriging3D:
             self.anisotropy_angle_y = anisotropy_angle_y
             self.anisotropy_angle_z = anisotropy_angle_z
             self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = \
-                _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
-                                       [self.XCENTER, self.YCENTER, self.ZCENTER],
-                                       [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
-                                       [self.anisotropy_angle_x,
-                                        self.anisotropy_angle_y, self.anisotropy_angle_z]).T
+                adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
+                                      [self.XCENTER, self.YCENTER, self.ZCENTER],
+                                      [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+                                      [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z]).T
 
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
@@ -397,10 +427,22 @@ class UniversalKriging3D:
             self.variogram_function = self.variogram_dict[self.variogram_model]
         if self.verbose:
             print("Updating variogram mode...")
+
+        if variogram_parameters is None:
+            vp_temp = None
+        elif use_psill:
+            vp_temp = variogram_parameters
+        else:
+            if self.variogram_model in ['gaussian', 'spherical', 'exponential', 'hole-effect']:
+                vp_temp = [variogram_parameters[0] - variogram_parameters[2],
+                           variogram_parameters[1], variogram_parameters[2]]
+            else:
+                vp_temp = variogram_parameters
         self.lags, self.semivariance, self.variogram_model_parameters = \
-            core.initialize_variogram_model_3d(self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED, self.VALUES,
-                                               self.variogram_model, variogram_parameters, self.variogram_function,
-                                               nlags, weight)
+            initialize_variogram_model(np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED)).T, self.VALUES,
+                                       self.variogram_model, vp_temp, self.variogram_function,
+                                       nlags, weight, 'euclidean')
+
         if self.verbose:
             if self.variogram_model == 'linear':
                 print("Using '%s' Variogram Model" % 'linear')
@@ -415,7 +457,8 @@ class UniversalKriging3D:
                 print("Using Custom Variogram Model")
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
-                print("Sill:", self.variogram_model_parameters[0])
+                print("Partial Sill:", self.variogram_model_parameters[0])
+                print("Full Sill:", self.variogram_model_parameters[0] + self.variogram_model_parameters[2])
                 print("Range:", self.variogram_model_parameters[1])
                 print("Nugget:", self.variogram_model_parameters[2], '\n')
         if self.enable_plotting:
@@ -781,11 +824,11 @@ class UniversalKriging3D:
                 warnings.warn("Provided specified drift values, but 'specified' drift was not initialized during "
                               "instantiation of UniversalKriging3D class.", RuntimeWarning)
 
-        xpts, ypts, zpts = _adjust_for_anisotropy(np.vstack((xpts, ypts, zpts)).T,
-                                                  [self.XCENTER, self.YCENTER, self.ZCENTER],
-                                                  [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
-                                                  [self.anisotropy_angle_x, self.anisotropy_angle_y,
-                                                   self.anisotropy_angle_z]).T
+        xpts, ypts, zpts = adjust_for_anisotropy(np.vstack((xpts, ypts, zpts)).T,
+                                                 [self.XCENTER, self.YCENTER, self.ZCENTER],
+                                                 [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+                                                 [self.anisotropy_angle_x, self.anisotropy_angle_y,
+                                                  self.anisotropy_angle_z]).T
 
         if style != 'masked':
             mask = np.zeros(npt, dtype='bool')
