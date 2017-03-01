@@ -50,6 +50,8 @@ help:
 
 clean:
 	rm -rf $(BUILDDIR)/*
+	rm -rf generated/
+	rm -rf auto_examples/
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html

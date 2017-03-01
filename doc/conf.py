@@ -21,13 +21,15 @@ import pykrige
 
 from recommonmark.parser import CommonMarkParser
 
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('sphinxext'))
 
-#from github_link import make_linkcode_resolve
 
+from github_link import make_linkcode_resolve
 
 source_parsers = {
     '.md': CommonMarkParser,
@@ -44,13 +46,11 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.mathjax',
-    'sphinx.ext.viewcode',
-#    'matplotlib.sphinxext.plot_directive',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinxcontrib.napoleon',
-#    'sphinx_gallery.gen_gallery',
-#    'sphinx.ext.linkcode'
+    'sphinx_gallery.gen_gallery',
+    'sphinx.ext.linkcode'
 ]
 
 
@@ -70,6 +70,15 @@ source_suffix = ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
+
+  
+sphinx_gallery_conf = {
+    # path to your examples scripts
+    'examples_dirs' : '../examples',
+    # path where to save gallery generated examples
+    'gallery_dirs'  : 'examples',
+    'filename_pattern'  : '/.*.py'
+}
 
 # General information about the project.
 project = 'PyKrige'
@@ -308,3 +317,8 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+# The following is used by sphinx.ext.linkcode to provide links to github
+linkcode_resolve = make_linkcode_resolve('pykrige',
+                                         u'https://github.com/bsmurphy/'
+                                         'PyKrige/blob/{revision}/'
+                                         '{package}/{path}#L{lineno}')
