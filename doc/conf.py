@@ -16,6 +16,10 @@
 import sys
 import os
 import shlex
+
+import matplotlib
+matplotlib.use("Agg")
+
 import sphinx_rtd_theme
 import pykrige
 
