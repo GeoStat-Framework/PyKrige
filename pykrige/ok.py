@@ -22,6 +22,7 @@ References:
 Copyright (c) 2015 Benjamin S. Murphy
 """
 
+import warnings
 import numpy as np
 import scipy.linalg
 from scipy.spatial.distance import cdist
@@ -228,8 +229,10 @@ class OrdinaryKriging:
         elif coordinates_type == 'geographic':
             # Leave everything as is in geographic case.
             # May be open to discussion?
-            print("Warning: Anisotropy is not compatible with geographic coordinates. "
-                  "Ignoring user set anisotropy.")
+            if anisotropy_scaling != 1.0:
+                warnings.warn("Anisotropy is not compatible with geographic "
+                              "coordinates. Ignoring user set anisotropy.",
+                              UserWarning)
             self.XCENTER= 0.0
             self.YCENTER= 0.0
             self.anisotropy_scaling = 1.0
@@ -314,6 +317,10 @@ class OrdinaryKriging:
                                            [self.anisotropy_scaling],
                                            [self.anisotropy_angle]).T
             elif self.coordinates_type == 'geographic':
+                if anisotropy_scaling != 1.0:
+                    warnings.warn("Anisotropy is not compatible with geographic"
+                                  " coordinates. Ignoring user set anisotropy.",
+                                  UserWarning)
                 self.anisotropy_scaling = 1.0
                 self.anisotropy_angle = 0.0
                 self.X_ADJUSTED = self.X_ORIG
