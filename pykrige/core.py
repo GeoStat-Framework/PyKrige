@@ -14,21 +14,25 @@ Functions:
     adjust_for_anisotropy(X, y, center, scaling, angle):
         Returns X_adj array of adjusted data coordinates. Angles are CCW about
         specified axes. Scaling is applied in rotated coordinate system.
-    initialize_variogram_model(X, y, variogram_model, variogram_model_parameters, variogram_function,
+    initialize_variogram_model(X, y, variogram_model,
+                               variogram_model_parameters, variogram_function,
                                nlags, weight, coordinates_type):
-        Returns lags, semivariance, and variogram model parameters. Variogram model parameters are estimated
-        if user did not provide them.
+        Returns lags, semivariance, and variogram model parameters.
+        Variogram model parameters are estimated if user did not provide them.
     _variogram_residuals(params, x, y, variogram_function, weight):
         Called by _calculate_variogram_model.
-    _calculate_variogram_model(lags, semivariance, variogram_model, variogram_function, weight):
-        Returns variogram model parameters that minimize the RMSE between the specified
-        variogram function and the actual calculated variogram points.
+    _calculate_variogram_model(lags, semivariance, variogram_model,
+                               variogram_function, weight):
+        Returns variogram model parameters that minimize the RMSE between the
+        specified variogram function and the actual calculated variogram points.
     krige(x, y, z, coords, variogram_function, variogram_model_parameters):
-        Function that solves the ordinary kriging system for a single specified point.
-        Returns the Z value and sigma squared for the specified coordinates.
-    krige_3d(x, y, z, vals, coords, variogram_function, variogram_model_parameters):
-        Function that solves the ordinary kriging system for a single specified point.
-        Returns the interpolated value and sigma squared for the specified coordinates.
+        Function that solves the ordinary kriging system for a single specified
+        point. Returns Z value and sigma squared for the specified coordinates.
+    krige_3d(x, y, z, vals, coords, variogram_function,
+             variogram_model_parameters):
+        Function that solves the ordinary kriging system for a single specified
+        point. Returns the interpolated value and sigma squared for the
+        specified coordinates.
     find_statistics(x, y, z, variogram_funtion, variogram_model_parameters):
         Returns the delta, sigma, and epsilon values for the variogram fit.
     calcQ1(epsilon):
@@ -38,9 +42,9 @@ Functions:
     calc_cR(Q2, sigma):
         Returns the cR statistic for the variogram fit (see Kitanidis).
     great_circle_distance(lon1, lat1, lon2, lat2):
-        Returns the great circle distance between two arrays of points given in spherical
-        coordinates. Spherical coordinates are expected in degrees. Angle definition
-        follows standard longitude/latitude definition.
+        Returns the great circle distance between two arrays of points given in
+        spherical coordinates. Spherical coordinates are expected in degrees.
+        Angle definition follows standard longitude/latitude definition.
 
 References:
 [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
@@ -183,7 +187,8 @@ def adjust_for_anisotropy(X, center, scaling, angle):
                              [0., 0., 1.]])
         rot_tot = np.dot(rotate_z, np.dot(rotate_y, rotate_x))
     else:
-        raise ValueError("Adjust for anysotropy function doesn't support ND spaces where N>3")
+        raise ValueError("Adjust for anisotropy function doesn't "
+                         "support ND spaces where N>3")
     X_adj = np.dot(stretch, np.dot(rot_tot, X.T)).T
 
     X_adj += center
@@ -191,10 +196,11 @@ def adjust_for_anisotropy(X, center, scaling, angle):
     return X_adj
 
 
-def initialize_variogram_model(X, y, variogram_model, variogram_model_parameters, variogram_function,
+def initialize_variogram_model(X, y, variogram_model,
+                               variogram_model_parameters, variogram_function,
                                nlags, weight, coordinates_type):
-    """Initializes the variogram model for kriging. If user does not specify parameters,
-    calls automatic variogram estimation routine.
+    """Initializes the variogram model for kriging. If user does not specify
+    parameters, calls automatic variogram estimation routine.
 
     Parameters
     ----------
@@ -202,7 +208,7 @@ def initialize_variogram_model(X, y, variogram_model, variogram_model_parameters
         float array [n_samples, n_dim], the input array of coordinates
     y: ndarray
         float array [n_samples], the input array of values to be kriged
-    variogram_model: str/unicode
+    variogram_model: str
         user-specified variogram model to use
     variogram_model_parameters: list
         user-specified parameters for variogram model
@@ -214,36 +220,39 @@ def initialize_variogram_model(X, y, variogram_model, variogram_model_parameters
     weight: bool
         boolean flag that indicates whether the semivariances at smaller lags
         should be weighted more heavily in the automatic variogram estimation
-    coordinates_type: str/unicode
-        type of coordinates in X array, can be 'euclidean' for standard rectangular coordinates
-        or 'geographic' if the coordinates are lat/lon
+    coordinates_type: str
+        type of coordinates in X array, can be 'euclidean' for standard
+        rectangular coordinates or 'geographic' if the coordinates are lat/lon
 
     Returns
     -------
     lags: ndarray
-        float array [nlags], distance values for bins into which the semivariances were grouped
+        float array [nlags], distance values for bins into which the
+        semivariances were grouped
     semivariance: ndarray
         float array [nlags], averaged semivariance for each bin
     variogram_model_parameters: list
-        parameters for the variogram model, either returned unaffected if the user specified them or
-        returned from the automatic variogram estimation routine
+        parameters for the variogram model, either returned unaffected if the
+        user specified them or returned from the automatic variogram
+        estimation routine
     """
 
-    # distance calculation for rectangular coords now leverages scipy.spatial.distance's pdist function,
-    # which gives pairwise distances in a condensed distance vector (distance matrix flattened to a vector)
-    # to calculate semivariances... trick scipy.spatial.distance's pdist function into thinking that the measurements
-    # are in a 2D space by stacking with an array of zeros
+    # distance calculation for rectangular coords now leverages
+    # scipy.spatial.distance's pdist function, which gives pairwise distances
+    # in a condensed distance vector (distance matrix flattened to a vector)
+    # to calculate semivariances...
     if coordinates_type == 'euclidean':
         d = pdist(X, metric='euclidean')
-        y_temp = np.vstack((y, np.zeros(y.size))).T
-        g = 0.5 * pdist(y_temp, metric='sqeuclidean')
+        g = 0.5 * pdist(y[:, None], metric='sqeuclidean')
 
     # geographic coordinates only accepted if the problem is 2D
     # assume X[:, 0] ('x') => lon, X[:, 1] ('y') => lat
-    # old method of distance calculation is retained here... could be improved in the future
+    # old method of distance calculation is retained here...
+    # could be improved in the future
     elif coordinates_type == 'geographic':
         if X.shape[1] != 2:
-            raise ValueError('Geographic coordinate type only supported for 2D datasets.')
+            raise ValueError('Geographic coordinate type only '
+                             'supported for 2D datasets.')
         x1, x2 = np.meshgrid(X[:, 0], X[:, 0], sparse=True)
         y1, y2 = np.meshgrid(X[:, 1], X[:, 1], sparse=True)
         z1, z2 = np.meshgrid(y, y, sparse=True)
@@ -254,7 +263,8 @@ def initialize_variogram_model(X, y, variogram_model, variogram_model_parameters
         g = g[(indices[0, :, :] > indices[1, :, :])]
 
     else:
-        raise ValueError("Specified coordinate type '%s' is not supported." % coordinates_type)
+        raise ValueError("Specified coordinate type '%s' "
+                         "is not supported." % coordinates_type)
 
     # Equal-sized bins are now implemented. The upper limit on the bins
     # is appended to the list (instead of calculated as part of the
@@ -304,8 +314,9 @@ def initialize_variogram_model(X, y, variogram_model, variogram_model_parameters
     lags = lags[~np.isnan(semivariance)]
     semivariance = semivariance[~np.isnan(semivariance)]
 
-    # a few tests the make sure that, if the variogram_model_parameters are supplied, they have been supplied
-    # as expected... if variogram_model_parameters was not defined, then estimate the variogram
+    # a few tests the make sure that, if the variogram_model_parameters
+    # are supplied, they have been supplied as expected...
+    # if variogram_model_parameters was not defined, then estimate the variogram
     if variogram_model_parameters is not None:
         if variogram_model == 'linear' and len(variogram_model_parameters) != 2:
             raise ValueError("Exactly two parameters required for linear variogram model.")
@@ -316,15 +327,16 @@ def initialize_variogram_model(X, y, variogram_model, variogram_model_parameters
         if variogram_model == 'custom':
             raise ValueError("Variogram parameters must be specified when implementing custom variogram model.")
         else:
-            variogram_model_parameters = _calculate_variogram_model(lags, semivariance, variogram_model,
-                                                                    variogram_function, weight)
+            variogram_model_parameters = \
+                _calculate_variogram_model(lags, semivariance, variogram_model,
+                                           variogram_function, weight)
 
     return lags, semivariance, variogram_model_parameters
 
 
 def _variogram_residuals(params, x, y, variogram_function, weight):
-    """Function used in variogram model estimation.
-    Returns residuals between calculated variogram and actual data (lags/semivariance).
+    """Function used in variogram model estimation. Returns residuals between
+    calculated variogram and actual data (lags/semivariance).
 
     Parameters
     ----------
@@ -337,7 +349,8 @@ def _variogram_residuals(params, x, y, variogram_function, weight):
     variogram_function: callable
         the actual funtion that evaluates the model variogram
     weight: bool
-        flag for implementing the crude weighting routine, used in order to fit smaller lags better
+        flag for implementing the crude weighting routine, used in order to
+        fit smaller lags better
 
     Returns
     -------
@@ -363,7 +376,8 @@ def _variogram_residuals(params, x, y, variogram_function, weight):
     return resid
 
 
-def _calculate_variogram_model(lags, semivariance, variogram_model, variogram_function, weight):
+def _calculate_variogram_model(lags, semivariance, variogram_model,
+                               variogram_function, weight):
     """Function that fits a variogram model when parameters are not specified.
 
     Parameters
@@ -371,22 +385,25 @@ def _calculate_variogram_model(lags, semivariance, variogram_model, variogram_fu
     lags: 1d array
         binned lags/distances to use for variogram model parameter estimation
     semivariance: 1d array
-        binned/averaged experimental semivariances to use for variogram model parameter estimation
+        binned/averaged experimental semivariances to use for variogram model
+        parameter estimation
     variogram_model: str/unicode
         specified variogram model to use for parameter estimation
     variogram_function: callable
         the actual funtion that evaluates the model variogram
     weight: bool
-        flag for implementing the crude weighting routine, used in order to fit smaller lags better
-        this is passed on to the residual calculation function, where weighting is actually applied...
+        flag for implementing the crude weighting routine, used in order to fit
+        smaller lags better this is passed on to the residual calculation
+        cfunction, where weighting is actually applied...
 
     Returns
     -------
     res: list
         list of estimated variogram model parameters
 
-    NOTE that the estimation routine works in terms of the partial sill (psill = sill - nugget) --
-    setting bounds such that psill > 0 ensures that the sill will always be greater than the nugget...
+    NOTE that the estimation routine works in terms of the partial sill
+    (psill = sill - nugget) -- setting bounds such that psill > 0 ensures that
+    the sill will always be greater than the nugget...
     """
 
     if variogram_model == 'linear':
