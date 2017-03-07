@@ -59,7 +59,7 @@ class TestPyKrige(unittest.TestCase):
 
         X = np.array([[1.0, 0.0, -1.0, 0.0],
                       [0.0, 1.0, 0.0, -1.0]]).T
-        X_adj = core.adjust_for_anisotropy(X, [0.0, 0.0], [2.0], [90.0])
+        X_adj = core._adjust_for_anisotropy(X, [0.0, 0.0], [2.0], [90.0])
         self.assertTrue(np.allclose(X_adj[:, 0], np.array([0.0, 1.0, 0.0, -1.0])))
         self.assertTrue(np.allclose(X_adj[:, 1], np.array([-2.0, 0.0, 2.0, 0.0])))
 
@@ -70,15 +70,15 @@ class TestPyKrige(unittest.TestCase):
         X = np.array([[1.0, 0.0, 0.0],
                       [0.0, 1.0, 0.0],
                       [0.0, 0.0, 1.0]]).T
-        X_adj = core.adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [90., 0., 0.])
+        X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [90., 0., 0.])
         self.assertTrue(np.allclose(X_adj[:, 0], np.array([1., 0., 0.])))
         self.assertTrue(np.allclose(X_adj[:, 1], np.array([0., 0., 2.])))
         self.assertTrue(np.allclose(X_adj[:, 2], np.array([0., -2., 0.])))
-        X_adj = core.adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [0., 90., 0.])
+        X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [0., 90., 0.])
         self.assertTrue(np.allclose(X_adj[:, 0], np.array([0., 0., -1.])))
         self.assertTrue(np.allclose(X_adj[:, 1], np.array([0., 2., 0.])))
         self.assertTrue(np.allclose(X_adj[:, 2], np.array([2., 0., 0.])))
-        X_adj = core.adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [0., 0., 90.])
+        X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [0., 0., 90.])
         self.assertTrue(np.allclose(X_adj[:, 0], np.array([0., 1., 0.])))
         self.assertTrue(np.allclose(X_adj[:, 1], np.array([-2., 0., 0.])))
         self.assertTrue(np.allclose(X_adj[:, 2], np.array([0., 0., 2.])))
@@ -86,15 +86,15 @@ class TestPyKrige(unittest.TestCase):
     def test_core_initialize_variogram_model(self):
 
         # Note the variogram_function argument is not a string in real life...
-        self.assertRaises(ValueError, core.initialize_variogram_model,
+        self.assertRaises(ValueError, core._initialize_variogram_model,
                           np.vstack((self.test_data[:, 0], self.test_data[:, 1])).T, self.test_data[:, 2],
                           'linear', [0.0], 'linear', 6, False, 'euclidean')
 
-        self.assertRaises(ValueError, core.initialize_variogram_model,
+        self.assertRaises(ValueError, core._initialize_variogram_model,
                           np.vstack((self.test_data[:, 0], self.test_data[:, 1])).T, self.test_data[:, 2],
                           'spherical', [0.0], 'spherical', 6, False, 'euclidean')
 
-        self.assertRaises(ValueError, core.initialize_variogram_model,
+        self.assertRaises(ValueError, core._initialize_variogram_model,
                           np.vstack((self.test_data[:, 0], self.test_data[:, 1])).T, self.test_data[:, 2],
                           'spherical', [0.0, 0.0, 0.0], 'spherical', 6, False, 'tacos')
 
@@ -102,7 +102,7 @@ class TestPyKrige(unittest.TestCase):
         y = np.array([1.0 + n/np.sqrt(2) for n in range(4)])
         z = np.arange(1.0, 5.0, 1.0)
         lags, semivariance, variogram_model_parameters = \
-            core.initialize_variogram_model(np.vstack((x, y)).T, z, 'linear', [0.0, 0.0],
+            core._initialize_variogram_model(np.vstack((x, y)).T, z, 'linear', [0.0, 0.0],
                                             'linear', 6, False, 'euclidean')
 
         self.assertTrue(np.allclose(lags, np.array([1.0, 2.0, 3.0])))
@@ -111,24 +111,24 @@ class TestPyKrige(unittest.TestCase):
     def test_core_initialize_variogram_model_3d(self):
 
         # Note the variogram_function argument is not a string in real life...
-        self.assertRaises(ValueError, core.initialize_variogram_model,
+        self.assertRaises(ValueError, core._initialize_variogram_model,
                           np.vstack((self.simple_data_3d[:, 0], self.simple_data_3d[:, 1],
                                      self.simple_data_3d[:, 2])).T, self.simple_data_3d[:, 3],
                           'linear', [0.0], 'linear', 6, False, 'euclidean')
 
-        self.assertRaises(ValueError, core.initialize_variogram_model,
+        self.assertRaises(ValueError, core._initialize_variogram_model,
                           np.vstack((self.simple_data_3d[:, 0], self.simple_data_3d[:, 1],
                                      self.simple_data_3d[:, 2])).T, self.simple_data_3d[:, 3],
                           'spherical', [0.0], 'spherical', 6, False, 'euclidean')
 
-        self.assertRaises(ValueError, core.initialize_variogram_model,
+        self.assertRaises(ValueError, core._initialize_variogram_model,
                           np.vstack((self.simple_data_3d[:, 0], self.simple_data_3d[:, 1],
                                      self.simple_data_3d[:, 2])).T, self.simple_data_3d[:, 3],
                           'linear', [0.0, 0.0], 'linear', 6, False, 'geographic')
 
         lags, semivariance, variogram_model_parameters = \
-            core.initialize_variogram_model(np.vstack((np.array([1., 2., 3., 4.]), np.array([1., 2., 3., 4.]),
-                                                       np.array([1., 2., 3., 4.]))).T, np.array([1., 2., 3., 4.]),
+            core._initialize_variogram_model(np.vstack((np.array([1., 2., 3., 4.]), np.array([1., 2., 3., 4.]),
+                                                        np.array([1., 2., 3., 4.]))).T, np.array([1., 2., 3., 4.]),
                                             'linear', [0.0, 0.0], 'linear', 3, False, 'euclidean')
         self.assertTrue(np.allclose(lags, np.array([np.sqrt(3.), 2.*np.sqrt(3.), 3.*np.sqrt(3.)])))
         self.assertTrue(np.allclose(semivariance, np.array([0.5, 2.0, 4.5])))

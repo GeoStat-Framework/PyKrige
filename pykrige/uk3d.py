@@ -27,7 +27,8 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
-from .core import adjust_for_anisotropy, initialize_variogram_model, _make_variogram_parameter_list
+from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
+    _make_variogram_parameter_list
 import warnings
 
 
@@ -281,10 +282,10 @@ class UniversalKriging3D:
         if self.verbose:
             print("Adjusting data for anisotropy...")
         self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = \
-            adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
-                                  [self.XCENTER, self.YCENTER, self.ZCENTER],
-                                  [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
-                                  [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z]).T
+            _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
+                                   [self.XCENTER, self.YCENTER, self.ZCENTER],
+                                   [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+                                   [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z]).T
 
         # set up variogram...
         self.variogram_model = variogram_model
@@ -304,12 +305,12 @@ class UniversalKriging3D:
         vp_temp = _make_variogram_parameter_list(self.variogram_model,
                                                  variogram_parameters)
         self.lags, self.semivariance, self.variogram_model_parameters = \
-            initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                  self.Y_ADJUSTED,
-                                                  self.Z_ADJUSTED)).T,
-                                       self.VALUES, self.variogram_model,
-                                       vp_temp, self.variogram_function,
-                                       nlags, weight, 'euclidean')
+            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
+                                                   self.Y_ADJUSTED,
+                                                   self.Z_ADJUSTED)).T,
+                                        self.VALUES, self.variogram_model,
+                                        vp_temp, self.variogram_function,
+                                        nlags, weight, 'euclidean')
 
         if self.verbose:
             if self.variogram_model == 'linear':
@@ -406,10 +407,10 @@ class UniversalKriging3D:
             self.anisotropy_angle_y = anisotropy_angle_y
             self.anisotropy_angle_z = anisotropy_angle_z
             self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = \
-                adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
-                                      [self.XCENTER, self.YCENTER, self.ZCENTER],
-                                      [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
-                                      [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z]).T
+                _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
+                                       [self.XCENTER, self.YCENTER, self.ZCENTER],
+                                       [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+                                       [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z]).T
 
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
@@ -427,12 +428,12 @@ class UniversalKriging3D:
         vp_temp = _make_variogram_parameter_list(self.variogram_model,
                                                  variogram_parameters)
         self.lags, self.semivariance, self.variogram_model_parameters = \
-            initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                  self.Y_ADJUSTED,
-                                                  self.Z_ADJUSTED)).T,
-                                       self.VALUES, self.variogram_model,
-                                       vp_temp, self.variogram_function,
-                                       nlags, weight, 'euclidean')
+            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
+                                                   self.Y_ADJUSTED,
+                                                   self.Z_ADJUSTED)).T,
+                                        self.VALUES, self.variogram_model,
+                                        vp_temp, self.variogram_function,
+                                        nlags, weight, 'euclidean')
 
         if self.verbose:
             if self.variogram_model == 'linear':
@@ -816,10 +817,10 @@ class UniversalKriging3D:
                 warnings.warn("Provided specified drift values, but 'specified' drift was not initialized during "
                               "instantiation of UniversalKriging3D class.", RuntimeWarning)
 
-        xpts, ypts, zpts = adjust_for_anisotropy(np.vstack((xpts, ypts, zpts)).T,
-                                                 [self.XCENTER, self.YCENTER, self.ZCENTER],
-                                                 [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
-                                                 [self.anisotropy_angle_x, self.anisotropy_angle_y,
+        xpts, ypts, zpts = _adjust_for_anisotropy(np.vstack((xpts, ypts, zpts)).T,
+                                                  [self.XCENTER, self.YCENTER, self.ZCENTER],
+                                                  [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+                                                  [self.anisotropy_angle_x, self.anisotropy_angle_y,
                                                   self.anisotropy_angle_z]).T
 
         if style != 'masked':

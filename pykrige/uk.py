@@ -28,7 +28,8 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
-from .core import adjust_for_anisotropy, initialize_variogram_model, _make_variogram_parameter_list
+from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
+    _make_variogram_parameter_list
 import warnings
 
 
@@ -282,10 +283,10 @@ class UniversalKriging:
         self.anisotropy_angle = anisotropy_angle
         if self.verbose:
             print("Adjusting data for anisotropy...")
-        self.X_ADJUSTED, self.Y_ADJUSTED = adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
-                                                                 [self.XCENTER, self.YCENTER],
-                                                                 [self.anisotropy_scaling],
-                                                                 [self.anisotropy_angle]).T
+        self.X_ADJUSTED, self.Y_ADJUSTED = _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                                                                  [self.XCENTER, self.YCENTER],
+                                                                  [self.anisotropy_scaling],
+                                                                  [self.anisotropy_angle]).T
 
         # set up variogram model and parameters...
         self.variogram_model = variogram_model
@@ -306,11 +307,11 @@ class UniversalKriging:
         vp_temp = _make_variogram_parameter_list(self.variogram_model,
                                                  variogram_parameters)
         self.lags, self.semivariance, self.variogram_model_parameters = \
-            initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                  self.Y_ADJUSTED)).T,
-                                       self.Z, self.variogram_model, vp_temp,
-                                       self.variogram_function, nlags,
-                                       weight, 'euclidean')
+            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
+                                                   self.Y_ADJUSTED)).T,
+                                        self.Z, self.variogram_model, vp_temp,
+                                        self.variogram_function, nlags,
+                                        weight, 'euclidean')
         # TODO extend geographic capabilities to UK...
 
         if self.verbose:
@@ -395,10 +396,10 @@ class UniversalKriging:
             point_log = np.atleast_2d(np.squeeze(np.array(point_drift, copy=True)))
             self.point_log_array = np.zeros(point_log.shape)
             self.point_log_array[:, 2] = point_log[:, 2]
-            self.point_log_array[:, :2] = adjust_for_anisotropy(np.vstack((point_log[:, 0], point_log[:, 1])).T,
-                                                                [self.XCENTER, self.YCENTER],
-                                                                [self.anisotropy_scaling],
-                                                                [self.anisotropy_angle])
+            self.point_log_array[:, :2] = _adjust_for_anisotropy(np.vstack((point_log[:, 0], point_log[:, 1])).T,
+                                                                 [self.XCENTER, self.YCENTER],
+                                                                 [self.anisotropy_scaling],
+                                                                 [self.anisotropy_angle])
             if self.verbose:
                 print("Implementing external point-logarithmic drift; number of points =",
                       self.point_log_array.shape[0], '\n')
@@ -541,10 +542,10 @@ class UniversalKriging:
             self.anisotropy_scaling = anisotropy_scaling
             self.anisotropy_angle = anisotropy_angle
             self.X_ADJUSTED, self.Y_ADJUSTED =\
-                adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
-                                      [self.XCENTER, self.YCENTER],
-                                      [self.anisotropy_scaling],
-                                      [self.anisotropy_angle]).T
+                _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                                       [self.XCENTER, self.YCENTER],
+                                       [self.anisotropy_scaling],
+                                       [self.anisotropy_angle]).T
 
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
@@ -563,11 +564,11 @@ class UniversalKriging:
         vp_temp = _make_variogram_parameter_list(self.variogram_model,
                                                  variogram_parameters)
         self.lags, self.semivariance, self.variogram_model_parameters = \
-            initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                  self.Y_ADJUSTED)).T,
-                                       self.Z, self.variogram_model, vp_temp,
-                                       self.variogram_function, nlags,
-                                       weight, 'euclidean')
+            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
+                                                   self.Y_ADJUSTED)).T,
+                                        self.Z, self.variogram_model, vp_temp,
+                                        self.variogram_function, nlags,
+                                        weight, 'euclidean')
 
         if self.verbose:
             if self.variogram_model == 'linear':
@@ -974,8 +975,8 @@ class UniversalKriging:
                               "instantiation of UniversalKriging class.", RuntimeWarning)
 
         xy_points_original = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
-        xpts, ypts = adjust_for_anisotropy(np.vstack((xpts, ypts)).T, [self.XCENTER, self.YCENTER],
-                                           [self.anisotropy_scaling], [self.anisotropy_angle]).T
+        xpts, ypts = _adjust_for_anisotropy(np.vstack((xpts, ypts)).T, [self.XCENTER, self.YCENTER],
+                                            [self.anisotropy_scaling], [self.anisotropy_angle]).T
         xy_points = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
         xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
 

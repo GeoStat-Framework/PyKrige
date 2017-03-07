@@ -29,7 +29,8 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
-from .core import adjust_for_anisotropy, initialize_variogram_model, _make_variogram_parameter_list
+from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
+    _make_variogram_parameter_list
 import warnings
 
 
@@ -241,10 +242,10 @@ class OrdinaryKriging:
             self.anisotropy_angle = anisotropy_angle
             if self.verbose:
                 print("Adjusting data for anisotropy...")
-            self.X_ADJUSTED, self.Y_ADJUSTED = adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
-                                                                     [self.XCENTER, self.YCENTER],
-                                                                     [self.anisotropy_scaling],
-                                                                     [self.anisotropy_angle]).T
+            self.X_ADJUSTED, self.Y_ADJUSTED = _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                                                                      [self.XCENTER, self.YCENTER],
+                                                                      [self.anisotropy_scaling],
+                                                                      [self.anisotropy_angle]).T
         elif coordinates_type == 'geographic':
             # Leave everything as is in geographic case.
             # May be open to discussion?
@@ -281,11 +282,11 @@ class OrdinaryKriging:
         vp_temp = _make_variogram_parameter_list(self.variogram_model,
                                                  variogram_parameters)
         self.lags, self.semivariance, self.variogram_model_parameters = \
-            initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                  self.Y_ADJUSTED)).T,
-                                       self.Z, self.variogram_model, vp_temp,
-                                       self.variogram_function, nlags,
-                                       weight, self.coordinates_type)
+            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
+                                                   self.Y_ADJUSTED)).T,
+                                        self.Z, self.variogram_model, vp_temp,
+                                        self.variogram_function, nlags,
+                                        weight, self.coordinates_type)
 
         if self.verbose:
             print("Coordinates type: '%s'" % self.coordinates_type, '\n')
@@ -340,10 +341,10 @@ class OrdinaryKriging:
                 self.anisotropy_scaling = anisotropy_scaling
                 self.anisotropy_angle = anisotropy_angle
                 self.X_ADJUSTED, self.Y_ADJUSTED = \
-                    adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
-                                          [self.XCENTER, self.YCENTER],
-                                          [self.anisotropy_scaling],
-                                          [self.anisotropy_angle]).T
+                    _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                                           [self.XCENTER, self.YCENTER],
+                                           [self.anisotropy_scaling],
+                                           [self.anisotropy_angle]).T
             elif self.coordinates_type == 'geographic':
                 if anisotropy_scaling != 1.0:
                     warnings.warn("Anisotropy is not compatible with geographic"
@@ -371,11 +372,11 @@ class OrdinaryKriging:
         vp_temp = _make_variogram_parameter_list(self.variogram_model,
                                                  variogram_parameters)
         self.lags, self.semivariance, self.variogram_model_parameters = \
-            initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                  self.Y_ADJUSTED)).T,
-                                       self.Z, self.variogram_model, vp_temp,
-                                       self.variogram_function, nlags,
-                                       weight, self.coordinates_type)
+            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
+                                                   self.Y_ADJUSTED)).T,
+                                        self.Z, self.variogram_model, vp_temp,
+                                        self.variogram_function, nlags,
+                                        weight, self.coordinates_type)
 
         if self.verbose:
             print("Coordinates type: '%s'" % self.coordinates_type, '\n')
@@ -663,8 +664,8 @@ class OrdinaryKriging:
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         if self.coordinates_type == 'euclidean':
-            xpts, ypts = adjust_for_anisotropy(np.vstack((xpts, ypts)).T, [self.XCENTER, self.YCENTER],
-                                               [self.anisotropy_scaling], [self.anisotropy_angle]).T
+            xpts, ypts = _adjust_for_anisotropy(np.vstack((xpts, ypts)).T, [self.XCENTER, self.YCENTER],
+                                                [self.anisotropy_scaling], [self.anisotropy_angle]).T
             xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
             xy_points = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
         elif self.coordinates_type == 'geographic':

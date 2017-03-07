@@ -8,15 +8,20 @@ bscott.murphy@gmail.com
 
 Dependencies:
     numpy
-    scipy (scipy.optimize.minimize())
+    scipy
 
 Functions:
-    adjust_for_anisotropy(X, y, center, scaling, angle):
+    _adjust_for_anisotropy(X, y, center, scaling, angle):
         Returns X_adj array of adjusted data coordinates. Angles are CCW about
         specified axes. Scaling is applied in rotated coordinate system.
-    initialize_variogram_model(X, y, variogram_model,
-                               variogram_model_parameters, variogram_function,
-                               nlags, weight, coordinates_type):
+    _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
+        Makes a list of variogram model parameters in the expected order if the
+        user has provided the model parameters. If not, returns None, which
+        will ensure that the automatic variogram estimation routine is
+        triggered.
+    _initialize_variogram_model(X, y, variogram_model,
+                                variogram_model_parameters, variogram_function,
+                                nlags, weight, coordinates_type):
         Returns lags, semivariance, and variogram model parameters.
         Variogram model parameters are estimated if user did not provide them.
     _variogram_residuals(params, x, y, variogram_function, weight):
@@ -140,7 +145,7 @@ def euclid3_to_great_circle(euclid3_distance):
     return 180.0 - 360.0/np.pi*np.arccos(0.5*euclid3_distance)
 
 
-def adjust_for_anisotropy(X, center, scaling, angle):
+def _adjust_for_anisotropy(X, center, scaling, angle):
     """Adjusts data coordinates to take into account anisotropy.
     Can also be used to take into account data scaling.
 
@@ -367,9 +372,9 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
     return parameter_list
 
 
-def initialize_variogram_model(X, y, variogram_model,
-                               variogram_model_parameters, variogram_function,
-                               nlags, weight, coordinates_type):
+def _initialize_variogram_model(X, y, variogram_model,
+                                variogram_model_parameters, variogram_function,
+                                nlags, weight, coordinates_type):
     """Initializes the variogram model for kriging. If user does not specify
     parameters, calls automatic variogram estimation routine.
 
