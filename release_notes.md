@@ -1,13 +1,14 @@
 # PyKrige Changelog
 
 ## Version 1.4
-*In developpement*
+*In developement*
 
 ### New features  
 
-* Regression krigging algotithm. PR [#27](https://github.com/bsmurphy/PyKrige/pull/27) by [Sudipta Basaks](https://github.com/basaks).
+* Regression kriging algotithm. PR [#27](https://github.com/bsmurphy/PyKrige/pull/27) by [Sudipta Basaks](https://github.com/basaks).
 * Support for spherical coordinates. PR [#23](https://github.com/bsmurphy/PyKrige/pull/23) by [Malte Ziebarth](https://github.com/mjziebarth)
-* Krigging parameter tuning with scikit-learn. PR [#24](https://github.com/bsmurphy/PyKrige/pull/24) by [Sudipta Basaks](https://github.com/basaks).
+* Kriging parameter tuning with scikit-learn. PR [#24](https://github.com/bsmurphy/PyKrige/pull/24) by [Sudipta Basaks](https://github.com/basaks).
+* Variogram model parameters can be specified using a list or a dict. Allows for directly feeding in the partial sill rather than the full sill. PR [#47](https://github.com/bsmurphy/PyKrige/pull/47) by [Benjamin Murphy](https://github.com/bsmurphy).
 
 ### Enhancements
 
@@ -17,7 +18,8 @@
 
 ### Bug fixes
 
-* Statistics calculations in 3D krigging. PR [#45](https://github.com/bsmurphy/PyKrige/pull/45) by [Will Chang](https://github.com/whdc).
+* Statistics calculations in 3D kriging. PR [#45](https://github.com/bsmurphy/PyKrige/pull/45) by [Will Chang](https://github.com/whdc).
+* Automatic variogram estimation robustified. PR [#47](https://github.com/bsmurphy/PyKrige/pull/47) by [Benjamin Murphy](https://github.com/bsmurphy).
 
 
 
