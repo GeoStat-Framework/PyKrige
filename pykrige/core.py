@@ -209,7 +209,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
     ----------
     variogram_model: str
         specifies the variogram model type
-    variogram_model_parameters: list or dict
+    variogram_model_parameters: list, dict, or None
         parameters provided by the user, can also be None if the user
         did not specify the variogram model parameters; if None,
         this function returns None, that way the automatic variogram
@@ -239,7 +239,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
 
     elif type(variogram_model_parameters) is dict:
 
-        if variogram_model is 'linear':
+        if variogram_model in ['linear']:
 
             if 'slope' not in variogram_model_parameters.keys() \
                     or 'nugget' not in variogram_model_parameters.keys():
@@ -253,7 +253,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
                 parameter_list = [variogram_model_parameters['slope'],
                                   variogram_model_parameters['nugget']]
 
-        elif variogram_model is 'power':
+        elif variogram_model in ['power']:
 
             if 'scale' not in variogram_model_parameters.keys() \
                     or 'exponent' not in variogram_model_parameters.keys() \
@@ -272,9 +272,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
         elif variogram_model in ['gaussian', 'spherical', 'exponential',
                                  'hole-effect']:
 
-            if ('sill' not in variogram_model_parameters.keys()
-                or 'psill' not in variogram_model_parameters.keys()) \
-                    or 'range' not in variogram_model_parameters.keys() \
+            if 'range' not in variogram_model_parameters.keys() \
                     or 'nugget' not in variogram_model_parameters.keys():
 
                 raise KeyError("'%s' variogram model requires 'range', "
@@ -304,7 +302,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
                                    "variogram model parameter "
                                    "dictionary." % variogram_model)
 
-        elif variogram_model is 'custom':
+        elif variogram_model in ['custom']:
 
             raise TypeError("For user-specified custom variogram model, "
                             "parameters must be specified in a list, "
@@ -319,7 +317,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
 
     elif type(variogram_model_parameters) is list:
 
-        if variogram_model is 'linear':
+        if variogram_model in ['linear']:
 
             if len(variogram_model_parameters) != 2:
 
@@ -329,7 +327,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
 
             parameter_list = variogram_model_parameters
 
-        elif variogram_model is 'power':
+        elif variogram_model in ['power']:
 
             if len(variogram_model_parameters) != 3:
 
@@ -353,7 +351,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
                               variogram_model_parameters[1],
                               variogram_model_parameters[2]]
 
-        elif variogram_model is 'custom':
+        elif variogram_model in ['custom']:
 
             parameter_list = variogram_model_parameters
 
