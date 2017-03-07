@@ -196,6 +196,177 @@ def adjust_for_anisotropy(X, center, scaling, angle):
     return X_adj
 
 
+def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
+    """Converts the user input for the variogram model parameters into the
+    format expected in the rest of the code.
+
+    Parameters
+    ----------
+    variogram_model: str
+        specifies the variogram model type
+    variogram_model_parameters: list or dict
+        parameters provided by the user, can also be None if the user
+        did not specify the variogram model parameters; if None,
+        this function returns None, that way the automatic variogram
+        estimation routine will kick in down the road...
+
+    Returns
+    -------
+    parameter_list: list
+        variogram model parameters stored in a list in the expected order;
+        if variogram_model is 'custom', model parameters should already
+        be encapsulated in a list, so the list is returned unaltered;
+        if variogram_model_parameters was not specified by the user,
+        None is returned; order for internal variogram models is as follows...
+
+        linear - [slope, nugget]
+        power - [scale, exponent, nugget]
+        gaussian - [psill, range, nugget]
+        spherical - [psill, range, nugget]
+        exponential - [psill, range, nugget]
+        hole-effect - [psill, range, nugget]
+
+    """
+
+    if variogram_model_parameters is None:
+
+        parameter_list = None
+
+    elif type(variogram_model_parameters) is dict:
+
+        if variogram_model is 'linear':
+
+            if 'slope' not in variogram_model_parameters.keys() \
+                    or 'nugget' not in variogram_model_parameters.keys():
+
+                raise KeyError("'linear' variogram model requires 'slope' "
+                               "and 'nugget' specified in variogram model "
+                               "parameter dictionary.")
+
+            else:
+
+                parameter_list = [variogram_model_parameters['slope'],
+                                  variogram_model_parameters['nugget']]
+
+        elif variogram_model is 'power':
+
+            if 'scale' not in variogram_model_parameters.keys() \
+                    or 'exponent' not in variogram_model_parameters.keys() \
+                    or 'nugget' not in variogram_model_parameters.keys():
+
+                raise KeyError("'power' variogram model requires 'scale', "
+                               "'exponent', and 'nugget' specified in "
+                               "variogram model parameter dictionary.")
+
+            else:
+
+                parameter_list = [variogram_model_parameters['scale'],
+                                  variogram_model_parameters['exponent'],
+                                  variogram_model_parameters['nugget']]
+
+        elif variogram_model in ['gaussian', 'spherical', 'exponential',
+                                 'hole-effect']:
+
+            if ('sill' not in variogram_model_parameters.keys()
+                or 'psill' not in variogram_model_parameters.keys()) \
+                    or 'range' not in variogram_model_parameters.keys() \
+                    or 'nugget' not in variogram_model_parameters.keys():
+
+                raise KeyError("'%s' variogram model requires 'range', "
+                               "'nugget', and either 'sill' or 'psill' "
+                               "specified in variogram model parameter "
+                               "dictionary." % variogram_model)
+
+            else:
+
+                if 'sill' in variogram_model_parameters.keys():
+
+                    parameter_list = [variogram_model_parameters['sill'] -
+                                      variogram_model_parameters['nugget'],
+                                      variogram_model_parameters['range'],
+                                      variogram_model_parameters['nugget']]
+
+                elif 'psill' in variogram_model_parameters.keys():
+
+                    parameter_list = [variogram_model_parameters['psill'],
+                                      variogram_model_parameters['range'],
+                                      variogram_model_parameters['nugget']]
+
+                else:
+
+                    raise KeyError("'%s' variogram model requires either "
+                                   "'sill' or 'psill' specified in "
+                                   "variogram model parameter "
+                                   "dictionary." % variogram_model)
+
+        elif variogram_model is 'custom':
+
+            raise TypeError("For user-specified custom variogram model, "
+                            "parameters must be specified in a list, "
+                            "not a dict.")
+
+        else:
+
+            raise ValueError("Specified variogram model must be one of the "
+                             "following: 'linear', 'power', 'gaussian', "
+                             "'spherical', 'exponential', 'hole-effect', "
+                             "'custom'.")
+
+    elif type(variogram_model_parameters) is list:
+
+        if variogram_model is 'linear':
+
+            if len(variogram_model_parameters) != 2:
+
+                raise ValueError("Variogram model parameter list must have "
+                                 "exactly two entries when variogram model "
+                                 "set to 'linear'.")
+
+            parameter_list = variogram_model_parameters
+
+        elif variogram_model is 'power':
+
+            if len(variogram_model_parameters) != 3:
+
+                raise ValueError("Variogram model parameter list must have "
+                                 "exactly three entries when variogram model "
+                                 "set to 'power'.")
+
+            parameter_list = variogram_model_parameters
+
+        elif variogram_model in ['gaussian', 'spherical', 'exponential',
+                                 'hole-effect']:
+
+            if len(variogram_model_parameters) != 3:
+
+                raise ValueError("Variogram model parameter list must have "
+                                 "exactly three entries when variogram model "
+                                 "set to '%s'." % variogram_model)
+
+            parameter_list = [variogram_model_parameters[0] -
+                              variogram_model_parameters[2],
+                              variogram_model_parameters[1],
+                              variogram_model_parameters[2]]
+
+        elif variogram_model is 'custom':
+
+            parameter_list = variogram_model_parameters
+
+        else:
+
+            raise ValueError("Specified variogram model must be one of the "
+                             "following: 'linear', 'power', 'gaussian', "
+                             "'spherical', 'exponential', 'hole-effect', "
+                             "'custom'.")
+
+    else:
+
+        raise TypeError("Variogram model parameters must be provided in either "
+                        "a list or a dict when they are explicitly specified.")
+
+    return parameter_list
+
+
 def initialize_variogram_model(X, y, variogram_model,
                                variogram_model_parameters, variogram_function,
                                nlags, weight, coordinates_type):

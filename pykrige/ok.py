@@ -29,7 +29,7 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
-from .core import adjust_for_anisotropy, initialize_variogram_model
+from .core import adjust_for_anisotropy, initialize_variogram_model, _make_variogram_parameter_list
 import warnings
 
 
@@ -212,9 +212,9 @@ class OrdinaryKriging:
                       'exponential': variogram_models.exponential_variogram_model,
                       'hole-effect': variogram_models.hole_effect_variogram_model}
 
-    def __init__(self, x, y, z, variogram_model='linear', variogram_parameters=None,
-                 variogram_function=None, nlags=6, weight=False, use_psill=False,
-                 anisotropy_scaling=1.0, anisotropy_angle=0.0,
+    def __init__(self, x, y, z, variogram_model='linear',
+                 variogram_parameters=None, variogram_function=None, nlags=6,
+                 weight=False, anisotropy_scaling=1.0, anisotropy_angle=0.0,
                  verbose=False, enable_plotting=False, enable_statistics=False,
                  coordinates_type='euclidean'):
 
@@ -278,24 +278,14 @@ class OrdinaryKriging:
         if self.verbose:
             print("Initializing variogram model...")
 
-        # The 'use_psill' kwarg lets the user specify whether variogram_parameters, if specified,
-        # are given in terms of the full sill or the partial sill. The full sill is easier to work
-        # with as a user, but the code works better with the partial sill. If the 'use_psill' is False
-        # (i.e., user is feeding in the full sill), the code converts to partial sill before initializing
-        # the variogram model...
-        if variogram_parameters is None:
-            vp_temp = None
-        elif use_psill:
-            vp_temp = variogram_parameters
-        else:
-            if self.variogram_model in ['gaussian', 'spherical', 'exponential', 'hole-effect']:
-                vp_temp = [variogram_parameters[0] - variogram_parameters[2],
-                           variogram_parameters[1], variogram_parameters[2]]
-            else:
-                vp_temp = variogram_parameters
+        vp_temp = _make_variogram_parameter_list(self.variogram_model,
+                                                 variogram_parameters)
         self.lags, self.semivariance, self.variogram_model_parameters = \
-            initialize_variogram_model(np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T, self.Z, self.variogram_model,
-                                       vp_temp, self.variogram_function, nlags, weight, self.coordinates_type)
+            initialize_variogram_model(np.vstack((self.X_ADJUSTED,
+                                                  self.Y_ADJUSTED)).T,
+                                       self.Z, self.variogram_model, vp_temp,
+                                       self.variogram_function, nlags,
+                                       weight, self.coordinates_type)
 
         if self.verbose:
             print("Coordinates type: '%s'" % self.coordinates_type, '\n')
@@ -313,7 +303,8 @@ class OrdinaryKriging:
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
                 print("Partial Sill:", self.variogram_model_parameters[0])
-                print("Full Sill:", self.variogram_model_parameters[0] + self.variogram_model_parameters[2])
+                print("Full Sill:", self.variogram_model_parameters[0] +
+                      self.variogram_model_parameters[2])
                 print("Range:", self.variogram_model_parameters[1])
                 print("Nugget:", self.variogram_model_parameters[2], '\n')
         if self.enable_plotting:
@@ -337,8 +328,8 @@ class OrdinaryKriging:
             self.delta, self.sigma, self.epsilon, self.Q1, self.Q2, self.cR = [None]*6
 
     def update_variogram_model(self, variogram_model, variogram_parameters=None,
-                               variogram_function=None, nlags=6, weight=False, use_psill=False,
-                               anisotropy_scaling=1.0, anisotropy_angle=0.0):
+                               variogram_function=None, nlags=6, weight=False,
+                               anisotropy_scaling=1., anisotropy_angle=0.):
         """Allows user to update variogram type and/or variogram model parameters."""
 
         if anisotropy_scaling != self.anisotropy_scaling or \
@@ -377,19 +368,14 @@ class OrdinaryKriging:
             print("Updating variogram mode...")
 
         # See note above about the 'use_psill' kwarg...
-        if variogram_parameters is None:
-            vp_temp = None
-        elif use_psill:
-            vp_temp = variogram_parameters
-        else:
-            if self.variogram_model in ['gaussian', 'spherical', 'exponential', 'hole-effect']:
-                vp_temp = [variogram_parameters[0] - variogram_parameters[2],
-                           variogram_parameters[1], variogram_parameters[2]]
-            else:
-                vp_temp = variogram_parameters
+        vp_temp = _make_variogram_parameter_list(self.variogram_model,
+                                                 variogram_parameters)
         self.lags, self.semivariance, self.variogram_model_parameters = \
-            initialize_variogram_model(np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T, self.Z, self.variogram_model,
-                                       vp_temp, self.variogram_function, nlags, weight, self.coordinates_type)
+            initialize_variogram_model(np.vstack((self.X_ADJUSTED,
+                                                  self.Y_ADJUSTED)).T,
+                                       self.Z, self.variogram_model, vp_temp,
+                                       self.variogram_function, nlags,
+                                       weight, self.coordinates_type)
 
         if self.verbose:
             print("Coordinates type: '%s'" % self.coordinates_type, '\n')
@@ -407,7 +393,8 @@ class OrdinaryKriging:
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
                 print("Partial Sill:", self.variogram_model_parameters[0])
-                print("Full Sill:", self.variogram_model_parameters[0] + self.variogram_model_parameters[2])
+                print("Full Sill:", self.variogram_model_parameters[0] +
+                      self.variogram_model_parameters[2])
                 print("Range:", self.variogram_model_parameters[1])
                 print("Nugget:", self.variogram_model_parameters[2], '\n')
         if self.enable_plotting:
