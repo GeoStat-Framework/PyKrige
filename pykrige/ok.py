@@ -48,57 +48,87 @@ class OrdinaryKriging:
         Y (array-like): Y-coordinates of data points.
         Z (array-like): Values at data points.
 
-        variogram_model (string, optional): Specified which variogram model to use;
-            may be one of the following: linear, power, gaussian, spherical,
-            exponential. Default is linear variogram model. To utilize as custom variogram
-            model, specify 'custom'; you must also provide variogram_parameters and
-            variogram_function.
-        variogram_parameters (list, optional): Parameters that define the
-            specified variogram model. If not provided, parameters will be automatically
-            calculated such that the root-mean-square error for the fit variogram
-            function is minimized.
+        variogram_model (string, optional): Specified which variogram model to
+            use; may be one of the following: linear, power, gaussian,
+            spherical, exponential, hole-effect. Default is linear variogram
+            model. To utilize a custom variogram model, specify 'custom';
+            you must also provide variogram_parameters and variogram_function.
+            Note that the hole-effect model is only technically correct
+            for one-dimensional problems.
+        variogram_parameters (list or dict, optional): Parameters that define
+            the specified variogram model. If not provided, parameters will be
+            automatically calculated using a "soft" L1 norm minimization scheme.
+            For variogram model parameters provided in a dict, the required
+            dict keys vary according to the specified variogram model:
+                linear - {'slope': slope, 'nugget': nugget}
+                power - {'scale': scale, 'exponent': exponent, 'nugget': nugget}
+                gaussian - {'sill': s, 'range': r, 'nugget': n}
+                            OR
+                           {'psill': p, 'range': r, 'nugget':n}
+                spherical - {'sill': s, 'range': r, 'nugget': n}
+                             OR
+                            {'psill': p, 'range': r, 'nugget':n}
+                exponential - {'sill': s, 'range': r, 'nugget': n}
+                               OR
+                              {'psill': p, 'range': r, 'nugget':n}
+                hole-effect - {'sill': s, 'range': r, 'nugget': n}
+                               OR
+                              {'psill': p, 'range': r, 'nugget':n}
+            Note that either the full sill or the partial sill
+            (psill = sill - nugget) can be specified in the dict.
+            For variogram model parameters provided in a list, the entries
+            must be as follows:
                 linear - [slope, nugget]
                 power - [scale, exponent, nugget]
                 gaussian - [sill, range, nugget]
                 spherical - [sill, range, nugget]
                 exponential - [sill, range, nugget]
                 hole-effect - [sill, range, nugget]
-            For a custom variogram model, the parameters are required, as custom variogram
-            models currently will not automatically be fit to the data. The code does not
-            check that the provided list contains the appropriate number of parameters for
-            the custom variogram model, so an incorrect parameter list in such a case will
-            probably trigger an esoteric exception someplace deep in the code.
-            NOTE that, by default, the code expects the full sill rather than the partial sill.
-            The user can specify the partial sill (psill) instead of the full sill
-            here by setting the 'use_psill' flag to True (see below).
-        variogram_function (callable, optional): A callable function that must be provided
-            if variogram_model is specified as 'custom'. The function must take only two
-            arguments: first, a list of parameters for the variogram model; second, the
-            distances at which to calculate the variogram model. The list provided in
-            variogram_parameters will be passed to the function as the first argument.
+            Note that the full sill (NOT the partial sill) must be specified
+            in the list format.
+            For a custom variogram model, the parameters are required, as custom
+            variogram models will not automatically be fit to the data.
+            Furthermore, the parameters must be specified in list format, in the
+            order in which they are used in the callable function (see
+            variogram_function for more information). The code does not check
+            that the provided list contains the appropriate number of parameters
+            for the custom variogram model, so an incorrect parameter list in
+            such a case will probably trigger an esoteric exception someplace
+            deep in the code.
+            NOTE that, while the list format expects the full sill, the code
+            itself works internally with the partial sill.
+        variogram_function (callable, optional): A callable function that must
+            be provided if variogram_model is specified as 'custom'.
+            The function must take only two arguments: first, a list of
+            parameters for the variogram model; second, the distances at which
+            to calculate the variogram model. The list provided in
+            variogram_parameters will be passed to the function as the
+            first argument.
         nlags (int, optional): Number of averaging bins for the semivariogram.
             Default is 6.
-        weight (boolean, optional): Flag that specifies if semivariance at smaller lags
-            should be weighted more heavily when automatically calculating variogram model.
-            True indicates that weights will be applied. Default is False.
-            (Kitanidis suggests that the values at smaller lags are more important in
-            fitting a variogram model, so the option is provided to enable such weighting.)
-        use_psill (boolean, optional): Flag that specified whether the user has specified the full sill
-            or the partial sill (psill). Only used if the user specifies the variogram model parameters
-            and if the variogram model is specified as gaussian, spherical, exponential, or hole-effect.
-            If True, the code will interpret the variogram model parameters in terms of the partial sill;
-            if False, the code will interpret the variogram model parameters in terms of the full sill.
-            Default is False, as it is generally easier for the user to think in terms of the full sill.
+        weight (boolean, optional): Flag that specifies if semivariance at
+            smaller lags should be weighted more heavily when automatically
+            calculating variogram model. The routine is currently hard-coded
+            such  that the weights are calculated from a logistic function,
+            so weights at small lags are ~1 and weights at the longest lags
+            are ~0; the center of the logistic weighting is hard-coded to be
+            at 70% of the distance from the shortest lag to the largest lag.
+            Setting this parameter to True indicates that weights will be
+            applied. Default is False.
+            (Kitanidis suggests that the values at smaller lags are more
+            important in fitting a variogram model, so the option is provided
+            to enable such weighting.)
         anisotropy_scaling (float, optional): Scalar stretching value to take
             into account anisotropy. Default is 1 (effectively no stretching).
             Scaling is applied in the y-direction in the rotated data frame
             (i.e., after adjusting for the anisotropy_angle, if anisotropy_angle
-            is not 0). This parameter has no effect if coordinate_types is set to
-            'geographic'.
+            is not 0). This parameter has no effect if coordinate_types is
+            set to 'geographic'.
         anisotropy_angle (float, optional): CCW angle (in degrees) by which to
             rotate coordinate system in order to take into account anisotropy.
-            Default is 0 (no rotation). Note that the coordinate system is rotated.
-            This parameter has no effect if coordinate_types is set to 'geographic'.
+            Default is 0 (no rotation). Note that the coordinate system is
+            rotated. This parameter has no effect if coordinate_types is
+            set to 'geographic'.
         verbose (Boolean, optional): Enables program text output to monitor
             kriging process. Default is False (off).
         enable_plotting (Boolean, optional): Enables plotting to display
@@ -115,34 +145,36 @@ class OrdinaryKriging:
     Callable Methods:
         display_variogram_model(): Displays semivariogram and variogram model.
 
-        update_variogram_model(variogram_model, variogram_parameters=None, nlags=6, weight=False,
-            use_psill=False, anisotropy_scaling=1.0, anisotropy_angle=0.0):
+        update_variogram_model(variogram_model, variogram_parameters=None,
+                               nlags=6, weight=False, anisotropy_scaling=1.0,
+                               anisotropy_angle=0.0):
             Changes the variogram model and variogram parameters for
             the kriging system.
             Inputs:
                 variogram_model (string): May be any of the variogram models
-                    listed above. May also be 'custom', in which case variogram_parameters
-                    and variogram_function must be specified.
-                variogram_parameters (list, optional): List of variogram model
-                    parameters, as listed above. If not provided, a best fit model
-                    will be calculated as described above.
-                variogram_function (callable, optional): A callable function that must be
-                    provided if variogram_model is specified as 'custom'. See above for
-                    more information.
-                nlags (int, optional): Number of averaging bins for the semivariogram.
-                    Defualt is 6.
-                weight (boolean, optional): Flag that specifies if semivariance at smaller lags
-                    should be weighted more heavily when automatically calculating variogram model.
-                    True indicates that weights will be applied. Default is False.
-                use_psill (boolean, optional): Flag that specified whether the user has specified
-                    the full sill or the partial sill (psill) in the variogram_parameters list.
-                    Default is False.
+                    listed above. May also be 'custom', in which case
+                    variogram_parameters and variogram_function must be
+                    specified.
+                variogram_parameters (list or dict, optional): List or dict of
+                    variogram model parameters, as explained above.
+                    If not provided, a best fit model will be calculated as
+                    described above.
+                variogram_function (callable, optional): A callable function
+                    that must be provided if variogram_model is specified as
+                    'custom'. See above for more information.
+                nlags (int, optional): Number of averaging bins for the
+                    semivariogram. Defualt is 6.
+                weight (boolean, optional): Flag that specifies if semivariance
+                    at smaller lags should be weighted more heavily when
+                    automatically calculating the variogram model. See above for
+                    more information. True indicates that weights will be
+                    applied. Default is False.
                 anisotropy_scaling (float, optional): Scalar stretching value to
                     take into account anisotropy. Default is 1 (effectively no
                     stretching). Scaling is applied in the y-direction.
-                anisotropy_angle (float, optional): CCW angle (in degrees) by which to
-                    rotate coordinate system in order to take into account
-                    anisotropy. Default is 0 (no rotation).
+                anisotropy_angle (float, optional): CCW angle (in degrees) by
+                    which to rotate coordinate system in order to take into
+                    account anisotropy. Default is 0 (no rotation).
 
         switch_verbose(): Enables/disables program text output. No arguments.
         switch_plotting(): Enables/disable variogram plot display. No arguments.
@@ -162,47 +194,54 @@ class OrdinaryKriging:
         execute(style, xpoints, ypoints, mask=None): Calculates a kriged grid.
             Inputs:
                 style (string): Specifies how to treat input kriging points.
-                    Specifying 'grid' treats xpoints and ypoints as two arrays of
-                    x and y coordinates that define a rectangular grid.
+                    Specifying 'grid' treats xpoints and ypoints as two arrays
+                    of x and y coordinates that define a rectangular grid.
                     Specifying 'points' treats xpoints and ypoints as two arrays
-                    that provide coordinate pairs at which to solve the kriging system.
-                    Specifying 'masked' treats xpoints and ypoints as two arrays of)
-                    x and y coordinates that define a rectangular grid and uses mask
-                    to only evaluate specific points in the grid.
-                xpoints (array-like, dim Nx1): If style is specific as 'grid' or 'masked',
-                    x-coordinates of MxN grid. If style is specified as 'points',
-                    x-coordinates of specific points at which to solve kriging system.
-                ypoints (array-like, dim Mx1): If style is specified as 'grid' or 'masked',
-                    y-coordinates of MxN grid. If style is specified as 'points',
-                    y-coordinates of specific points at which to solve kriging system.
-                mask (boolean array, dim MxN, optional): Specifies the points in the rectangular
-                    grid defined by xpoints and ypoints that are to be excluded in the
-                    kriging calculations. Must be provided if style is specified as 'masked'.
-                    False indicates that the point should not be masked; True indicates that
+                    that provide coordinate pairs at which to solve the kriging
+                    system. Specifying 'masked' treats xpoints and ypoints as
+                    two arrays of x and y coordinates that define a rectangular
+                    grid and uses mask to only evaluate specific points in
+                    the grid.
+                xpoints (array-like, dim Nx1): If style is specific as 'grid'
+                    or 'masked', x-coordinates of MxN grid. If style is
+                    specified as 'points', x-coordinates of specific points at
+                    which to solve kriging system.
+                ypoints (array-like, dim Mx1): If style is specified as 'grid'
+                    or 'masked', y-coordinates of MxN grid. If style is
+                    specified as 'points', y-coordinates of specific points at
+                    which to solve kriging system.
+                mask (boolean array, dim MxN, optional): Specifies the points
+                    in the rectangular grid defined by xpoints and ypoints that
+                    are to be excluded in the kriging calculations. Must be
+                    provided if style is specified as 'masked'. False indicates
+                    that the point should not be masked; True indicates that
                     the point should be masked.
-                backend (string, optional): Specifies which approach to use in kriging.
-                    Specifying 'vectorized' will solve the entire kriging problem at once in a
-                    vectorized operation. This approach is faster but also can consume a
-                    significant amount of memory for large grids and/or large datasets.
-                    Specifying 'loop' will loop through each point at which the kriging system
-                    is to be solved. This approach is slower but also less memory-intensive.
-                    Specifying 'C' will utilize a loop in Cython.
-                    Default is 'vectorized'.
-                n_closest_points (int, optional): For kriging with a moving window, specifies the number
-                    of nearby points to use in the calculation. This can speed up the calculation for large
-                    datasets, but should be used with caution. As Kitanidis notes, kriging with a moving
-                    window can produce unexpected oddities if the variogram model is not carefully chosen.
+                backend (string, optional): Specifies which approach to use in
+                    kriging. Specifying 'vectorized' will solve the entire
+                    kriging problem at once in a vectorized operation. This
+                    approach is faster but also can consume a significant amount
+                    of memory for large grids and/or large datasets. Specifying
+                    'loop' will loop through each point at which the kriging
+                    system is to be solved. This approach is slower but also
+                    less memory-intensive. Specifying 'C' will utilize a loop
+                    in Cython. Default is 'vectorized'.
+                n_closest_points (int, optional): For kriging with a moving
+                    window, specifies the number of nearby points to use in the
+                    calculation. This can speed up the calculation for large
+                    datasets, but should be used with caution. As Kitanidis
+                    notes, kriging with a moving window can produce unexpected
+                    oddities if the variogram model is not carefully chosen.
             Outputs:
-                zvalues (numpy array, dim MxN or dim Nx1): Z-values of specified grid or at the
-                    specified set of points. If style was specified as 'masked', zvalues will
-                    be a numpy masked array.
-                sigmasq (numpy array, dim MxN or dim Nx1): Variance at specified grid points or
-                    at the specified set of points. If style was specified as 'masked', sigmasq
-                    will be a numpy masked array.
+                zvalues (numpy array, dim MxN or dim Nx1): Z-values of specified
+                    grid or at the specified set of points. If style was
+                    specified as 'masked', zvalues will be a numpy masked array.
+                sigmasq (numpy array, dim MxN or dim Nx1): Variance at specified
+                    grid points or at the specified set of points. If style was
+                    specified as 'masked', sigmasq will be a numpy masked array.
 
     References:
-        P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
-        (Cambridge University Press, 1997) 272 p.
+        P.K. Kitanidis, Introduction to Geostatistcs: Applications in
+        Hydrogeology, (Cambridge University Press, 1997) 272 p.
     """
 
     eps = 1.e-10   # Cutoff for comparison to zero

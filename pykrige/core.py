@@ -493,13 +493,17 @@ def _initialize_variogram_model(X, y, variogram_model,
     # if variogram_model_parameters was not defined, then estimate the variogram
     if variogram_model_parameters is not None:
         if variogram_model == 'linear' and len(variogram_model_parameters) != 2:
-            raise ValueError("Exactly two parameters required for linear variogram model.")
-        elif variogram_model in ['power', 'spherical', 'exponential', 'gaussian', 'hole-effect'] \
+            raise ValueError("Exactly two parameters required "
+                             "for linear variogram model.")
+        elif variogram_model in ['power', 'spherical', 'exponential',
+                                 'gaussian', 'hole-effect'] \
                 and len(variogram_model_parameters) != 3:
-            raise ValueError("Exactly three parameters required for %s variogram model" % variogram_model)
+            raise ValueError("Exactly three parameters required for "
+                             "%s variogram model" % variogram_model)
     else:
         if variogram_model == 'custom':
-            raise ValueError("Variogram parameters must be specified when implementing custom variogram model.")
+            raise ValueError("Variogram parameters must be specified when "
+                             "implementing custom variogram model.")
         else:
             variogram_model_parameters = \
                 _calculate_variogram_model(lags, semivariance, variogram_model,
@@ -532,11 +536,12 @@ def _variogram_residuals(params, x, y, variogram_function, weight):
         residuals, dimension same as y
     """
 
-    # this crude weighting routine can be used to better fit the model variogram to the experimental variogram
-    # at smaller lags... as Kitanidis notes, the fit at smaller lags is more important than the overall fit
-    # the weights are calculated from a logistic function, so weights at small lags are ~1
-    # and weights at the longest lags are ~0; the center of the logistic weighting is hard-coded
-    # to be at 70% of the distance from the shortest lag to the largest lag
+    # this crude weighting routine can be used to better fit the model
+    # variogram to the experimental variogram at smaller lags...
+    # the weights are calculated from a logistic function, so weights at small
+    # lags are ~1 and weights at the longest lags are ~0;
+    # the center of the logistic weighting is hard-coded to be at 70% of the
+    # distance from the shortest lag to the largest lag
     if weight:
         drange = np.amax(x) - np.amin(x)
         k = 2.1972 / (0.1 * drange)
@@ -581,17 +586,21 @@ def _calculate_variogram_model(lags, semivariance, variogram_model,
     """
 
     if variogram_model == 'linear':
-        x0 = [(np.amax(semivariance) - np.amin(semivariance))/(np.amax(lags) - np.amin(lags)), np.amin(semivariance)]
+        x0 = [(np.amax(semivariance) - np.amin(semivariance)) /
+              (np.amax(lags) - np.amin(lags)), np.amin(semivariance)]
         bnds = ([0., 0.], [np.inf, np.amax(semivariance)])
     elif variogram_model == 'power':
-        x0 = [(np.amax(semivariance) - np.amin(semivariance))/(np.amax(lags) - np.amin(lags)),
-              1.1, np.amin(semivariance)]
+        x0 = [(np.amax(semivariance) - np.amin(semivariance)) /
+              (np.amax(lags) - np.amin(lags)), 1.1, np.amin(semivariance)]
         bnds = ([0., 0.001, 0.], [np.inf, 1.999, np.amax(semivariance)])
     else:
-        x0 = [np.amax(semivariance) - np.amin(semivariance), 0.25*np.amax(lags), np.amin(semivariance)]
-        bnds = ([0., 0., 0.], [10.*np.amax(semivariance), np.amax(lags), np.amax(semivariance)])
+        x0 = [np.amax(semivariance) - np.amin(semivariance),
+              0.25*np.amax(lags), np.amin(semivariance)]
+        bnds = ([0., 0., 0.], [10.*np.amax(semivariance), np.amax(lags),
+                               np.amax(semivariance)])
 
-    # use 'soft' L1-norm minimization in order to buffer against potential outliers (weird/skewed points)
+    # use 'soft' L1-norm minimization in order to buffer against
+    # potential outliers (weird/skewed points)
     res = least_squares(_variogram_residuals, x0, bounds=bnds, loss='soft_l1',
                         args=(lags, semivariance, variogram_function, weight))
 
