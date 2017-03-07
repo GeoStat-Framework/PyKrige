@@ -243,7 +243,8 @@ class TestPyKrige(unittest.TestCase):
         self.assertTrue(np.allclose(res, np.array([0.98, 1.05]), 0.01, 0.01))
 
         res = core._calculate_variogram_model(
-            np.array([1., 2., 3., 4.]), np.array([1., 2.8284271, 5.1961524, 8.]),
+            np.array([1., 2., 3., 4.]), np.array([1., 2.8284271,
+                                                  5.1961524, 8.]),
             'power', variogram_models.power_variogram_model, False)
         self.assertTrue(np.allclose(res, np.array([1., 1.5, 0.]), 0.001, 0.001))
 
@@ -253,14 +254,28 @@ class TestPyKrige(unittest.TestCase):
         self.assertTrue(np.allclose(res, np.array([1., 0.5, 0.]), 0.001, 0.001))
 
         res = core._calculate_variogram_model(
-            np.array([1., 2., 3., 4.]), np.array([1.2642, 1.7293, 1.9004, 1.9634]),
+            np.array([1., 2., 3., 4.]), np.array([1.2642, 1.7293,
+                                                  1.9004, 1.9634]),
             'exponential', variogram_models.exponential_variogram_model, False)
         self.assertTrue(np.allclose(res, np.array([2., 3., 0.]), 0.001, 0.001))
 
         res = core._calculate_variogram_model(
-            np.array([1., 2., 3., 4.]), np.array([0.5769, 1.4872, 1.9065, 1.9914]),
+            np.array([1., 2., 3., 4.]), np.array([0.5769, 1.4872,
+                                                  1.9065, 1.9914]),
             'gaussian', variogram_models.gaussian_variogram_model, False)
         self.assertTrue(np.allclose(res, np.array([2., 3., 0.]), 0.001, 0.001))
+
+        res = core._calculate_variogram_model(
+            np.array([1., 2., 3., 4.]), np.array([3.33060952, 3.85063879,
+                                                  3.96667301, 3.99256374]),
+            'exponential', variogram_models.exponential_variogram_model, False)
+        self.assertTrue(np.allclose(res, np.array([3., 2., 1.]), 0.001, 0.001))
+
+        res = core._calculate_variogram_model(
+            np.array([1., 2., 3., 4.]), np.array([2.60487044, 3.85968813,
+                                                  3.99694817, 3.99998564]),
+            'gaussian', variogram_models.gaussian_variogram_model, False)
+        self.assertTrue(np.allclose(res, np.array([3., 2., 1.]), 0.001, 0.001))
 
     def test_core_krige(self):
 
