@@ -25,8 +25,8 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - "conda create -q -n _krige-env python=%PYTHON_VERSION% numpy scipy nose matplotlib cython scikit-learn"
-  - activate _krige-env
+  - "conda create -q -n krige-env python=%PYTHON_VERSION% numpy scipy nose matplotlib cython scikit-learn"
+  - activate krige-env
   - pip install coverage
 
   - dir 

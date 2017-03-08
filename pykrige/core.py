@@ -30,16 +30,15 @@ Functions:
                                variogram_function, weight):
         Returns variogram model parameters that minimize the RMSE between the
         specified variogram function and the actual calculated variogram points.
-    _krige(x, y, z, coords, variogram_function, variogram_model_parameters):
+    _krige(X, y, coords, variogram_function, variogram_model_parameters,
+           coordinates_type):
         Function that solves the ordinary kriging system for a single specified
         point. Returns Z value and sigma squared for the specified coordinates.
-    krige_3d(x, y, z, vals, coords, variogram_function,
-             variogram_model_parameters):
-        Function that solves the ordinary kriging system for a single specified
-        point. Returns the interpolated value and sigma squared for the
-        specified coordinates.
-    _find_statistics(x, y, z, variogram_funtion, variogram_model_parameters):
+        Used in statistics calculation.
+    _find_statistics(X, y, variogram_funtion, variogram_model_parameters,
+                     coordinates_type):
         Returns the delta, sigma, and epsilon values for the variogram fit.
+        These arrays are used for statistics calculations.
     calcQ1(epsilon):
         Returns the Q1 statistic for the variogram fit (see Kitanidis).
     calcQ2(epsilon):
@@ -612,7 +611,31 @@ def _calculate_variogram_model(lags, semivariance, variogram_model,
 def _krige(X, y, coords, variogram_function,
            variogram_model_parameters, coordinates_type):
     """Sets up and solves the kriging matrix for the given coordinate pair.
-    This function is now only used for the statistics calculations."""
+    This function is only used for the statistics calculations.
+
+    Parameters
+    ----------
+    X: ndarray
+        float array [n_samples, n_dim], the input array of coordinates
+    y: ndarray
+        float array [n_samples], the input array of measurement values
+    coords: ndarray
+        float array [1, n_dim], point at which to evaluate the kriging system
+    variogram_function: callable
+        function that will be called to evaluate variogram model
+    variogram_model_parameters: list
+        user-specified parameters for variogram model
+    coordinates_type: str
+        type of coordinates in X array, can be 'euclidean' for standard
+        rectangular coordinates or 'geographic' if the coordinates are lat/lon
+
+    Returns
+    -------
+    zinterp: float
+        kriging estimate at the specified point
+    sigmasq: float
+        mean square error of the kriging estimate
+    """
 
     zero_index = None
     zero_value = False
@@ -671,7 +694,31 @@ def _krige(X, y, coords, variogram_function,
 
 def _find_statistics(X, y, variogram_function,
                      variogram_model_parameters, coordinates_type):
-    """Calculates variogram fit statistics."""
+    """Calculates variogram fit statistics.
+
+    Parameters
+    ----------
+    X: ndarray
+        float array [n_samples, n_dim], the input array of coordinates
+    y: ndarray
+        float array [n_samples], the input array of measurement values
+    variogram_function: callable
+        function that will be called to evaluate variogram model
+    variogram_model_parameters: list
+        user-specified parameters for variogram model
+    coordinates_type: str
+        type of coordinates in X array, can be 'euclidean' for standard
+        rectangular coordinates or 'geographic' if the coordinates are lat/lon
+
+    Returns
+    -------
+    delta: ndarray
+        residuals between observed values and kriged estimates for those values
+    sigma: ndarray
+        mean error in kriging estimates
+    epsilon: ndarray
+        residuals normalized by their mean error
+    """
 
     delta = np.zeros(y.shape)
     sigma = np.zeros(y.shape)
