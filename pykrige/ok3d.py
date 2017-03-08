@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
 from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
-    _make_variogram_parameter_list
+    _make_variogram_parameter_list, _find_statistics
 import warnings
 
 
@@ -351,7 +351,8 @@ class OrdinaryKriging3D:
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
                 print("Partial Sill:", self.variogram_model_parameters[0])
-                print("Full Sill:", self.variogram_model_parameters[0] + self.variogram_model_parameters[2])
+                print("Full Sill:", self.variogram_model_parameters[0] +
+                      self.variogram_model_parameters[2])
                 print("Range:", self.variogram_model_parameters[1])
                 print("Nugget:", self.variogram_model_parameters[2], '\n')
         if self.enable_plotting:
@@ -359,10 +360,12 @@ class OrdinaryKriging3D:
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = core.find_statistics_3d(self.X_ADJUSTED, self.Y_ADJUSTED,
-                                                                       self.Z_ADJUSTED, self.VALUES,
-                                                                       self.variogram_function,
-                                                                       self.variogram_model_parameters)
+        self.delta, self.sigma, self.epsilon = \
+            _find_statistics(np.vstack((self.X_ADJUSTED,
+                                        self.Y_ADJUSTED,
+                                        self.Z_ADJUSTED)).T,
+                             self.VALUES,  self.variogram_function,
+                             self.variogram_model_parameters, 'euclidean')
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
@@ -441,10 +444,12 @@ class OrdinaryKriging3D:
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = core.find_statistics_3d(self.X_ADJUSTED, self.Y_ADJUSTED,
-                                                                       self.Z_ADJUSTED, self.VALUES,
-                                                                       self.variogram_function,
-                                                                       self.variogram_model_parameters)
+        self.delta, self.sigma, self.epsilon = \
+            _find_statistics(np.vstack((self.X_ADJUSTED,
+                                        self.Y_ADJUSTED,
+                                        self.Z_ADJUSTED)).T,
+                             self.VALUES, self.variogram_function,
+                             self.variogram_model_parameters, 'euclidean')
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)

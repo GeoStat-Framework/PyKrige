@@ -30,7 +30,7 @@ Functions:
                                variogram_function, weight):
         Returns variogram model parameters that minimize the RMSE between the
         specified variogram function and the actual calculated variogram points.
-    krige(x, y, z, coords, variogram_function, variogram_model_parameters):
+    _krige(x, y, z, coords, variogram_function, variogram_model_parameters):
         Function that solves the ordinary kriging system for a single specified
         point. Returns Z value and sigma squared for the specified coordinates.
     krige_3d(x, y, z, vals, coords, variogram_function,
@@ -38,7 +38,7 @@ Functions:
         Function that solves the ordinary kriging system for a single specified
         point. Returns the interpolated value and sigma squared for the
         specified coordinates.
-    find_statistics(x, y, z, variogram_funtion, variogram_model_parameters):
+    _find_statistics(x, y, z, variogram_funtion, variogram_model_parameters):
         Returns the delta, sigma, and epsilon values for the variogram fit.
     calcQ1(epsilon):
         Returns the Q1 statistic for the variogram fit (see Kitanidis).
@@ -63,7 +63,7 @@ Copyright (c) 2015-2017 Benjamin S. Murphy
 """
 
 import numpy as np
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.optimize import least_squares
 
 
@@ -607,124 +607,83 @@ def _calculate_variogram_model(lags, semivariance, variogram_model,
     return res.x
 
 
-def krige(x, y, z, coords, variogram_function, variogram_model_parameters, coordinates_type):
-        """Sets up and solves the kriging matrix for the given coordinate pair.
-        This function is now only used for the statistics calculations."""
+def _krige(X, y, coords, variogram_function,
+           variogram_model_parameters, coordinates_type):
+    """Sets up and solves the kriging matrix for the given coordinate pair.
+    This function is now only used for the statistics calculations."""
 
-        zero_index = None
-        zero_value = False
+    zero_index = None
+    zero_value = False
 
-        x1, x2 = np.meshgrid(x, x, sparse=True)
-        y1, y2 = np.meshgrid(y, y, sparse=True)
+    # calculate distance between points... need a square distance matrix
+    # of inter-measurement-point distances and a vector of distances between
+    # measurement points (X) and the kriging point (coords)
+    if coordinates_type == 'euclidean':
+        d = squareform(pdist(X, metric='euclidean'))
+        bd = np.squeeze(cdist(X, coords[None, :], metric='euclidean'))
 
-        if coordinates_type == 'euclidean':
-            d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-            bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2)
-        elif coordinates_type == 'geographic':
-            d = great_circle_distance(x1, y1, x2, y2)
-            bd = great_circle_distance(x, y, coords[0]*np.ones(x.shape),
-                                       coords[1]*np.ones(y.shape))
-        if np.any(np.absolute(bd) <= 1e-10):
-            zero_value = True
-            zero_index = np.where(bd <= 1e-10)[0][0]
+    # geographic coordinate distances still calculated in the old way...
+    # assume X[:, 0] ('x') => lon, X[:, 1] ('y') => lat
+    # also assume problem is 2D; check done earlier in initializing variogram
+    elif coordinates_type == 'geographic':
+        x1, x2 = np.meshgrid(X[:, 0], X[:, 0], sparse=True)
+        y1, y2 = np.meshgrid(X[:, 1], X[:, 1], sparse=True)
+        d = great_circle_distance(x1, y1, x2, y2)
+        bd = great_circle_distance(X[:, 0], X[:, 1],
+                                   coords[0] * np.ones(X.shape[0]),
+                                   coords[1] * np.ones(X.shape[0]))
 
-        n = x.shape[0]
-        a = np.zeros((n+1, n+1))
-        a[:n, :n] = - variogram_function(variogram_model_parameters, d)
-        np.fill_diagonal(a, 0.0)
-        a[n, :] = 1.0
-        a[:, n] = 1.0
-        a[n, n] = 0.0
+    # this check is done when initializing variogram, but kept here anyways...
+    else:
+        raise ValueError("Specified coordinate type '%s' "
+                         "is not supported." % coordinates_type)
 
-        b = np.zeros((n+1, 1))
-        b[:n, 0] = - variogram_function(variogram_model_parameters, bd)
-        if zero_value:
-            b[zero_index, 0] = 0.0
-        b[n, 0] = 1.0
+    # check if kriging point overlaps with measurement point
+    if np.any(np.absolute(bd) <= 1e-10):
+        zero_value = True
+        zero_index = np.where(bd <= 1e-10)[0][0]
 
-        x_ = np.linalg.solve(a, b)
-        zinterp = np.sum(x_[:n, 0] * z)
-        sigmasq = np.sum(x_[:, 0] * -b[:, 0])
+    # set up kriging matrix
+    n = X.shape[0]
+    a = np.zeros((n+1, n+1))
+    a[:n, :n] = - variogram_function(variogram_model_parameters, d)
+    np.fill_diagonal(a, 0.0)
+    a[n, :] = 1.0
+    a[:, n] = 1.0
+    a[n, n] = 0.0
 
-        return zinterp, sigmasq
+    # set up RHS
+    b = np.zeros((n+1, 1))
+    b[:n, 0] = - variogram_function(variogram_model_parameters, bd)
+    if zero_value:
+        b[zero_index, 0] = 0.0
+    b[n, 0] = 1.0
 
+    # solve
+    res = np.linalg.solve(a, b)
+    zinterp = np.sum(res[:n, 0] * y)
+    sigmasq = np.sum(res[:, 0] * -b[:, 0])
 
-def krige_3d(x, y, z, vals, coords, variogram_function, variogram_model_parameters):
-        """Sets up and solves the kriging matrix for the given coordinate pair.
-        This function is now only used for the statistics calculations."""
-
-        zero_index = None
-        zero_value = False
-
-        x1, x2 = np.meshgrid(x, x, sparse=True)
-        y1, y2 = np.meshgrid(y, y, sparse=True)
-        z1, z2 = np.meshgrid(z, z, sparse=True)
-        d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
-        bd = np.sqrt((x - coords[0])**2 + (y - coords[1])**2 + (z - coords[2])**2)
-        if np.any(np.absolute(bd) <= 1e-10):
-            zero_value = True
-            zero_index = np.where(bd <= 1e-10)[0][0]
-
-        n = x.shape[0]
-        a = np.zeros((n+1, n+1))
-        a[:n, :n] = - variogram_function(variogram_model_parameters, d)
-        np.fill_diagonal(a, 0.0)
-        a[n, :] = 1.0
-        a[:, n] = 1.0
-        a[n, n] = 0.0
-
-        b = np.zeros((n+1, 1))
-        b[:n, 0] = - variogram_function(variogram_model_parameters, bd)
-        if zero_value:
-            b[zero_index, 0] = 0.0
-        b[n, 0] = 1.0
-
-        x_ = np.linalg.solve(a, b)
-        zinterp = np.sum(x_[:n, 0] * vals)
-        sigmasq = np.sum(x_[:, 0] * -b[:, 0])
-
-        return zinterp, sigmasq
+    return zinterp, sigmasq
 
 
-def find_statistics(x, y, z, variogram_function, variogram_model_parameters, coordinates_type):
+def _find_statistics(X, y, variogram_function,
+                     variogram_model_parameters, coordinates_type):
     """Calculates variogram fit statistics."""
 
-    delta = np.zeros(z.shape)
-    sigma = np.zeros(z.shape)
+    delta = np.zeros(y.shape)
+    sigma = np.zeros(y.shape)
 
-    for n in range(z.shape[0]):
-        if n == 0:
-            delta[n] = 0.0
-            sigma[n] = 0.0
+    for i in range(y.shape[0]):
+        if i == 0:
+            delta[i] = 0.0
+            sigma[i] = 0.0
         else:
-            z_, ss_ = krige(x[:n], y[:n], z[:n], (x[n], y[n]), variogram_function,
-                            variogram_model_parameters, coordinates_type)
-            d = z[n] - z_
-            delta[n] = d
-            sigma[n] = np.sqrt(ss_)
-
-    delta = delta[1:]
-    sigma = sigma[1:]
-    epsilon = delta/sigma
-
-    return delta, sigma, epsilon
-
-
-def find_statistics_3d(x, y, z, vals, variogram_function, variogram_model_parameters):
-    """Calculates variogram fit statistics for 3D problems."""
-
-    delta = np.zeros(vals.shape)
-    sigma = np.zeros(vals.shape)
-
-    for n in range(z.shape[0]):
-        if n == 0:
-            delta[n] = 0.0
-            sigma[n] = 0.0
-        else:
-            val_, ss_ = krige_3d(x[:n], y[:n], z[:n], vals[:n], (x[n], y[n], z[n]),
-                               variogram_function, variogram_model_parameters)
-            delta[n] = vals[n] - val_
-            sigma[n] = np.sqrt(ss_)
+            k, ss = _krige(X[:i, :], y[:i], X[i, :], variogram_function,
+                           variogram_model_parameters, coordinates_type)
+            d = y[i] - k
+            delta[i] = d
+            sigma[i] = np.sqrt(ss)
 
     delta = delta[1:]
     sigma = sigma[1:]

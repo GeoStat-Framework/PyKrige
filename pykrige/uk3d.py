@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
 from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
-    _make_variogram_parameter_list
+    _make_variogram_parameter_list, _find_statistics
 import warnings
 
 
@@ -400,10 +400,12 @@ class UniversalKriging3D:
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = core.find_statistics_3d(self.X_ADJUSTED, self.Y_ADJUSTED,
-                                                                       self.Z_ADJUSTED, self.VALUES,
-                                                                       self.variogram_function,
-                                                                       self.variogram_model_parameters)
+        self.delta, self.sigma, self.epsilon = \
+            _find_statistics(np.vstack((self.X_ADJUSTED,
+                                        self.Y_ADJUSTED,
+                                        self.Z_ADJUSTED)).T,
+                             self.VALUES, self.variogram_function,
+                             self.variogram_model_parameters, 'euclidean')
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
@@ -523,10 +525,12 @@ class UniversalKriging3D:
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = core.find_statistics_3d(self.X_ADJUSTED, self.Y_ADJUSTED,
-                                                                       self.Z_ADJUSTED, self.VALUES,
-                                                                       self.variogram_function,
-                                                                       self.variogram_model_parameters)
+        self.delta, self.sigma, self.epsilon = \
+            _find_statistics(np.vstack((self.X_ADJUSTED,
+                                        self.Y_ADJUSTED,
+                                        self.Z_ADJUSTED)).T,
+                             self.VALUES, self.variogram_function,
+                             self.variogram_model_parameters, 'euclidean')
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)

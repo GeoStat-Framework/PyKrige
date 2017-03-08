@@ -85,12 +85,12 @@ class Krige(RegressorMixin, BaseEstimator):
     def _dimensionality_check(self, x, ext=''):
         if self.method in ('ordinary', 'universal'):
             if x.shape[1] != 2:
-                raise ValueError('2d krige can use only 2d points')
+                raise ValueError('2d _krige can use only 2d points')
             else:
                 return {'x' + ext: x[:, 0], 'y' + ext: x[:, 1]}
         if self.method in ('ordinary3d', 'universal3d'):
             if x.shape[1] != 3:
-                raise ValueError('3d krige can use only 3d points')
+                raise ValueError('3d _krige can use only 3d points')
             else:
                 return {'x' + ext: x[:, 0],
                         'y' + ext: x[:, 1],
