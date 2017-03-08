@@ -41,7 +41,7 @@ Callable Methods:
             NODATA (float): Value that specifies which entries are not
                 actual data.
 
-Copyright (c) 2015 Benjamin S. Murphy
+Copyright (c) 2015-2017 Benjamin S. Murphy
 """
 
 import numpy as np

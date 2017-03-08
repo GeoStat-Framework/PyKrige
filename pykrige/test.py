@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 """
 Testing code.
-Updated BSM March 2016
+Updated BSM February 2017
 """
 
 import unittest
@@ -27,11 +27,16 @@ class TestPyKrige(unittest.TestCase):
 
     def setUp(self):
 
-        self.test_data = np.genfromtxt(os.path.join(os.getcwd(), 'test_data/test_data.txt'))
-        self.ok_test_answer, self.ok_test_gridx, self.ok_test_gridy, cellsize, no_data = \
-            kt.read_asc_grid(os.path.join(os.getcwd(), 'test_data/test1_answer.asc'), footer=2)
-        self.uk_test_answer, self.uk_test_gridx, self.uk_test_gridy, cellsize, no_data = \
-            kt.read_asc_grid(os.path.join(os.getcwd(), 'test_data/test2_answer.asc'), footer=2)
+        self.test_data = np.genfromtxt(os.path.join(os.getcwd(),
+                                                    'test_data/test_data.txt'))
+        self.ok_test_answer, self.ok_test_gridx, self.ok_test_gridy, \
+            cellsize, no_data = kt.read_asc_grid(
+                os.path.join(os.getcwd(), 'test_data/test1_answer.asc'),
+                    footer=2)
+        self.uk_test_answer, self.uk_test_gridx, self.uk_test_gridy, \
+            cellsize, no_data = kt.read_asc_grid(
+                os.path.join(os.getcwd(), 'test_data/test2_answer.asc'),
+                    footer=2)
 
         self.simple_data = np.array([[0.3, 1.2, 0.47],
                                      [1.9, 0.6, 0.56],
@@ -52,7 +57,8 @@ class TestPyKrige(unittest.TestCase):
         self.simple_gridx_3d = np.arange(0.0, 0.6, 0.05)
         self.simple_gridy_3d = np.arange(0.0, 0.6, 0.01)
         self.simple_gridz_3d = np.arange(0.0, 0.6, 0.1)
-        zi, yi, xi = np.meshgrid(self.simple_gridz_3d, self.simple_gridy_3d, self.simple_gridx_3d, indexing='ij')
+        zi, yi, xi = np.meshgrid(self.simple_gridz_3d, self.simple_gridy_3d,
+                                 self.simple_gridx_3d, indexing='ij')
         self.mask_3d = np.array((xi == yi) & (yi == zi))
 
     def test_core_adjust_for_anisotropy(self):
@@ -83,23 +89,105 @@ class TestPyKrige(unittest.TestCase):
         self.assertTrue(np.allclose(X_adj[:, 1], np.array([-2., 0., 0.])))
         self.assertTrue(np.allclose(X_adj[:, 2], np.array([0., 0., 2.])))
 
+    def test_core_make_variogram_parameter_list(self):
+
+        # test of first case - variogram_model_parameters is None
+        # function should return None unaffected
+        result = core._make_variogram_parameter_list('linear', None)
+        self.assertIsNone(result)
+
+        # tests for second case - variogram_model_parameters is dict
+        self.assertRaises(KeyError, core._make_variogram_parameter_list,
+                          'linear', {'tacos': 1., 'burritos': 2.})
+        result = core._make_variogram_parameter_list('linear', {'slope': 1.,
+                                                                'nugget': 0.})
+        self.assertEqual(result, [1., 0.])
+
+        self.assertRaises(KeyError, core._make_variogram_parameter_list,
+                          'power', {'frijoles': 1.})
+        result = core._make_variogram_parameter_list('power', {'scale': 2.,
+                                                               'exponent': 1.,
+                                                               'nugget': 0.})
+        self.assertEqual(result, [2., 1., 0.])
+
+        self.assertRaises(KeyError, core._make_variogram_parameter_list,
+                          'exponential', {'tacos': 1.})
+        self.assertRaises(KeyError, core._make_variogram_parameter_list,
+                          'exponential', {'range': 1., 'nugget': 1.})
+        result = core._make_variogram_parameter_list('exponential',
+                                                     {'sill': 5., 'range': 2.,
+                                                      'nugget': 1.})
+        self.assertEqual(result, [4., 2., 1.])
+        result = core._make_variogram_parameter_list('exponential',
+                                                     {'psill': 4., 'range': 2.,
+                                                      'nugget': 1.})
+        self.assertEqual(result, [4., 2., 1.])
+
+        self.assertRaises(TypeError, core._make_variogram_parameter_list,
+                          'custom', {'junk': 1.})
+        self.assertRaises(ValueError, core._make_variogram_parameter_list,
+                          'blarg', {'junk': 1.})
+
+        # tests for third case - variogram_model_parameters is list
+        self.assertRaises(ValueError, core._make_variogram_parameter_list,
+                          'linear', [1., 2., 3.])
+        result = core._make_variogram_parameter_list('linear', [1., 2.])
+        self.assertEqual(result, [1., 2.])
+
+        self.assertRaises(ValueError, core._make_variogram_parameter_list,
+                          'power', [1., 2.])
+        result = core._make_variogram_parameter_list('power', [1., 2., 3.])
+        self.assertEqual(result, [1., 2., 3.])
+
+        self.assertRaises(ValueError, core._make_variogram_parameter_list,
+                          'exponential', [1., 2., 3., 4.])
+        result = core._make_variogram_parameter_list('exponential',
+                                                     [5., 2., 1.])
+        self.assertEqual(result, [4., 2., 1.])
+
+        result = core._make_variogram_parameter_list('custom', [1., 2., 3.])
+        self.assertEqual(result, [1., 2., 3])
+
+        self.assertRaises(ValueError, core._make_variogram_parameter_list,
+                          'junk', [1., 1., 1.])
+
+        # test for last case - make sure function handles incorrect
+        # variogram_model_parameters type appropriately
+        self.assertRaises(TypeError, core._make_variogram_parameter_list,
+                          'linear', 'tacos')
+
     def test_core_initialize_variogram_model(self):
 
         # Note the variogram_function argument is not a string in real life...
-        self.assertRaises(ValueError, core.initialize_variogram_model, self.test_data[:, 0], self.test_data[:, 1],
-                          self.test_data[:, 2], 'linear', [0.0], 'linear', 6, False,
-                          'euclidean')
+        # core._initialize_variogram_model also checks the length of input
+        # lists, which is redundant now because the same tests are done in
+        # core._make_variogram_parameter_list
+        self.assertRaises(ValueError, core._initialize_variogram_model,
+                          np.vstack((self.test_data[:, 0],
+                                     self.test_data[:, 1])).T,
+                          self.test_data[:, 2], 'linear', [0.0], 'linear',
+                          6, False, 'euclidean')
+        self.assertRaises(ValueError, core._initialize_variogram_model,
+                          np.vstack((self.test_data[:, 0],
+                                     self.test_data[:, 1])).T,
+                          self.test_data[:, 2], 'spherical', [0.0],
+                          'spherical', 6, False, 'euclidean')
 
-        self.assertRaises(ValueError, core.initialize_variogram_model, self.test_data[:, 0], self.test_data[:, 1],
-                          self.test_data[:, 2], 'spherical', [0.0], 'spherical', 6, False,
-                          'euclidean')
+        # core._initialize_variogram_model does also check coordinate type,
+        # this is NOT redundant
+        self.assertRaises(ValueError, core._initialize_variogram_model,
+                          np.vstack((self.test_data[:, 0],
+                                     self.test_data[:, 1])).T,
+                          self.test_data[:, 2], 'spherical', [0.0, 0.0, 0.0],
+                          'spherical', 6, False, 'tacos')
 
         x = np.array([1.0 + n/np.sqrt(2) for n in range(4)])
         y = np.array([1.0 + n/np.sqrt(2) for n in range(4)])
         z = np.arange(1.0, 5.0, 1.0)
-        lags, semivariance, variogram_model_parameters = core.initialize_variogram_model(x, y, z, 'linear',
-                                                                                         [0.0, 0.0], 'linear',
-                                                                                         6, False, 'euclidean')
+        lags, semivariance, variogram_model_parameters = \
+            core._initialize_variogram_model(np.vstack((x, y)).T, z,
+                                             'linear', [0.0, 0.0],
+                                             'linear', 6, False, 'euclidean')
 
         self.assertTrue(np.allclose(lags, np.array([1.0, 2.0, 3.0])))
         self.assertTrue(np.allclose(semivariance, np.array([0.5, 2.0, 4.5])))
@@ -107,48 +195,87 @@ class TestPyKrige(unittest.TestCase):
     def test_core_initialize_variogram_model_3d(self):
 
         # Note the variogram_function argument is not a string in real life...
-        self.assertRaises(ValueError, core.initialize_variogram_model_3d, self.simple_data_3d[:, 0],
-                          self.simple_data_3d[:, 1], self.simple_data_3d[:, 2], self.simple_data_3d[:, 3],
-                          'linear', [0.0], 'linear', 6, False)
+        # again, these checks in core._initialize_variogram_model are redundant
+        # now because the same tests are done in
+        # core._make_variogram_parameter_list
+        self.assertRaises(ValueError, core._initialize_variogram_model,
+                          np.vstack((self.simple_data_3d[:, 0],
+                                     self.simple_data_3d[:, 1],
+                                     self.simple_data_3d[:, 2])).T,
+                          self.simple_data_3d[:, 3], 'linear', [0.0], 'linear',
+                          6, False, 'euclidean')
 
-        self.assertRaises(ValueError, core.initialize_variogram_model_3d, self.simple_data_3d[:, 0],
-                          self.simple_data_3d[:, 1], self.simple_data_3d[:, 2], self.simple_data_3d[:, 3],
-                          'spherical', [0.0], 'spherical', 6, False)
+        self.assertRaises(ValueError, core._initialize_variogram_model,
+                          np.vstack((self.simple_data_3d[:, 0],
+                                     self.simple_data_3d[:, 1],
+                                     self.simple_data_3d[:, 2])).T,
+                          self.simple_data_3d[:, 3], 'spherical', [0.0],
+                          'spherical', 6, False, 'euclidean')
 
-        lags, semivariance, variogram_model_parameters = core.initialize_variogram_model_3d(np.array([1., 2., 3., 4.]),
-                                                                                            np.array([1., 2., 3., 4.]),
-                                                                                            np.array([1., 2., 3., 4.]),
-                                                                                            np.array([1., 2., 3., 4.]),
-                                                                                            'linear', [0.0, 0.0],
-                                                                                            'linear', 3, False)
-        self.assertTrue(np.allclose(lags, np.array([np.sqrt(3.), 2.*np.sqrt(3.), 3.*np.sqrt(3.)])))
+        self.assertRaises(ValueError, core._initialize_variogram_model,
+                          np.vstack((self.simple_data_3d[:, 0],
+                                     self.simple_data_3d[:, 1],
+                                     self.simple_data_3d[:, 2])).T,
+                          self.simple_data_3d[:, 3], 'linear', [0.0, 0.0],
+                          'linear', 6, False, 'geographic')
+
+        lags, semivariance, variogram_model_parameters = \
+            core._initialize_variogram_model(
+                np.vstack((np.array([1., 2., 3., 4.]),
+                           np.array([1., 2., 3., 4.]),
+                           np.array([1., 2., 3., 4.]))).T,
+                np.array([1., 2., 3., 4.]), 'linear', [0.0, 0.0], 'linear', 3,
+                False, 'euclidean')
+        self.assertTrue(np.allclose(lags, np.array([np.sqrt(3.), 2.*np.sqrt(3.),
+                                                    3.*np.sqrt(3.)])))
         self.assertTrue(np.allclose(semivariance, np.array([0.5, 2.0, 4.5])))
 
     def test_core_calculate_variogram_model(self):
 
-        res = core.calculate_variogram_model(np.array([1.0, 2.0, 3.0, 4.0]), np.array([2.05, 2.95, 4.05, 4.95]),
-                                             'linear', variogram_models.linear_variogram_model, False)
+        res = core._calculate_variogram_model(
+            np.array([1.0, 2.0, 3.0, 4.0]), np.array([2.05, 2.95, 4.05, 4.95]),
+            'linear', variogram_models.linear_variogram_model, False)
         self.assertTrue(np.allclose(res, np.array([0.98, 1.05]), 0.01, 0.01))
 
-        res = core.calculate_variogram_model(np.array([1.0, 2.0, 3.0, 4.0]), np.array([2.05, 2.95, 4.05, 4.95]),
-                                             'linear', variogram_models.linear_variogram_model, True)
+        res = core._calculate_variogram_model(
+            np.array([1.0, 2.0, 3.0, 4.0]), np.array([2.05, 2.95, 4.05, 4.95]),
+            'linear', variogram_models.linear_variogram_model, True)
         self.assertTrue(np.allclose(res, np.array([0.98, 1.05]), 0.01, 0.01))
 
-        res = core.calculate_variogram_model(np.array([1.0, 2.0, 3.0, 4.0]), np.array([1.0, 2.8284, 5.1962, 8.0]),
-                                             'power', variogram_models.power_variogram_model, False)
-        self.assertTrue(np.allclose(res, np.array([1.0, 1.5, 0.0])))
+        res = core._calculate_variogram_model(
+            np.array([1., 2., 3., 4.]), np.array([1., 2.8284271,
+                                                  5.1961524, 8.]),
+            'power', variogram_models.power_variogram_model, False)
+        self.assertTrue(np.allclose(res, np.array([1., 1.5, 0.]), 0.001, 0.001))
 
-        res = core.calculate_variogram_model(np.array([1.0, 2.0, 3.0, 4.0]), np.array([1.0, 1.4142, 1.7321, 2.0]),
-                                             'power', variogram_models.power_variogram_model, False)
-        self.assertTrue(np.allclose(res, np.array([1.0, 0.5, 0.0])))
+        res = core._calculate_variogram_model(
+            np.array([1., 2., 3., 4.]), np.array([1.0, 1.4142, 1.7321, 2.0]),
+            'power', variogram_models.power_variogram_model, False)
+        self.assertTrue(np.allclose(res, np.array([1., 0.5, 0.]), 0.001, 0.001))
 
-        res = core.calculate_variogram_model(np.array([1.0, 2.0, 3.0, 4.0]), np.array([1.2642, 1.7293, 1.9004, 1.9634]),
-                                             'exponential', variogram_models.exponential_variogram_model, False)
-        self.assertTrue(np.allclose(res, np.array([2.0, 3.0, 0.0]), 0.001, 0.001))
+        res = core._calculate_variogram_model(
+            np.array([1., 2., 3., 4.]), np.array([1.2642, 1.7293,
+                                                  1.9004, 1.9634]),
+            'exponential', variogram_models.exponential_variogram_model, False)
+        self.assertTrue(np.allclose(res, np.array([2., 3., 0.]), 0.001, 0.001))
 
-        res = core.calculate_variogram_model(np.array([1.0, 2.0, 3.0, 4.0]), np.array([0.5769, 1.4872, 1.9065, 1.9914]),
-                                             'gaussian', variogram_models.gaussian_variogram_model, False)
-        self.assertTrue(np.allclose(res, np.array([2.0, 3.0, 0.0]), 0.001, 0.001))
+        res = core._calculate_variogram_model(
+            np.array([1., 2., 3., 4.]), np.array([0.5769, 1.4872,
+                                                  1.9065, 1.9914]),
+            'gaussian', variogram_models.gaussian_variogram_model, False)
+        self.assertTrue(np.allclose(res, np.array([2., 3., 0.]), 0.001, 0.001))
+
+        res = core._calculate_variogram_model(
+            np.array([1., 2., 3., 4.]), np.array([3.33060952, 3.85063879,
+                                                  3.96667301, 3.99256374]),
+            'exponential', variogram_models.exponential_variogram_model, False)
+        self.assertTrue(np.allclose(res, np.array([3., 2., 1.]), 0.001, 0.001))
+
+        res = core._calculate_variogram_model(
+            np.array([1., 2., 3., 4.]), np.array([2.60487044, 3.85968813,
+                                                  3.99694817, 3.99998564]),
+            'gaussian', variogram_models.gaussian_variogram_model, False)
+        self.assertTrue(np.allclose(res, np.array([3., 2., 1.]), 0.001, 0.001))
 
     def test_core_krige(self):
 
@@ -688,7 +815,8 @@ class TestPyKrige(unittest.TestCase):
                          [2., 2., 1.5],
                          [3., 3., 1.]])
         ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
-                             variogram_model='linear', variogram_parameters=[1.0, 1.0])
+                             variogram_model='linear',
+                             variogram_parameters=[1.0, 1.0])
         z, ss = ok.execute('grid', [1., 2., 3.], [1., 2., 3.], backend='vectorized')
         self.assertAlmostEqual(z[0, 0], 2.0)
         self.assertAlmostEqual(ss[0, 0], 0.0)

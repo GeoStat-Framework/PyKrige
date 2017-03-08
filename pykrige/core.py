@@ -8,29 +8,36 @@ bscott.murphy@gmail.com
 
 Dependencies:
     numpy
-    scipy (scipy.optimize.minimize())
+    scipy
 
 Functions:
     _adjust_for_anisotropy(X, y, center, scaling, angle):
         Returns X_adj array of adjusted data coordinates. Angles are CCW about
         specified axes. Scaling is applied in rotated coordinate system.
-    initialize_variogram_model(x, y, z, variogram_model, variogram_model_parameters,
-                               variogram_function, nlags):
-        Returns lags, semivariance, and variogram model parameters as a list.
-    initialize_variogram_model_3d(x, y, z, values, variogram_model,
-                                  variogram_model_parameters, variogram_function, nlags):
-        Returns lags, semivariance, and variogram model parameters as a list.
-    variogram_function_error(params, x, y, variogram_function):
-        Called by calculate_variogram_model.
-    calculate_variogram_model(lags, semivariance, variogram_model, variogram_function):
-        Returns variogram model parameters that minimize the RMSE between the specified
-        variogram function and the actual calculated variogram points.
+    _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
+        Makes a list of variogram model parameters in the expected order if the
+        user has provided the model parameters. If not, returns None, which
+        will ensure that the automatic variogram estimation routine is
+        triggered.
+    _initialize_variogram_model(X, y, variogram_model,
+                                variogram_model_parameters, variogram_function,
+                                nlags, weight, coordinates_type):
+        Returns lags, semivariance, and variogram model parameters.
+        Variogram model parameters are estimated if user did not provide them.
+    _variogram_residuals(params, x, y, variogram_function, weight):
+        Called by _calculate_variogram_model.
+    _calculate_variogram_model(lags, semivariance, variogram_model,
+                               variogram_function, weight):
+        Returns variogram model parameters that minimize the RMSE between the
+        specified variogram function and the actual calculated variogram points.
     krige(x, y, z, coords, variogram_function, variogram_model_parameters):
-        Function that solves the ordinary kriging system for a single specified point.
-        Returns the Z value and sigma squared for the specified coordinates.
-    krige_3d(x, y, z, vals, coords, variogram_function, variogram_model_parameters):
-        Function that solves the ordinary kriging system for a single specified point.
-        Returns the interpolated value and sigma squared for the specified coordinates.
+        Function that solves the ordinary kriging system for a single specified
+        point. Returns Z value and sigma squared for the specified coordinates.
+    krige_3d(x, y, z, vals, coords, variogram_function,
+             variogram_model_parameters):
+        Function that solves the ordinary kriging system for a single specified
+        point. Returns the interpolated value and sigma squared for the
+        specified coordinates.
     find_statistics(x, y, z, variogram_funtion, variogram_model_parameters):
         Returns the delta, sigma, and epsilon values for the variogram fit.
     calcQ1(epsilon):
@@ -40,9 +47,9 @@ Functions:
     calc_cR(Q2, sigma):
         Returns the cR statistic for the variogram fit (see Kitanidis).
     great_circle_distance(lon1, lat1, lon2, lat2):
-        Returns the great circle distance between two arrays of points given in spherical
-        coordinates. Spherical coordinates are expected in degrees. Angle definition
-        follows standard longitude/latitude definition.
+        Returns the great circle distance between two arrays of points given in
+        spherical coordinates. Spherical coordinates are expected in degrees.
+        Angle definition follows standard longitude/latitude definition.
 
 References:
 [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
@@ -52,11 +59,12 @@ References:
     with Application of Nested Equations, Survey Review 23 (176),
     (Directorate of Overseas Survey, Kingston Road, Tolworth, Surrey 1975)
 
-Copyright (c) 2015 Benjamin S. Murphy
+Copyright (c) 2015-2017 Benjamin S. Murphy
 """
 
 import numpy as np
-from scipy.optimize import minimize
+from scipy.spatial.distance import pdist
+from scipy.optimize import least_squares
 
 
 def great_circle_distance(lon1, lat1, lon2, lat2):
@@ -86,7 +94,7 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
 
     Returns:
     --------
-    distance: float
+    distance: float scalar or numpy array
               The great circle distance(s) (in degrees) between the
               given pair(s) of points.
 
@@ -110,10 +118,8 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
     # Formula can be obtained from [2] combining eqns. (14)-(16)
     # for spherical geometry (f=0).
 
-    return 180.0/np.pi*np.arctan2(
-               np.sqrt((c2*np.sin(dlon))**2 +
-                       (c1*s2-s1*c2*cd)**2),
-               s1*s2+c1*c2*cd)
+    return 180.0 / np.pi * np.arctan2(np.sqrt((c2*np.sin(dlon))**2 + (c1*s2-s1*c2*cd)**2), s1*s2+c1*c2*cd)
+
 
 def euclid3_to_great_circle(euclid3_distance):
     """
@@ -186,7 +192,8 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
                              [0., 0., 1.]])
         rot_tot = np.dot(rotate_z, np.dot(rotate_y, rotate_x))
     else:
-        raise ValueError("Adjust for anysotropy function doesn't support ND spaces where N>3")
+        raise ValueError("Adjust for anisotropy function doesn't "
+                         "support ND spaces where N>3")
     X_adj = np.dot(stretch, np.dot(rot_tot, X.T)).T
 
     X_adj += center
@@ -194,29 +201,244 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
     return X_adj
 
 
-def initialize_variogram_model(x, y, z, variogram_model, variogram_model_parameters,
-                               variogram_function, nlags, weight, coordinates_type):
-    """Initializes the variogram model for kriging according
-    to user specifications or to defaults"""
+def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
+    """Converts the user input for the variogram model parameters into the
+    format expected in the rest of the code.
 
-    x1, x2 = np.meshgrid(x, x, sparse=True)
-    y1, y2 = np.meshgrid(y, y, sparse=True)
-    z1, z2 = np.meshgrid(z, z, sparse=True)
-    dz = z1 - z2
+    Parameters
+    ----------
+    variogram_model: str
+        specifies the variogram model type
+    variogram_model_parameters: list, dict, or None
+        parameters provided by the user, can also be None if the user
+        did not specify the variogram model parameters; if None,
+        this function returns None, that way the automatic variogram
+        estimation routine will kick in down the road...
 
+    Returns
+    -------
+    parameter_list: list
+        variogram model parameters stored in a list in the expected order;
+        if variogram_model is 'custom', model parameters should already
+        be encapsulated in a list, so the list is returned unaltered;
+        if variogram_model_parameters was not specified by the user,
+        None is returned; order for internal variogram models is as follows...
+
+        linear - [slope, nugget]
+        power - [scale, exponent, nugget]
+        gaussian - [psill, range, nugget]
+        spherical - [psill, range, nugget]
+        exponential - [psill, range, nugget]
+        hole-effect - [psill, range, nugget]
+
+    """
+
+    if variogram_model_parameters is None:
+
+        parameter_list = None
+
+    elif type(variogram_model_parameters) is dict:
+
+        if variogram_model in ['linear']:
+
+            if 'slope' not in variogram_model_parameters.keys() \
+                    or 'nugget' not in variogram_model_parameters.keys():
+
+                raise KeyError("'linear' variogram model requires 'slope' "
+                               "and 'nugget' specified in variogram model "
+                               "parameter dictionary.")
+
+            else:
+
+                parameter_list = [variogram_model_parameters['slope'],
+                                  variogram_model_parameters['nugget']]
+
+        elif variogram_model in ['power']:
+
+            if 'scale' not in variogram_model_parameters.keys() \
+                    or 'exponent' not in variogram_model_parameters.keys() \
+                    or 'nugget' not in variogram_model_parameters.keys():
+
+                raise KeyError("'power' variogram model requires 'scale', "
+                               "'exponent', and 'nugget' specified in "
+                               "variogram model parameter dictionary.")
+
+            else:
+
+                parameter_list = [variogram_model_parameters['scale'],
+                                  variogram_model_parameters['exponent'],
+                                  variogram_model_parameters['nugget']]
+
+        elif variogram_model in ['gaussian', 'spherical', 'exponential',
+                                 'hole-effect']:
+
+            if 'range' not in variogram_model_parameters.keys() \
+                    or 'nugget' not in variogram_model_parameters.keys():
+
+                raise KeyError("'%s' variogram model requires 'range', "
+                               "'nugget', and either 'sill' or 'psill' "
+                               "specified in variogram model parameter "
+                               "dictionary." % variogram_model)
+
+            else:
+
+                if 'sill' in variogram_model_parameters.keys():
+
+                    parameter_list = [variogram_model_parameters['sill'] -
+                                      variogram_model_parameters['nugget'],
+                                      variogram_model_parameters['range'],
+                                      variogram_model_parameters['nugget']]
+
+                elif 'psill' in variogram_model_parameters.keys():
+
+                    parameter_list = [variogram_model_parameters['psill'],
+                                      variogram_model_parameters['range'],
+                                      variogram_model_parameters['nugget']]
+
+                else:
+
+                    raise KeyError("'%s' variogram model requires either "
+                                   "'sill' or 'psill' specified in "
+                                   "variogram model parameter "
+                                   "dictionary." % variogram_model)
+
+        elif variogram_model in ['custom']:
+
+            raise TypeError("For user-specified custom variogram model, "
+                            "parameters must be specified in a list, "
+                            "not a dict.")
+
+        else:
+
+            raise ValueError("Specified variogram model must be one of the "
+                             "following: 'linear', 'power', 'gaussian', "
+                             "'spherical', 'exponential', 'hole-effect', "
+                             "'custom'.")
+
+    elif type(variogram_model_parameters) is list:
+
+        if variogram_model in ['linear']:
+
+            if len(variogram_model_parameters) != 2:
+
+                raise ValueError("Variogram model parameter list must have "
+                                 "exactly two entries when variogram model "
+                                 "set to 'linear'.")
+
+            parameter_list = variogram_model_parameters
+
+        elif variogram_model in ['power']:
+
+            if len(variogram_model_parameters) != 3:
+
+                raise ValueError("Variogram model parameter list must have "
+                                 "exactly three entries when variogram model "
+                                 "set to 'power'.")
+
+            parameter_list = variogram_model_parameters
+
+        elif variogram_model in ['gaussian', 'spherical', 'exponential',
+                                 'hole-effect']:
+
+            if len(variogram_model_parameters) != 3:
+
+                raise ValueError("Variogram model parameter list must have "
+                                 "exactly three entries when variogram model "
+                                 "set to '%s'." % variogram_model)
+
+            parameter_list = [variogram_model_parameters[0] -
+                              variogram_model_parameters[2],
+                              variogram_model_parameters[1],
+                              variogram_model_parameters[2]]
+
+        elif variogram_model in ['custom']:
+
+            parameter_list = variogram_model_parameters
+
+        else:
+
+            raise ValueError("Specified variogram model must be one of the "
+                             "following: 'linear', 'power', 'gaussian', "
+                             "'spherical', 'exponential', 'hole-effect', "
+                             "'custom'.")
+
+    else:
+
+        raise TypeError("Variogram model parameters must be provided in either "
+                        "a list or a dict when they are explicitly specified.")
+
+    return parameter_list
+
+
+def _initialize_variogram_model(X, y, variogram_model,
+                                variogram_model_parameters, variogram_function,
+                                nlags, weight, coordinates_type):
+    """Initializes the variogram model for kriging. If user does not specify
+    parameters, calls automatic variogram estimation routine.
+
+    Parameters
+    ----------
+    X: ndarray
+        float array [n_samples, n_dim], the input array of coordinates
+    y: ndarray
+        float array [n_samples], the input array of values to be kriged
+    variogram_model: str
+        user-specified variogram model to use
+    variogram_model_parameters: list
+        user-specified parameters for variogram model
+    variogram_function: callable
+        function that will be called to evaluate variogram model
+        (only used if user does not specify variogram model parameters)
+    nlags: int
+        integer scalar, number of bins into which to group inter-point distances
+    weight: bool
+        boolean flag that indicates whether the semivariances at smaller lags
+        should be weighted more heavily in the automatic variogram estimation
+    coordinates_type: str
+        type of coordinates in X array, can be 'euclidean' for standard
+        rectangular coordinates or 'geographic' if the coordinates are lat/lon
+
+    Returns
+    -------
+    lags: ndarray
+        float array [nlags], distance values for bins into which the
+        semivariances were grouped
+    semivariance: ndarray
+        float array [nlags], averaged semivariance for each bin
+    variogram_model_parameters: list
+        parameters for the variogram model, either returned unaffected if the
+        user specified them or returned from the automatic variogram
+        estimation routine
+    """
+
+    # distance calculation for rectangular coords now leverages
+    # scipy.spatial.distance's pdist function, which gives pairwise distances
+    # in a condensed distance vector (distance matrix flattened to a vector)
+    # to calculate semivariances...
     if coordinates_type == 'euclidean':
-        dx = x1 - x2
-        dy = y1 - y2
-        d = np.sqrt(dx**2 + dy**2)
+        d = pdist(X, metric='euclidean')
+        g = 0.5 * pdist(y[:, None], metric='sqeuclidean')
+
+    # geographic coordinates only accepted if the problem is 2D
+    # assume X[:, 0] ('x') => lon, X[:, 1] ('y') => lat
+    # old method of distance calculation is retained here...
+    # could be improved in the future
     elif coordinates_type == 'geographic':
-        # Assume x => lon, y => lat
+        if X.shape[1] != 2:
+            raise ValueError('Geographic coordinate type only '
+                             'supported for 2D datasets.')
+        x1, x2 = np.meshgrid(X[:, 0], X[:, 0], sparse=True)
+        y1, y2 = np.meshgrid(X[:, 1], X[:, 1], sparse=True)
+        z1, z2 = np.meshgrid(y, y, sparse=True)
         d = great_circle_distance(x1, y1, x2, y2)
+        g = 0.5 * (z1 - z2)**2.
+        indices = np.indices(d.shape)
+        d = d[(indices[0, :, :] > indices[1, :, :])]
+        g = g[(indices[0, :, :] > indices[1, :, :])]
 
-    g = 0.5 * dz**2
-
-    indices = np.indices(d.shape)
-    d = d[(indices[0, :, :] > indices[1, :, :])]
-    g = g[(indices[0, :, :] > indices[1, :, :])]
+    else:
+        raise ValueError("Specified coordinate type '%s' "
+                         "is not supported." % coordinates_type)
 
     # Equal-sized bins are now implemented. The upper limit on the bins
     # is appended to the list (instead of calculated as part of the
@@ -226,8 +448,8 @@ def initialize_variogram_model(x, y, z, variogram_model, variogram_model_paramet
     # is included in the semivariogram calculation.
     dmax = np.amax(d)
     dmin = np.amin(d)
-    dd = (dmax - dmin)/nlags
-    bins = [dmin + n*dd for n in range(nlags)]
+    dd = (dmax - dmin) / nlags
+    bins = [dmin + n * dd for n in range(nlags)]
     dmax += 0.001
     bins.append(dmax)
 
@@ -266,119 +488,121 @@ def initialize_variogram_model(x, y, z, variogram_model, variogram_model_paramet
     lags = lags[~np.isnan(semivariance)]
     semivariance = semivariance[~np.isnan(semivariance)]
 
+    # a few tests the make sure that, if the variogram_model_parameters
+    # are supplied, they have been supplied as expected...
+    # if variogram_model_parameters was not defined, then estimate the variogram
     if variogram_model_parameters is not None:
         if variogram_model == 'linear' and len(variogram_model_parameters) != 2:
             raise ValueError("Exactly two parameters required "
-                             "for linear variogram model")
-        elif (variogram_model == 'power' or variogram_model == 'spherical' or variogram_model == 'exponential'
-              or variogram_model == 'gaussian') and len(variogram_model_parameters) != 3:
-            raise ValueError("Exactly three parameters required "
-                             "for %s variogram model" % variogram_model)
+                             "for linear variogram model.")
+        elif variogram_model in ['power', 'spherical', 'exponential',
+                                 'gaussian', 'hole-effect'] \
+                and len(variogram_model_parameters) != 3:
+            raise ValueError("Exactly three parameters required for "
+                             "%s variogram model" % variogram_model)
     else:
         if variogram_model == 'custom':
-            raise ValueError("Variogram parameters must be specified when implementing custom variogram model.")
+            raise ValueError("Variogram parameters must be specified when "
+                             "implementing custom variogram model.")
         else:
-            variogram_model_parameters = calculate_variogram_model(lags, semivariance, variogram_model,
-                                                                   variogram_function, weight)
+            variogram_model_parameters = \
+                _calculate_variogram_model(lags, semivariance, variogram_model,
+                                           variogram_function, weight)
 
     return lags, semivariance, variogram_model_parameters
 
 
-def initialize_variogram_model_3d(x, y, z, values, variogram_model, variogram_model_parameters,
-                                  variogram_function, nlags, weight):
-    """Initializes the variogram model for kriging according
-    to user specifications or to defaults"""
+def _variogram_residuals(params, x, y, variogram_function, weight):
+    """Function used in variogram model estimation. Returns residuals between
+    calculated variogram and actual data (lags/semivariance).
 
-    x1, x2 = np.meshgrid(x, x, sparse=True)
-    y1, y2 = np.meshgrid(y, y, sparse=True)
-    z1, z2 = np.meshgrid(z, z, sparse=True)
-    val1, val2 = np.meshgrid(values, values)
-    d = np.sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
-    g = 0.5 * (val1 - val2)**2
+    Parameters
+    ----------
+    params: list or 1D array
+        parameters for calculating the model variogram
+    x: ndarray
+        lags (distances) at which to evaluate the model variogram
+    y: ndarray
+        experimental semivariances at the specified lags
+    variogram_function: callable
+        the actual funtion that evaluates the model variogram
+    weight: bool
+        flag for implementing the crude weighting routine, used in order to
+        fit smaller lags better
 
-    indices = np.indices(d.shape)
-    d = d[(indices[0, :, :] > indices[1, :, :])]
-    g = g[(indices[0, :, :] > indices[1, :, :])]
+    Returns
+    -------
+    resid: 1d array
+        residuals, dimension same as y
+    """
 
-    # The upper limit on the bins is appended to the list (instead of calculated as part of the
-    # list comprehension) to avoid any numerical oddities (specifically, say, ending up as
-    # 0.99999999999999 instead of 1.0). Appending dmax + 0.001 ensures that the largest distance value
-    # is included in the semivariogram calculation.
-    dmax = np.amax(d)
-    dmin = np.amin(d)
-    dd = (dmax - dmin)/nlags
-    bins = [dmin + n*dd for n in range(nlags)]
-    dmax += 0.001
-    bins.append(dmax)
-
-    lags = np.zeros(nlags)
-    semivariance = np.zeros(nlags)
-
-    for n in range(nlags):
-        # This 'if... else...' statement ensures that there are data in the bin so that numpy can actually
-        # find the mean. If we don't test this first, then Python kicks out an annoying warning message
-        # when there is an empty bin and we try to calculate the mean.
-        if d[(d >= bins[n]) & (d < bins[n + 1])].size > 0:
-            lags[n] = np.mean(d[(d >= bins[n]) & (d < bins[n + 1])])
-            semivariance[n] = np.mean(g[(d >= bins[n]) & (d < bins[n + 1])])
-        else:
-            lags[n] = np.nan
-            semivariance[n] = np.nan
-
-    lags = lags[~np.isnan(semivariance)]
-    semivariance = semivariance[~np.isnan(semivariance)]
-
-    if variogram_model_parameters is not None:
-        if variogram_model == 'linear' and len(variogram_model_parameters) != 2:
-            raise ValueError("Exactly two parameters required "
-                             "for linear variogram model")
-        elif (variogram_model == 'power' or variogram_model == 'spherical' or variogram_model == 'exponential'
-              or variogram_model == 'gaussian') and len(variogram_model_parameters) != 3:
-            raise ValueError("Exactly three parameters required "
-                             "for %s variogram model" % variogram_model)
-    else:
-        if variogram_model == 'custom':
-            raise ValueError("Variogram parameters must be specified when implementing custom variogram model.")
-        else:
-            variogram_model_parameters = calculate_variogram_model(lags, semivariance, variogram_model,
-                                                                   variogram_function, weight)
-
-    return lags, semivariance, variogram_model_parameters
-
-
-def variogram_function_error(params, x, y, variogram_function, weight):
-    """Function used to in fitting of variogram model.
-    Returns RMSE between calculated fit and actual data."""
-
-    diff = variogram_function(params, x) - y
-
+    # this crude weighting routine can be used to better fit the model
+    # variogram to the experimental variogram at smaller lags...
+    # the weights are calculated from a logistic function, so weights at small
+    # lags are ~1 and weights at the longest lags are ~0;
+    # the center of the logistic weighting is hard-coded to be at 70% of the
+    # distance from the shortest lag to the largest lag
     if weight:
-        weights = np.arange(x.size, 0.0, -1.0)
+        drange = np.amax(x) - np.amin(x)
+        k = 2.1972 / (0.1 * drange)
+        x0 = 0.7 * drange + np.amin(x)
+        weights = 1. / (1. + np.exp(-k * (x0 - x)))
         weights /= np.sum(weights)
-        rmse = np.sqrt(np.average(diff**2, weights=weights))
+        resid = (variogram_function(params, x) - y) * weights
     else:
-        rmse = np.sqrt(np.mean(diff**2))
+        resid = variogram_function(params, x) - y
 
-    return rmse
+    return resid
 
 
-def calculate_variogram_model(lags, semivariance, variogram_model, variogram_function, weight):
-    """Function that fits a variogram model when parameters are not specified."""
+def _calculate_variogram_model(lags, semivariance, variogram_model,
+                               variogram_function, weight):
+    """Function that fits a variogram model when parameters are not specified.
+
+    Parameters
+    ----------
+    lags: 1d array
+        binned lags/distances to use for variogram model parameter estimation
+    semivariance: 1d array
+        binned/averaged experimental semivariances to use for variogram model
+        parameter estimation
+    variogram_model: str/unicode
+        specified variogram model to use for parameter estimation
+    variogram_function: callable
+        the actual funtion that evaluates the model variogram
+    weight: bool
+        flag for implementing the crude weighting routine, used in order to fit
+        smaller lags better this is passed on to the residual calculation
+        cfunction, where weighting is actually applied...
+
+    Returns
+    -------
+    res: list
+        list of estimated variogram model parameters
+
+    NOTE that the estimation routine works in terms of the partial sill
+    (psill = sill - nugget) -- setting bounds such that psill > 0 ensures that
+    the sill will always be greater than the nugget...
+    """
 
     if variogram_model == 'linear':
-        x0 = [(np.amax(semivariance) - np.amin(semivariance))/(np.amax(lags) - np.amin(lags)),
-              np.amin(semivariance)]
-        bnds = ((0.0, 1000000000.0), (0.0, np.amax(semivariance)))
+        x0 = [(np.amax(semivariance) - np.amin(semivariance)) /
+              (np.amax(lags) - np.amin(lags)), np.amin(semivariance)]
+        bnds = ([0., 0.], [np.inf, np.amax(semivariance)])
     elif variogram_model == 'power':
-        x0 = [(np.amax(semivariance) - np.amin(semivariance))/(np.amax(lags) - np.amin(lags)),
-              1.1, np.amin(semivariance)]
-        bnds = ((0.0, 1000000000.0), (0.01, 1.99), (0.0, np.amax(semivariance)))
+        x0 = [(np.amax(semivariance) - np.amin(semivariance)) /
+              (np.amax(lags) - np.amin(lags)), 1.1, np.amin(semivariance)]
+        bnds = ([0., 0.001, 0.], [np.inf, 1.999, np.amax(semivariance)])
     else:
-        x0 = [np.amax(semivariance), 0.5*np.amax(lags), np.amin(semivariance)]
-        bnds = ((0.0, 10*np.amax(semivariance)), (0.0, np.amax(lags)), (0.0, np.amax(semivariance)))
+        x0 = [np.amax(semivariance) - np.amin(semivariance),
+              0.25*np.amax(lags), np.amin(semivariance)]
+        bnds = ([0., 0., 0.], [10.*np.amax(semivariance), np.amax(lags),
+                               np.amax(semivariance)])
 
-    res = minimize(variogram_function_error, x0, args=(lags, semivariance, variogram_function, weight),
-                   method='SLSQP', bounds=bnds)
+    # use 'soft' L1-norm minimization in order to buffer against
+    # potential outliers (weird/skewed points)
+    res = least_squares(_variogram_residuals, x0, bounds=bnds, loss='soft_l1',
+                        args=(lags, semivariance, variogram_function, weight))
 
     return res.x
 
