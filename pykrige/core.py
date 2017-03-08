@@ -66,6 +66,8 @@ import numpy as np
 from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.optimize import least_squares
 
+eps = 1.e-10   # Cutoff for comparison to zero
+
 
 def great_circle_distance(lon1, lat1, lon2, lat2):
     """
@@ -675,18 +677,30 @@ def _find_statistics(X, y, variogram_function,
     sigma = np.zeros(y.shape)
 
     for i in range(y.shape[0]):
+
+        # skip the first value in the kriging problem
         if i == 0:
-            delta[i] = 0.0
-            sigma[i] = 0.0
+            continue
+
         else:
             k, ss = _krige(X[:i, :], y[:i], X[i, :], variogram_function,
                            variogram_model_parameters, coordinates_type)
-            d = y[i] - k
-            delta[i] = d
+
+            # if the estimation error is zero, it's probably because
+            # the evaluation point X[i, :] is really close to one of the
+            # kriging system points in X[:i, :]...
+            # in the case of zero estimation error, the results are not stored
+            if np.absolute(ss) < eps:
+                continue
+
+            delta[i] = y[i] - k
             sigma[i] = np.sqrt(ss)
 
-    delta = delta[1:]
-    sigma = sigma[1:]
+    # only use non-zero entries in these arrays... sigma is used to pull out
+    # non-zero entries in both cases because it is guaranteed to be positive,
+    # whereas delta can be either positive or negative
+    delta = delta[sigma > eps]
+    sigma = sigma[sigma > eps]
     epsilon = delta/sigma
 
     return delta, sigma, epsilon
