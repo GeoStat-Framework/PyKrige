@@ -20,7 +20,7 @@ threed_krige = ('ordinary3d', 'universal3d')
 
 def validate_method(method):
     if method not in krige_methods.keys():
-        raise ValueError('Kirging method must be '
+        raise ValueError('Kriging method must be '
                          'one of {}'.format(krige_methods.keys()))
 
 
