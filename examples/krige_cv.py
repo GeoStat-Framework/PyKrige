@@ -1,4 +1,10 @@
-# coding: utf-8
+"""
+Krige CV
+--------
+
+Searching for optimal kriging parameters with cross validation
+"""
+
 import numpy as np
 from pykrige.rk import Krige
 from pykrige.compat import GridSearchCV
