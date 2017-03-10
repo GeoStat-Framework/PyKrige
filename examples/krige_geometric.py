@@ -1,4 +1,11 @@
-#!/bin/python
+"""
+Geometric example
+------------------
+
+A small example script showing the usage of the 'geographic' coordinates type
+for ordinary kriging on a sphere.
+"""
+
 from pykrige.ok import OrdinaryKriging
 import numpy as np
 
