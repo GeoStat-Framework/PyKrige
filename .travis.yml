@@ -32,7 +32,7 @@ install:
 # command to run tests
 script: 
     - cd ./PyKrige/pykrige/
-    - nosetests ./test.py --with-coverage --cover-package=pykrige
+    - nosetests -v ./test.py --with-coverage --cover-package=pykrige
 
 #after_success:
 #    coveralls
