@@ -1,0 +1,4 @@
+scikit-learn>=0.18
+recommonmark
+sphinxcontrib-napoleon
+sphinx-gallery
