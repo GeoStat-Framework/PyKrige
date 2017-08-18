@@ -26,5 +26,7 @@ include pykrige/lib/__init__.py
 include pykrige/lib/cok.pyx
 include pykrige/lib/lapack.pxd
 include pykrige/lib/lapack.pyx
+include pykrige/lib/lapack_py3.pxd
+include pykrige/lib/lapack_py3.pxd
 include pykrige/lib/variogram_models.pxd
 include pykrige/lib/variogram_models.pyx
