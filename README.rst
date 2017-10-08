@@ -3,15 +3,22 @@ PyKrige
 
 Kriging Toolkit for Python
 
+.. image:: https://img.shields.io/pypi/v/pykrige.svg
+    :target: https://pypi.python.org/pypi/pykrige
+
+.. image:: https://anaconda.org/conda-forge/pykrige/badges/version.svg
+  :target: https://github.com/conda-forge/pykrige-feedstock
+
+.. image:: https://readthedocs.org/projects/pykrige/badge/?version=latest
+    :target: http://pykrige.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 .. image:: https://travis-ci.org/bsmurphy/PyKrige.svg?branch=master
     :target: https://travis-ci.org/bsmurphy/PyKrige
 
 .. image:: https://ci.appveyor.com/api/projects/status/github/bsmurphy/PyKrige?branch=master&svg=true
     :target: https://ci.appveyor.com/project/bsmurphy/pykrige
 
-.. image:: https://readthedocs.org/projects/pykrige/badge/?version=latest
-    :target: http://pykrige.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
 
 
 The code supports two- and three- dimensional ordinary and universal kriging. Standard variogram models (linear, power, spherical, gaussian, exponential) are built in, but custom variogram models can also be used with the code. The kriging methods are separated into four classes. Examples of their uses are shown below. The two-dimensional universal kriging code currently supports regional-linear, point-logarithmic, and external drift terms, while the three-dimensional universal kriging code supports a regional-linear drift term in all three spatial dimensions. Both universal kriging classes also support generic 'specified' and 'functional' drift capabilities. With the 'specified' drift capability, the user may manually specify the values of the drift(s) at each data point and all grid points. With the 'functional' drift capability, the user may provide callable function(s) of the spatial coordinates that define the drift(s). The package includes a module that contains functions that should be useful in working with ASCII grid files (`*.asc`).
