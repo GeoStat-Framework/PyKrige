@@ -13,9 +13,12 @@ environment:
     - PYTHON_VERSION: 2.7
       PYTHON_ARCH: "32"
       MINICONDA: C:\Miniconda
-    - PYTHON_VERSION: 3.4
-      PYTHON_ARCH: "64"
+    - PYTHON_VERSION: 3.5
+      PYTHON_ARCH: "32"
       MINICONDA: C:\Miniconda3
+    - PYTHON_VERSION: 3.6
+      PYTHON_ARCH: "64"
+      MINICONDA: C:\Miniconda3-x64
 
 init:
   - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH% %MINICONDA%"
@@ -25,7 +28,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - "conda create -q -n krige-env python=%PYTHON_VERSION% numpy scipy nose matplotlib cython"
+  - "conda create -q -n krige-env python=%PYTHON_VERSION% numpy scipy nose matplotlib cython scikit-learn==0.18.2"
   - activate krige-env
   - pip install coverage
 
