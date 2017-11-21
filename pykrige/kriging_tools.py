@@ -10,8 +10,8 @@ Dependencies:
     numpy
 
 Callable Methods:
-    write_asc_grid(X, Y, Z, filename='output.asc', style=1): Writes an MxN data grid
-        to an ASCII grid file (.*asc).
+    write_asc_grid(X, Y, Z, filename='output.asc', style=1, precision=2):
+        Writes an MxN data grid to an ASCII grid file (.*asc).
         Inputs:
             X (array-like, dim Nx1): X-coordinates of grid points at center
                 of cells.
@@ -23,6 +23,8 @@ Callable Methods:
                 header. Specifying 1 writes out DX, DY, XLLCENTER, YLLCENTER.
                 Specifying 2 writes out CELLSIZE (note DX must be the same
                 as DY), XLLCORNER, YLLCORNER. Default is 1.
+            precision (int, optional): Sometimes additional precisions is
+                required this is where this can be set.
 
     read_asc_grid(filename, footer=0): Reads ASCII grid file (*.asc).
         Inputs:
@@ -49,8 +51,12 @@ import warnings
 import io
 
 
-def write_asc_grid(x, y, z, filename='output.asc', style=1):
+def write_asc_grid(x, y, z, filename='output.asc', style=1, precision=2):
     """Writes gridded data to ASCII grid file (*.asc)"""
+
+    if style not in [1, 2]:
+        # Let's raise this exception ASAP
+        raise ValueError("style kwarg must be either 1 or 2.")
 
     if np.ma.is_masked(z):
         z = np.array(z.tolist(-999.))
@@ -62,32 +68,42 @@ def write_asc_grid(x, y, z, filename='output.asc', style=1):
     ncols = z.shape[1]
 
     if z.ndim != 2:
-        raise ValueError("Two-dimensional grid is required to write *.asc grid.")
+        raise ValueError(
+            "Two-dimensional grid is required to write *.asc grid.")
     if x.ndim > 1 or y.ndim > 1:
-        raise ValueError("Dimensions of X and/or Y coordinate arrays are not as expected. Could not write *.asc grid.")
+        raise ValueError(
+            "Dimensions of X and/or Y coordinate arrays are not as expected. "
+            "Could not write *.asc grid.")
     if z.shape != (y.size, x.size):
-        warnings.warn("Grid dimensions are not as expected. Incorrect *.asc file generation may result.",
-                      RuntimeWarning)
+        warnings.warn(
+            "Grid dimensions are not as expected. Incorrect *.asc file "
+            "generation may result.", RuntimeWarning)
     if np.amin(x) != x[0] or np.amin(y) != y[0]:
-        warnings.warn("Order of X or Y coordinates is not as expected. Incorrect *.asc file generation may result.",
-                      RuntimeWarning)
+        warnings.warn(
+            "Order of X or Y coordinates is not as expected. Incorrect *.asc "
+            "file generation may result.", RuntimeWarning)
 
     dx = abs(x[1] - x[0])
     dy = abs(y[1] - y[0])
     if abs((x[-1] - x[0])/(x.shape[0] - 1)) != dx or \
        abs((y[-1] - y[0])/(y.shape[0] - 1)) != dy:
-        raise ValueError("X or Y spacing is not constant; *.asc grid cannot be written.")
+        raise ValueError(
+            "X or Y spacing is not constant; *.asc grid cannot be written.")
     cellsize = -1
     if style == 2:
         if dx != dy:
-            raise ValueError("X and Y spacing is not the same. Cannot write *.asc file in the specified format.")
+            raise ValueError(
+                "X and Y spacing is not the same. Cannot write *.asc file in "
+                "the specified format.")
         cellsize = dx
 
     xllcenter = x[0]
     yllcenter = y[0]
 
-    xllcorner = -1   # Note that these values are flagged as -1. If there is a problem in trying
-    yllcorner = -1   # to write out style 2, the -1 value will appear in the output file.
+    # Note that these values are flagged as -1. If there is a problem in
+    # trying to write out style 2, the -1 value will appear in the output file.
+    xllcorner = -1
+    yllcorner = -1
     if style == 2:
         xllcorner = xllcenter - dx/2.0
         yllcorner = yllcenter - dy/2.0
@@ -95,27 +111,25 @@ def write_asc_grid(x, y, z, filename='output.asc', style=1):
     no_data = -999.
 
     with io.open(filename, 'w') as f:
+        formstr = "{:<15s}{:." + "{:d}".format(precision) + "f}"
+        f.write("{:<15s}{:d}".format("NCOLS", ncols) + '\n')
+        f.write("{:<15s}{:d}".format("NROWS", nrows) + '\n')
         if style == 1:
-            f.write("NCOLS          " + '{:<10n}'.format(ncols) + '\n')
-            f.write("NROWS          " + '{:<10n}'.format(nrows) + '\n')
-            f.write("XLLCENTER      " + '{:<10.2f}'.format(xllcenter) + '\n')
-            f.write("YLLCENTER      " + '{:<10.2f}'.format(yllcenter) + '\n')
-            f.write("DX             " + '{:<10.2f}'.format(dx) + '\n')
-            f.write("DY             " + '{:<10.2f}'.format(dy) + '\n')
-            f.write("NODATA_VALUE   " + '{:<10.2f}'.format(no_data) + '\n')
+            f.write(formstr.format("XLLCENTER", xllcenter) + '\n')
+            f.write(formstr.format("YLLCENTER", yllcenter) + '\n')
+            f.write(formstr.format("DX", dx) + '\n')
+            f.write(formstr.format("DY", dy) + '\n')
+            f.write(formstr.format("NODATA_VALUE", no_data) + '\n')
         elif style == 2:
-            f.write("NCOLS          " + '{:<10n}'.format(ncols) + '\n')
-            f.write("NROWS          " + '{:<10n}'.format(nrows) + '\n')
-            f.write("XLLCORNER      " + '{:<10.2f}'.format(xllcorner) + '\n')
-            f.write("YLLCORNER      " + '{:<10.2f}'.format(yllcorner) + '\n')
-            f.write("CELLSIZE       " + '{:<10.2f}'.format(cellsize) + '\n')
-            f.write("NODATA_VALUE   " + '{:<10.2f}'.format(no_data) + '\n')
-        else:
-            raise ValueError("style kwarg must be either 1 or 2.")
+            f.write(formstr.format("XLLCORNER", xllcorner) + '\n')
+            f.write(formstr.format("YLLCORNER", yllcorner) + '\n')
+            f.write(formstr.format("CELLSIZE", cellsize) + '\n')
+            f.write(formstr.format("NODATA_VALUE", no_data) + '\n')
 
         for m in range(z.shape[0] - 1, -1, -1):
+            formstr = "{:<16." + "{:d}".format(precision) + "f}"
             for n in range(z.shape[1]):
-                f.write('{:<16.2f}'.format(z[m, n]))
+                f.write(formstr.format(z[m, n]))
             if m != 0:
                 f.write('\n')
 
