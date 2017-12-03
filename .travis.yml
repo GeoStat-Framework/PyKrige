@@ -11,17 +11,17 @@ matrix:
 
 # setup adapted from https://github.com/soft-matter/trackpy/blob/master/.travis.yml
 before_install:
-    - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
     - chmod +x miniconda.sh
     - ./miniconda.sh -b
-    - export PATH=/home/travis/miniconda2/bin:$PATH
+    - export PATH=/home/travis/miniconda3/bin:$PATH
     - conda update --yes conda
     - conda info -a
 
 install:
     - conda create -q -n krige-env python=${TRAVIS_PYTHON_VERSION} --yes
     - source activate krige-env
-    - conda install --yes $DEPS pip
+    - conda install --yes $DEPS pip pytest-cov pytest
     - pip install coveralls
     - python -V
     - python setup.py build_ext --inplace
@@ -32,7 +32,13 @@ install:
 # command to run tests
 script: 
     - cd ./PyKrige/pykrige/
-    - nosetests -v ./test.py --with-coverage --cover-package=pykrige
+    - pytest -sv ./pykrige/ --cov=pykrige
+    # run examples
+    - |
+        for f in examples/*.py; do 
+           python $f >> ~/log.txt
+        done
+        if grep -q "Traceback (most recent call last):" ~/log.txt; then false; else true; fi
 
 #after_success:
 #    coveralls

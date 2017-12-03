@@ -28,7 +28,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - "conda create -q -n krige-env python=%PYTHON_VERSION% numpy scipy nose matplotlib cython scikit-learn==0.18.2"
+  - "conda create -q -n krige-env python=%PYTHON_VERSION% numpy scipy nose matplotlib cython scikit-learn==0.18.2 pytest pytest-cov"
   - activate krige-env
   - pip install coverage
 
@@ -38,7 +38,16 @@ install:
   - python setup.py install
 
 
-
 test_script:
-  - "cd C:\\projects\\pykrige\\pykrige"
-  - nosetests test.py --with-coverage --cover-package=pykrige
+  - "cd C:\\projects\\pykrige"
+  - pytest -sv --cov=pykrige pykrige/
+  - ps: | 
+          cd ".\\examples"
+          Get-ChildItem ".\\" -Filter *.py | 
+          Foreach-Object {
+              python $_.FullName 2>&1 | Tee-Object -Append -FilePath "C:\\log.txt"
+          }
+          type "C:\\log.txt"
+          if (sls "Traceback \(most recent call last\):" "C:\\log.txt" -ca -quiet) {
+              exit 1
+          }
