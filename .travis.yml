@@ -28,6 +28,10 @@ install:
     - python setup.py install
     - cd ..
 
+before_script:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
 
 # command to run tests
 script: 
@@ -35,8 +39,9 @@ script:
     - pytest -sv ./pykrige/ --cov=pykrige
     # run examples
     - |
+        set -x
         for f in examples/*.py; do 
-           python $f >> ~/log.txt
+           python $f 2>&1 | tee -a ~/log.txt
         done
         if grep -q "Traceback (most recent call last):" ~/log.txt; then false; else true; fi
 

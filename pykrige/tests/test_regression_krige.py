@@ -3,17 +3,19 @@ from __future__ import division
 from __future__ import print_function
 
 from itertools import product
+import pytest
 
 import numpy as np
 
 from pykrige.rk import RegressionKriging
-from pykrige.compat import train_test_split
 
 try:
     from sklearn.svm import SVR
+    from sklearn.datasets import fetch_california_housing
     from sklearn.linear_model import ElasticNet, Lasso
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.linear_model import LinearRegression
+    from pykrige.compat import train_test_split
     SKLEARN_INSTALLED = True
 except:
     SKLEARN_INSTALLED = False
@@ -30,7 +32,8 @@ def _methods():
                   ]
     return product(ml_methods, krige_methods)
 
-
+@pytest.mark.skipif(not SKLEARN_INSTALLED,
+                    reason="requires scikit-learn")
 def test_regression_krige():
     np.random.seed(1)
     x = np.linspace(-1., 1., 100)
@@ -55,10 +58,9 @@ def test_regression_krige():
         assert reg_kr_model.score(X_test, lon_lat_test, y_test) > 0.25
 
 
+@pytest.mark.skipif(not SKLEARN_INSTALLED,
+                    reason="requires scikit-learn")
 def test_krige_housing():
-    from pykrige.rk import RegressionKriging
-    from pykrige.compat import train_test_split
-    from sklearn.datasets import fetch_california_housing
     housing = fetch_california_housing()
 
     # take only first 1000
