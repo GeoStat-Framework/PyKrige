@@ -11,7 +11,6 @@ Updated BSM February 2017
 import unittest
 import os
 import numpy as np
-from itertools import product
 
 from pykrige import kriging_tools as kt
 from pykrige import core
@@ -20,22 +19,23 @@ from pykrige.ok import OrdinaryKriging
 from pykrige.uk import UniversalKriging
 from pykrige.ok3d import OrdinaryKriging3D
 from pykrige.uk3d import UniversalKriging3D
-from pykrige.compat import SKLEARN_INSTALLED
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestPyKrige(unittest.TestCase):
 
     def setUp(self):
 
-        self.test_data = np.genfromtxt(os.path.join(os.getcwd(),
+        self.test_data = np.genfromtxt(os.path.join(BASE_DIR,
                                                     'test_data/test_data.txt'))
         self.ok_test_answer, self.ok_test_gridx, self.ok_test_gridy, \
             cellsize, no_data = kt.read_asc_grid(
-                os.path.join(os.getcwd(), 'test_data/test1_answer.asc'),
+                os.path.join(BASE_DIR, 'test_data/test1_answer.asc'),
                     footer=2)
         self.uk_test_answer, self.uk_test_gridx, self.uk_test_gridy, \
             cellsize, no_data = kt.read_asc_grid(
-                os.path.join(os.getcwd(), 'test_data/test2_answer.asc'),
+                os.path.join(BASE_DIR, 'test_data/test2_answer.asc'),
                     footer=2)
 
         self.simple_data = np.array([[0.3, 1.2, 0.47],
@@ -633,16 +633,16 @@ class TestPyKrige(unittest.TestCase):
         z_write, ss_write = ok.execute('grid', self.simple_gridx, self.simple_gridy)
 
         kt.write_asc_grid(self.simple_gridx, self.simple_gridy, z_write,
-                          filename=os.path.join(os.getcwd(), 'test_data/temp.asc'), style=1)
-        z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(os.path.join(os.getcwd(), 'test_data/temp.asc'))
+                          filename=os.path.join(BASE_DIR, 'test_data/temp.asc'), style=1)
+        z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(os.path.join(BASE_DIR, 'test_data/temp.asc'))
         self.assertTrue(np.allclose(z_write, z_read, 0.01, 0.01))
         self.assertTrue(np.allclose(self.simple_gridx, x_read))
         self.assertTrue(np.allclose(self.simple_gridy, y_read))
 
         z_write, ss_write = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask)
         kt.write_asc_grid(self.simple_gridx, self.simple_gridy, z_write,
-                          filename=os.path.join(os.getcwd(), 'test_data/temp.asc'), style=1)
-        z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(os.path.join(os.getcwd(), 'test_data/temp.asc'))
+                          filename=os.path.join(BASE_DIR, 'test_data/temp.asc'), style=1)
+        z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(os.path.join(BASE_DIR, 'test_data/temp.asc'))
         self.assertTrue(np.ma.allclose(z_write, np.ma.masked_where(z_read == no_data, z_read),
                                        masked_equal=True, rtol=0.01, atol=0.01))
         self.assertTrue(np.allclose(self.simple_gridx, x_read))
@@ -652,13 +652,13 @@ class TestPyKrige(unittest.TestCase):
         z_write, ss_write = ok.execute('grid', self.simple_gridx_2, self.simple_gridy)
 
         kt.write_asc_grid(self.simple_gridx_2, self.simple_gridy, z_write,
-                          filename=os.path.join(os.getcwd(), 'test_data/temp.asc'), style=2)
-        z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(os.path.join(os.getcwd(), 'test_data/temp.asc'))
+                          filename=os.path.join(BASE_DIR, 'test_data/temp.asc'), style=2)
+        z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(os.path.join(BASE_DIR, 'test_data/temp.asc'))
         self.assertTrue(np.allclose(z_write, z_read, 0.01, 0.01))
         self.assertTrue(np.allclose(self.simple_gridx_2, x_read))
         self.assertTrue(np.allclose(self.simple_gridy, y_read))
 
-        os.remove(os.path.join(os.getcwd(), 'test_data/temp.asc'))
+        os.remove(os.path.join(BASE_DIR, 'test_data/temp.asc'))
 
     def test_uk_three_primary_drifts(self):
 
@@ -799,7 +799,7 @@ class TestPyKrige(unittest.TestCase):
     def test_uk_with_external_drift(self):
 
         dem, demx, demy, cellsize, no_data = \
-            kt.read_asc_grid(os.path.join(os.getcwd(), 'test_data/test3_dem.asc'))
+            kt.read_asc_grid(os.path.join(BASE_DIR, 'test_data/test3_dem.asc'))
         uk = UniversalKriging(self.test_data[:, 0], self.test_data[:, 1], self.test_data[:, 2],
                               variogram_model='spherical',
                               variogram_parameters=[500.0, 3000.0, 0.0],
@@ -808,7 +808,7 @@ class TestPyKrige(unittest.TestCase):
                               external_drift_x=demx, external_drift_y=demy,
                               verbose=False)
         answer, gridx, gridy, cellsize, no_data = \
-            kt.read_asc_grid(os.path.join(os.getcwd(), 'test_data/test3_answer.asc'))
+            kt.read_asc_grid(os.path.join(BASE_DIR, 'test_data/test3_answer.asc'))
 
         z, ss = uk.execute('grid', gridx, gridy, backend='vectorized')
         self.assertTrue(np.allclose(z, answer))
@@ -1114,8 +1114,8 @@ class TestPyKrige(unittest.TestCase):
         self.assertTrue(np.allclose(k, self.ok_test_answer))
 
         # Test to compare K3D results to those obtained using KT3D.
-        data = np.genfromtxt('./test_data/test3d_data.txt', skip_header=1)
-        ans = np.genfromtxt('./test_data/test3d_answer.txt')
+        data = np.genfromtxt(os.path.join(BASE_DIR, 'test_data', 'test3d_data.txt'), skip_header=1)
+        ans = np.genfromtxt(os.path.join(BASE_DIR, 'test_data', 'test3d_answer.txt'))
         ans_z = ans[:, 0].reshape((10, 10, 10))
         ans_ss = ans[:, 1].reshape((10, 10, 10))
         k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
@@ -1132,8 +1132,9 @@ class TestPyKrige(unittest.TestCase):
     def test_ok3d_moving_window(self):
 
         # Test to compare K3D results to those obtained using KT3D.
-        data = np.genfromtxt('./test_data/test3d_data.txt', skip_header=1)
-        ans = np.genfromtxt('./test_data/test3d_answer.txt')
+        data = np.genfromtxt(os.path.join(BASE_DIR, 'test_data', 'test3d_data.txt'),
+                             skip_header=1)
+        ans = np.genfromtxt(os.path.join(BASE_DIR, './test_data/test3d_answer.txt'))
         ans_z = ans[:, 0].reshape((10, 10, 10))
         ans_ss = ans[:, 1].reshape((10, 10, 10))
         k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
@@ -1160,7 +1161,7 @@ class TestPyKrige(unittest.TestCase):
         self.assertTrue(np.allclose(uk_l, uk_v))
         self.assertTrue(np.allclose(uss_l, uss_v))
 
-        data = np.genfromtxt('./test_data/test3d_data.txt', skip_header=1)
+        data = np.genfromtxt(os.path.join(BASE_DIR, 'test_data', 'test3d_data.txt'), skip_header=1)
         ok3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
                                  variogram_model='linear', variogram_parameters=[1., 0.1])
         ok_v, oss_v = ok3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='vectorized')
@@ -1627,120 +1628,3 @@ class TestPyKrige(unittest.TestCase):
         
         # Execute on grid:
         z, ss = OK.execute('grid', grid_lon, grid_lat)
-
-
-@unittest.skipUnless(SKLEARN_INSTALLED, "scikit-learn not installed")
-class TestKrige(unittest.TestCase):
-
-    @staticmethod
-    def method_and_vergiogram():
-        method = ['ordinary', 'universal', 'ordinary3d', 'universal3d']
-        variogram_model = ['linear', 'power', 'gaussian', 'spherical',
-                           'exponential']
-        return product(method, variogram_model)
-
-    def test_krige(self):
-        from pykrige.rk import Krige
-        from pykrige.rk import threed_krige
-        from pykrige.compat import GridSearchCV
-        # dummy data
-        np.random.seed(1)
-        X = np.random.randint(0, 400, size=(20, 3)).astype(float)
-        y = 5 * np.random.rand(20)
-
-        for m, v in self.method_and_vergiogram():
-            param_dict = {'method': [m], 'variogram_model': [v]}
-
-            estimator = GridSearchCV(Krige(),
-                                     param_dict,
-                                     n_jobs=-1,
-                                     iid=False,
-                                     pre_dispatch='2*n_jobs',
-                                     verbose=False,
-                                     cv=5,
-                                     )
-            # run the gridsearch
-            if m in ['ordinary', 'universal']:
-                estimator.fit(X=X[:, :2], y=y)
-            else:
-                estimator.fit(X=X, y=y)
-            if hasattr(estimator, 'best_score_'):
-                if m in threed_krige:
-                    assert estimator.best_score_ > -10.0
-                else:
-                    assert estimator.best_score_ > -3.0
-            if hasattr(estimator, 'cv_results_'):
-                assert estimator.cv_results_['mean_train_score'] > 0
-
-
-@unittest.skipUnless(SKLEARN_INSTALLED, "scikit-learn not installed")
-class TestRegressionKrige(unittest.TestCase):
-
-    @staticmethod
-    def methods():
-        from sklearn.svm import SVR
-        from sklearn.linear_model import ElasticNet, Lasso
-        from sklearn.ensemble import RandomForestRegressor
-        from sklearn.linear_model import LinearRegression
-
-        krige_methods = ['ordinary', 'universal']
-        ml_methods = [SVR(C=0.01),
-                      RandomForestRegressor(min_samples_split=5,
-                                            n_estimators=50),
-                      LinearRegression(),
-                      Lasso(),
-                      ElasticNet()
-                      ]
-        return product(ml_methods, krige_methods)
-
-    def test_krige(self):
-        from pykrige.rk import RegressionKriging
-        from pykrige.compat import train_test_split
-        from itertools import product
-        np.random.seed(1)
-        x = np.linspace(-1., 1., 100)
-        # create a feature matrix with 5 features
-        X = np.tile(x, reps=(5, 1)).T
-        y = 1 + 5*X[:, 0] - 2*X[:, 1] - 2*X[:, 2] + 3*X[:, 3] + 4*X[:, 4] + \
-            2*(np.random.rand(100) - 0.5)
-
-        # create lat/lon array
-        lon = np.linspace(-180., 180.0, 10)
-        lat = np.linspace(-90., 90., 10)
-        lon_lat = np.array(list(product(lon, lat)))
-
-        X_train, X_test, y_train, y_test, lon_lat_train, lon_lat_test = \
-            train_test_split(X, y, lon_lat, train_size=0.7, random_state=10)
-
-        for ml_model, krige_method in self.methods():
-            reg_kr_model = RegressionKriging(regression_model=ml_model,
-                                             method=krige_method,
-                                             n_closest_points=2)
-            reg_kr_model.fit(X_train, lon_lat_train, y_train)
-            assert reg_kr_model.score(X_test, lon_lat_test, y_test) > 0.25
-
-    def test_krige_housing(self):
-        from pykrige.rk import RegressionKriging
-        from pykrige.compat import train_test_split
-        from sklearn.datasets import fetch_california_housing
-        housing = fetch_california_housing()
-
-        # take only first 1000
-        p = housing['data'][:1000, :-2]
-        x = housing['data'][:1000, -2:]
-        target = housing['target'][:1000]
-
-        p_train, p_test, y_train, y_test, x_train, x_test = \
-            train_test_split(p, target, x, train_size=0.7,
-                             random_state=10)
-
-        for ml_model, krige_method in self.methods():
-
-            reg_kr_model = RegressionKriging(regression_model=ml_model,
-                                             method=krige_method,
-                                             n_closest_points=2)
-            reg_kr_model.fit(p_train, x_train, y_train)
-            if krige_method == 'ordinary':
-                assert reg_kr_model.score(p_test, x_test, y_test) > 0.5
-            else:
-                assert reg_kr_model.score(p_test, x_test, y_test) > 0.0
