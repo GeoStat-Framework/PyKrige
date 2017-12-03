@@ -31,7 +31,7 @@ install:
 
 # command to run tests
 script: 
-    - cd ./PyKrige/pykrige/
+    - cd ./PyKrige/
     - pytest -sv ./pykrige/ --cov=pykrige
     # run examples
     - |

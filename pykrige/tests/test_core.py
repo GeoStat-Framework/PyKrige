@@ -1744,7 +1744,3 @@ class TestRegressionKrige(unittest.TestCase):
                 assert reg_kr_model.score(p_test, x_test, y_test) > 0.5
             else:
                 assert reg_kr_model.score(p_test, x_test, y_test) > 0.0
-
-
-if __name__ == '__main__':
-    unittest.main()
