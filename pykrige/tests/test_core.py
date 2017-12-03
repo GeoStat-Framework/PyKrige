@@ -395,16 +395,16 @@ def test_ok_execute(self):
     shape = (self.simple_gridy.size, self.simple_gridx.size)
     assert z.shape == shape
     assert ss.shape == shape
-    self.assertNotEqual(np.amax(z), np.amin(z))
-    self.assertNotEqual(np.amax(ss), np.amin(ss))
+    assert np.amax(z) != np.amin(z)
+    assert np.amax(ss) != np.amin(ss)
     assert not np.ma.is_masked(z)
 
     z, ss = ok.execute('grid', self.simple_gridx, self.simple_gridy, backend='loop')
     shape = (self.simple_gridy.size, self.simple_gridx.size)
     assert z.shape == shape
     assert ss.shape == shape
-    self.assertNotEqual(np.amax(z), np.amin(z))
-    self.assertNotEqual(np.amax(ss), np.amin(ss))
+    assert np.amax(z) != np.amin(z)
+    assert np.amax(ss) != np.amin(ss)
     assert not np.ma.is_masked(z)
 
     with pytest.raises(IOError):
@@ -416,13 +416,13 @@ def test_ok_execute(self):
     z, ss = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask, backend='vectorized')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0], np.ma.masked)
+    assert z[0, 0] is np.ma.masked
+    assert ss[0, 0] is np.ma.masked
     z, ss = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask.T, backend='vectorized')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0], np.ma.masked)
+    assert z[0, 0] is np.ma.masked
+    assert ss[0, 0] is np.ma.masked
 
     with pytest.raises(IOError):
         ok.execute('masked', self.simple_gridx, self.simple_gridy, backend='loop')
@@ -433,13 +433,13 @@ def test_ok_execute(self):
     z, ss = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask, backend='loop')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0], np.ma.masked)
+    assert z[0, 0] is np.ma.masked
+    assert ss[0, 0] is np.ma.masked
     z, ss = ok.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask.T, backend='loop')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0], np.ma.masked)
+    assert z[0, 0] is np.ma.masked
+    assert ss[0, 0] is np.ma.masked
 
     with pytest.raises(ValueError):
         ok.execute('points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
@@ -596,16 +596,16 @@ def test_uk_execute(self):
     shape = (self.simple_gridy.size, self.simple_gridx.size)
     assert z.shape == shape
     assert ss.shape == shape
-    self.assertNotEqual(np.amax(z), np.amin(z))
-    self.assertNotEqual(np.amax(ss), np.amin(ss))
+    assert np.amax(z) != np.amin(z)
+    assert np.amax(ss) != np.amin(ss)
     assert not np.ma.is_masked(z)
 
     z, ss = uk.execute('grid', self.simple_gridx, self.simple_gridy, backend='loop')
     shape = (self.simple_gridy.size, self.simple_gridx.size)
     assert z.shape == shape
     assert ss.shape == shape
-    self.assertNotEqual(np.amax(z), np.amin(z))
-    self.assertNotEqual(np.amax(ss), np.amin(ss))
+    assert np.amax(z) != np.amin(z)
+    assert np.amax(ss) != np.amin(ss)
     assert not np.ma.is_masked(z)
 
     with pytest.raises(IOError):
@@ -617,13 +617,13 @@ def test_uk_execute(self):
     z, ss = uk.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask, backend='vectorized')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0], np.ma.masked)
+    assert z[0, 0] is np.ma.masked
+    assert ss[0, 0] is np.ma.masked
     z, ss = uk.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask.T, backend='vectorized')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0], np.ma.masked)
+    assert z[0, 0] is np.ma.masked
+    assert ss[0, 0] is np.ma.masked
 
     with pytest.raises(IOError):
         uk.execute('masked', self.simple_gridx, self.simple_gridy, backend='loop')
@@ -634,13 +634,13 @@ def test_uk_execute(self):
     z, ss = uk.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask, backend='loop')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0], np.ma.masked)
+    assert z[0, 0] is np.ma.masked
+    assert ss[0, 0] is np.ma.masked
     z, ss = uk.execute('masked', self.simple_gridx, self.simple_gridy, mask=self.mask.T, backend='loop')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0], np.ma.masked)
+    assert z[0, 0] is np.ma.masked
+    assert ss[0, 0] is np.ma.masked
 
     with pytest.raises(ValueError):
         uk.execute('points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
@@ -1362,8 +1362,8 @@ def test_ok3d_execute(self):
     shape = (self.simple_gridz_3d.size, self.simple_gridy_3d.size, self.simple_gridx_3d.size)
     assert k.shape == shape
     assert ss.shape == shape
-    self.assertNotEqual(np.amax(k), np.amin(k))
-    self.assertNotEqual(np.amax(ss), np.amin(ss))
+    assert np.amax(k) != np.amin(k)
+    assert np.amax(ss) != np.amin(ss)
     assert not np.ma.is_masked(k)
 
     k, ss = k3d.execute('grid', self.simple_gridx_3d, self.simple_gridy_3d,
@@ -1371,8 +1371,8 @@ def test_ok3d_execute(self):
     shape = (self.simple_gridz_3d.size, self.simple_gridy_3d.size, self.simple_gridx_3d.size)
     assert k.shape == shape
     assert ss.shape == shape
-    self.assertNotEqual(np.amax(k), np.amin(k))
-    self.assertNotEqual(np.amax(ss), np.amin(ss))
+    assert np.amax(k) != np.amin(k)
+    assert np.amax(ss) != np.amin(ss)
     assert not np.ma.is_masked(k)
 
     with pytest.raises(IOError):
@@ -1386,14 +1386,14 @@ def test_ok3d_execute(self):
                         mask=self.mask_3d, backend='vectorized')
     assert (np.ma.is_masked(k))
     assert (np.ma.is_masked(ss))
-    self.assertIs(k[0, 0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0, 0], np.ma.masked)
+    assert k[0, 0, 0] is np.ma.masked
+    assert ss[0, 0, 0] is np.ma.masked
     z, ss = k3d.execute('masked', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d,
                         mask=self.mask_3d.T, backend='vectorized')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0, 0], np.ma.masked)
+    assert z[0, 0, 0] is np.ma.masked
+    assert ss[0, 0, 0] is np.ma.masked
 
     with pytest.raises(IOError):
         k3d.execute('masked', self.simple_gridx_3d, self.simple_gridy_3d,
@@ -1406,14 +1406,14 @@ def test_ok3d_execute(self):
                         mask=self.mask_3d, backend='loop')
     assert (np.ma.is_masked(k))
     assert (np.ma.is_masked(ss))
-    self.assertIs(k[0, 0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0, 0], np.ma.masked)
+    assert k[0, 0, 0] is np.ma.masked
+    assert ss[0, 0, 0] is np.ma.masked
     z, ss = k3d.execute('masked', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d,
                         mask=self.mask_3d.T, backend='loop')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0, 0], np.ma.masked)
+    assert z[0, 0, 0] is np.ma.masked
+    assert ss[0, 0, 0] is np.ma.masked
 
     with pytest.raises(ValueError):
         k3d.execute('points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
@@ -1475,8 +1475,8 @@ def test_uk3d_execute(self):
     shape = (self.simple_gridz_3d.size, self.simple_gridy_3d.size, self.simple_gridx_3d.size)
     assert k.shape == shape
     assert ss.shape == shape
-    self.assertNotEqual(np.amax(k), np.amin(k))
-    self.assertNotEqual(np.amax(ss), np.amin(ss))
+    assert np.amax(k) != np.amin(k)
+    assert np.amax(ss) != np.amin(ss)
     assert not np.ma.is_masked(k)
 
     k, ss = uk3d.execute('grid', self.simple_gridx_3d, self.simple_gridy_3d,
@@ -1484,8 +1484,8 @@ def test_uk3d_execute(self):
     shape = (self.simple_gridz_3d.size, self.simple_gridy_3d.size, self.simple_gridx_3d.size)
     assert k.shape == shape
     assert ss.shape == shape
-    self.assertNotEqual(np.amax(k), np.amin(k))
-    self.assertNotEqual(np.amax(ss), np.amin(ss))
+    assert np.amax(k) != np.amin(k)
+    assert np.amax(ss) != np.amin(ss)
     assert not np.ma.is_masked(k)
 
     with pytest.raises(IOError):
@@ -1499,14 +1499,14 @@ def test_uk3d_execute(self):
                          mask=self.mask_3d, backend='vectorized')
     assert (np.ma.is_masked(k))
     assert (np.ma.is_masked(ss))
-    self.assertIs(k[0, 0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0, 0], np.ma.masked)
+    assert k[0, 0, 0] is np.ma.masked
+    assert ss[0, 0, 0] is np.ma.masked
     z, ss = uk3d.execute('masked', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d,
                          mask=self.mask_3d.T, backend='vectorized')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0, 0], np.ma.masked)
+    assert z[0, 0, 0] is np.ma.masked
+    assert ss[0, 0, 0] is np.ma.masked
 
     with pytest.raises(IOError):
         uk3d.execute('masked', self.simple_gridx_3d, self.simple_gridy_3d,
@@ -1519,14 +1519,14 @@ def test_uk3d_execute(self):
                          mask=self.mask_3d, backend='loop')
     assert (np.ma.is_masked(k))
     assert (np.ma.is_masked(ss))
-    self.assertIs(k[0, 0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0, 0], np.ma.masked)
+    assert k[0, 0, 0] is np.ma.masked
+    assert ss[0, 0, 0] is np.ma.masked
     z, ss = uk3d.execute('masked', self.simple_gridx_3d, self.simple_gridy_3d, self.simple_gridz_3d,
                          mask=self.mask_3d.T, backend='loop')
     assert (np.ma.is_masked(z))
     assert (np.ma.is_masked(ss))
-    self.assertIs(z[0, 0, 0], np.ma.masked)
-    self.assertIs(ss[0, 0, 0], np.ma.masked)
+    assert z[0, 0, 0] is np.ma.masked
+    assert ss[0, 0, 0] is np.ma.masked
 
     with pytest.raises(ValueError):
         uk3d.execute('points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
@@ -1538,7 +1538,7 @@ def test_uk3d_execute(self):
 
     with pytest.raises(ValueError):
         uk3d.execute('points', np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0]),
-                      np.array([1.0]), backend='loop')
+                     np.array([1.0]), backend='loop')
     k, ss = uk3d.execute('points', self.simple_gridx_3d[0], self.simple_gridy_3d[0],
                          self.simple_gridz_3d[0], backend='loop')
     assert k.shape == (1,)
