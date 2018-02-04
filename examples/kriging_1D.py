@@ -1,5 +1,6 @@
 """
 1D Kriging
+==========
 
 An example of 1D kriging with PyKrige
 """
