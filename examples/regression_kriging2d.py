@@ -5,12 +5,13 @@ Regression kriging
 An example of regression kriging
 """
 
-from pykrige.rk import RegressionKriging
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.datasets import fetch_california_housing
-from sklearn.model_selection import train_test_split
+
+from pykrige.rk import RegressionKriging
+from pykrige.compat import train_test_split
 
 svr_model = SVR(C=0.1)
 rf_model = RandomForestRegressor(n_estimators=100)
