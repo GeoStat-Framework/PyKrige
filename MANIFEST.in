@@ -6,13 +6,13 @@ include setup.py
 recursive-include pykrige *.py
 recursive-include pykrige *.pyx
 recursive-include pykrige *.pxd
-include pykrige/test_data/test_data.txt
-include pykrige/test_data/test1_answer.asc
-include pykrige/test_data/test1_settings.txt
-include pykrige/test_data/test2_answer.asc
-include pykrige/test_data/test2_settings.txt
-include pykrige/test_data/test3_answer.asc
-include pykrige/test_data/test3_dem.asc
-include pykrige/test_data/test3_settings.txt
-include pykrige/test_data/test3d_answer.txt
-include pykrige/test_data/test3d_data.txt
+include pykrige/tests/test_data/test_data.txt
+include pykrige/tests/test_data/test1_answer.asc
+include pykrige/tests/test_data/test1_settings.txt
+include pykrige/tests/test_data/test2_answer.asc
+include pykrige/tests/test_data/test2_settings.txt
+include pykrige/tests/test_data/test3_answer.asc
+include pykrige/tests/test_data/test3_dem.asc
+include pykrige/tests/test_data/test3_settings.txt
+include pykrige/tests/test_data/test3d_answer.txt
+include pykrige/tests/test_data/test3d_data.txt

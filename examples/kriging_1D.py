@@ -4,6 +4,7 @@
 
 An example of 1D kriging with PyKrige
 """
+import os
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -48,7 +49,7 @@ y_pred, y_std = uk.execute('grid', X_pred, np.array([0.]))
 y_pred = np.squeeze(y_pred)
 y_std = np.squeeze(y_std)
 
-fig, ax = plt.subplots(1,1, figsize=(10, 4))
+fig, ax = plt.subplots(1, 1, figsize=(10, 4))
 ax.scatter(X, y, s=40, label='Input data')
 
 
@@ -59,4 +60,6 @@ ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_xlim(-6, 6)
 ax.set_ylim(-2.8, 3.5)
-plt.show()
+if 'CI' not in os.environ:
+    # skip in continous integration
+    plt.show()
