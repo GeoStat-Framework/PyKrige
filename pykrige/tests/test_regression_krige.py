@@ -17,7 +17,7 @@ try:
     from sklearn.linear_model import LinearRegression
     from pykrige.compat import train_test_split
     SKLEARN_INSTALLED = True
-except:
+except ImportError:
     SKLEARN_INSTALLED = False
 
 
@@ -31,6 +31,7 @@ def _methods():
                   ElasticNet()
                   ]
     return product(ml_methods, krige_methods)
+
 
 @pytest.mark.skipif(not SKLEARN_INSTALLED,
                     reason="requires scikit-learn")

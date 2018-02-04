@@ -94,15 +94,18 @@ def test_core_adjust_for_anisotropy_3d():
     X = np.array([[1.0, 0.0, 0.0],
                   [0.0, 1.0, 0.0],
                   [0.0, 0.0, 1.0]]).T
-    X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [90., 0., 0.])
+    X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.],
+                                        [90., 0., 0.])
     assert_allclose(X_adj[:, 0], np.array([1., 0., 0.]), **allclose_pars)
     assert_allclose(X_adj[:, 1], np.array([0., 0., 2.]), **allclose_pars)
     assert_allclose(X_adj[:, 2], np.array([0., -2., 0.]), **allclose_pars)
-    X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [0., 90., 0.])
+    X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.],
+                                        [0., 90., 0.])
     assert_allclose(X_adj[:, 0], np.array([0., 0., -1.]), **allclose_pars)
     assert_allclose(X_adj[:, 1], np.array([0., 2., 0.]), **allclose_pars)
     assert_allclose(X_adj[:, 2], np.array([2., 0., 0.]), **allclose_pars)
-    X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.], [0., 0., 90.])
+    X_adj = core._adjust_for_anisotropy(X, [0., 0., 0.], [2., 2.],
+                                        [0., 0., 90.])
     assert_allclose(X_adj[:, 0], np.array([0., 1., 0.]), **allclose_pars)
     assert_allclose(X_adj[:, 1], np.array([-2., 0., 0.]), **allclose_pars)
     assert_allclose(X_adj[:, 2], np.array([0., 0., 2.]), **allclose_pars)
@@ -552,21 +555,27 @@ def test_uk_calculate_data_point_zscalars(sample_data_2d):
 
     with pytest.raises(ValueError):
         UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                         variogram_model='linear', variogram_parameters=[1.0, 0.0],
+                         variogram_model='linear',
+                         variogram_parameters=[1.0, 0.0],
                          drift_terms=['external_Z'])
     with pytest.raises(ValueError):
         UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                         variogram_model='linear', variogram_parameters=[1.0, 0.0],
+                         variogram_model='linear',
+                         variogram_parameters=[1.0, 0.0],
                          drift_terms=['external_Z'], external_drift=dem)
     with pytest.raises(ValueError):
         UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                         variogram_model='linear', variogram_parameters=[1.0, 0.0],
-                         drift_terms=['external_Z'], external_drift=dem, external_drift_x=dem_x,
+                         variogram_model='linear',
+                         variogram_parameters=[1.0, 0.0],
+                         drift_terms=['external_Z'],
+                         external_drift=dem, external_drift_x=dem_x,
                          external_drift_y=np.arange(0.0, 5.0, 1.0))
 
     uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                          variogram_model='linear', variogram_parameters=[1.0, 0.0],
-                          drift_terms=['external_Z'], external_drift=dem, external_drift_x=dem_x,
+                          variogram_model='linear',
+                          variogram_parameters=[1.0, 0.0],
+                          drift_terms=['external_Z'],
+                          external_drift=dem, external_drift_x=dem_x,
                           external_drift_y=dem_y)
     assert_allclose(uk.z_scalars, data[:, 0])
 
@@ -593,17 +602,22 @@ def test_uk_execute_single_point():
     z_answer = 567.54
     ss_answer = 9.044
 
-    uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2], variogram_model='exponential',
-                          variogram_parameters=[10.0, 9.99, 0.0], drift_terms=['regional_linear'])
-    z, ss = uk.execute('points', np.array([point[0]]), np.array([point[1]]), backend='vectorized')
+    uk = UniversalKriging(
+            data[:, 0], data[:, 1], data[:, 2], variogram_model='exponential',
+            variogram_parameters=[10.0, 9.99, 0.0],
+            drift_terms=['regional_linear'])
+    z, ss = uk.execute('points', np.array([point[0]]), np.array([point[1]]),
+                       backend='vectorized')
     assert z_answer == approx(z[0], rel=0.1)
     assert ss_answer == approx(ss[0], rel=0.1)
 
-    z, ss = uk.execute('points', np.array([61.0]), np.array([139.0]), backend='vectorized')
+    z, ss = uk.execute('points', np.array([61.0]), np.array([139.0]),
+                       backend='vectorized')
     assert z[0] == approx(477.0, rel=1e-3)
     assert ss[0] == approx(0.0, rel=1e-3)
 
-    z, ss = uk.execute('points', np.array([61.0]), np.array([139.0]), backend='loop')
+    z, ss = uk.execute('points', np.array([61.0]), np.array([139.0]),
+                       backend='loop')
     assert z[0] == approx(477.0, rel=1e-3)
     assert ss[0] == approx(0.0, rel=1e-3)
 
@@ -612,8 +626,9 @@ def test_uk_execute(sample_data_2d):
 
     data, (gridx, gridy, _), mask_ref = sample_data_2d
 
-    uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                          variogram_model='linear', drift_terms=['regional_linear'])
+    uk = UniversalKriging(
+            data[:, 0], data[:, 1], data[:, 2],
+            variogram_model='linear', drift_terms=['regional_linear'])
 
     with pytest.raises(ValueError):
         uk.execute('blurg', gridx, gridy)
@@ -748,17 +763,22 @@ def test_kriging_tools(sample_data_2d):
     z_write, ss_write = ok.execute('grid', gridx, gridy)
 
     kt.write_asc_grid(gridx, gridy, z_write,
-                      filename=os.path.join(BASE_DIR, 'test_data/temp.asc'), style=1)
-    z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(os.path.join(BASE_DIR, 'test_data/temp.asc'))
+                      filename=os.path.join(BASE_DIR, 'test_data/temp.asc'),
+                      style=1)
+    z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(
+            os.path.join(BASE_DIR, 'test_data/temp.asc'))
     assert_allclose(z_write, z_read, 0.01, 0.01)
     assert_allclose(gridx, x_read)
     assert_allclose(gridy, y_read)
 
     z_write, ss_write = ok.execute('masked', gridx, gridy, mask=mask_ref)
     kt.write_asc_grid(gridx, gridy, z_write,
-                      filename=os.path.join(BASE_DIR, 'test_data/temp.asc'), style=1)
-    z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(os.path.join(BASE_DIR, 'test_data/temp.asc'))
-    assert (np.ma.allclose(z_write, np.ma.masked_where(z_read == no_data, z_read),
+                      filename=os.path.join(BASE_DIR, 'test_data/temp.asc'),
+                      style=1)
+    z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(
+            os.path.join(BASE_DIR, 'test_data/temp.asc'))
+    assert (np.ma.allclose(z_write,
+                           np.ma.masked_where(z_read == no_data, z_read),
                            masked_equal=True, rtol=0.01, atol=0.01))
     assert_allclose(gridx, x_read)
     assert_allclose(gridy, y_read)
@@ -767,8 +787,10 @@ def test_kriging_tools(sample_data_2d):
     z_write, ss_write = ok.execute('grid', gridx_2, gridy)
 
     kt.write_asc_grid(gridx_2, gridy, z_write,
-                      filename=os.path.join(BASE_DIR, 'test_data/temp.asc'), style=2)
-    z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(os.path.join(BASE_DIR, 'test_data/temp.asc'))
+                      filename=os.path.join(BASE_DIR, 'test_data/temp.asc'),
+                      style=2)
+    z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(
+            os.path.join(BASE_DIR, 'test_data/temp.asc'))
     assert_allclose(z_write, z_read, 0.01, 0.01)
     assert_allclose(gridx_2, x_read)
     assert_allclose(gridy, y_read)
@@ -786,9 +808,12 @@ def test_uk_three_primary_drifts(sample_data_2d):
     dem_x = np.arange(0.0, 5.1, 0.1)
     dem_y = np.arange(0.0, 6.0, 1.0)
 
-    uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                          variogram_model='linear', drift_terms=['regional_linear', 'external_Z', 'point_log'],
-                          point_drift=well, external_drift=dem, external_drift_x=dem_x, external_drift_y=dem_y)
+    uk = UniversalKriging(
+            data[:, 0], data[:, 1], data[:, 2],
+            variogram_model='linear',
+            drift_terms=['regional_linear', 'external_Z', 'point_log'],
+            point_drift=well, external_drift=dem,
+            external_drift_x=dem_x, external_drift_y=dem_y)
 
     z, ss = uk.execute('grid', gridx, gridy, backend='vectorized')
     assert z.shape == (gridy.shape[0], gridx.shape[0])
@@ -813,11 +838,13 @@ def test_uk_specified_drift(sample_data_2d):
 
     xg, yg = np.meshgrid(gridx, gridy)
     well = np.array([[1.1, 1.1, -1.0]])
-    point_log = well[0, 2] * np.log(np.sqrt((xg - well[0, 0])**2. + (yg - well[0, 1])**2.)) * -1.
+    point_log = well[0, 2] * np.log(np.sqrt((xg - well[0, 0])**2.
+                                            + (yg - well[0, 1])**2.)) * -1.
     if np.any(np.isinf(point_log)):
         point_log[np.isinf(point_log)] = -100. * well[0, 2] * -1.
-    point_log_data = well[0, 2] * np.log(np.sqrt((data[:, 0] - well[0, 0])**2. +
-                                                 (data[:, 1] - well[0, 1])**2.)) * -1.
+    point_log_data = well[0, 2] * np.log(
+            np.sqrt((data[:, 0] - well[0, 0])**2. +
+                    (data[:, 1] - well[0, 1])**2.)) * -1.
     if np.any(np.isinf(point_log_data)):
         point_log_data[np.isinf(point_log_data)] = -100. * well[0, 2] * -1.
 
@@ -834,7 +861,8 @@ def test_uk_specified_drift(sample_data_2d):
                          specified_drift=[data[:2, 0]])
 
     uk_spec = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                               variogram_model='linear', drift_terms=['specified'],
+                               variogram_model='linear',
+                               drift_terms=['specified'],
                                specified_drift=[data[:, 0], data[:, 1]])
     with pytest.raises(ValueError):
         uk_spec.execute('grid', gridx, gridy,
@@ -845,35 +873,43 @@ def test_uk_specified_drift(sample_data_2d):
     with pytest.raises(ValueError):
         uk_spec.execute('grid', gridx, gridy,
                         specified_drift_arrays=[xg])
-    z_spec, ss_spec = uk_spec.execute('grid', gridx, gridy, specified_drift_arrays=[xg, yg])
+    z_spec, ss_spec = uk_spec.execute('grid', gridx, gridy,
+                                      specified_drift_arrays=[xg, yg])
 
     uk_lin = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                              variogram_model='linear', drift_terms=['regional_linear'])
+                              variogram_model='linear',
+                              drift_terms=['regional_linear'])
     z_lin, ss_lin = uk_lin.execute('grid', gridx, gridy)
 
     assert_allclose(z_spec, z_lin)
     assert_allclose(ss_spec, ss_lin)
 
     uk_spec = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                               variogram_model='linear', drift_terms=['specified'],
+                               variogram_model='linear',
+                               drift_terms=['specified'],
                                specified_drift=[point_log_data])
     z_spec, ss_spec = uk_spec.execute('grid', gridx, gridy,
                                       specified_drift_arrays=[point_log])
 
     uk_lin = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                              variogram_model='linear', drift_terms=['point_log'], point_drift=well)
+                              variogram_model='linear',
+                              drift_terms=['point_log'], point_drift=well)
     z_lin, ss_lin = uk_lin.execute('grid', gridx, gridy)
 
     assert_allclose(z_spec, z_lin)
     assert_allclose(ss_spec, ss_lin)
 
     uk_spec = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                               variogram_model='linear', drift_terms=['specified'],
-                               specified_drift=[data[:, 0], data[:, 1], point_log_data])
-    z_spec, ss_spec = uk_spec.execute('grid', gridx, gridy,
-                                      specified_drift_arrays=[xg, yg, point_log])
+                               variogram_model='linear',
+                               drift_terms=['specified'],
+                               specified_drift=[data[:, 0], data[:, 1],
+                               point_log_data])
+    z_spec, ss_spec = uk_spec.execute(
+            'grid', gridx, gridy,
+            specified_drift_arrays=[xg, yg, point_log])
     uk_lin = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                              variogram_model='linear', drift_terms=['regional_linear', 'point_log'],
+                              variogram_model='linear',
+                              drift_terms=['regional_linear', 'point_log'],
                               point_drift=well)
     z_lin, ss_lin = uk_lin.execute('grid', gridx, gridy)
 
@@ -886,9 +922,12 @@ def test_uk_functional_drift(sample_data_2d):
     data, (gridx, gridy, gridx_2), mask_ref = sample_data_2d
 
     well = np.array([[1.1, 1.1, -1.0]])
-    func_x = lambda x, y: x
-    func_y = lambda x, y: y
-    func_well = lambda x, y: - well[0, 2] * np.log(np.sqrt((x - well[0, 0])**2. + (y - well[0, 1])**2.))
+    func_x = lambda x, y: x  # noqa
+    func_y = lambda x, y: y  # noqa
+
+    def func_well(x, y):
+        return - well[0, 2] * np.log(
+                np.sqrt((x - well[0, 0])**2. + (y - well[0, 1])**2.))
 
     with pytest.raises(ValueError):
         UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
@@ -899,30 +938,38 @@ def test_uk_functional_drift(sample_data_2d):
                          functional_drift=func_x)
 
     uk_func = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                               variogram_model='linear', drift_terms=['functional'],
+                               variogram_model='linear',
+                               drift_terms=['functional'],
                                functional_drift=[func_x, func_y])
     z_func, ss_func = uk_func.execute('grid', gridx, gridy)
     uk_lin = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                              variogram_model='linear', drift_terms=['regional_linear'])
+                              variogram_model='linear',
+                              drift_terms=['regional_linear'])
     z_lin, ss_lin = uk_lin.execute('grid', gridx, gridy)
     assert_allclose(z_func, z_lin)
     assert_allclose(ss_func, ss_lin)
 
     uk_func = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                               variogram_model='linear', drift_terms=['functional'], functional_drift=[func_well])
+                               variogram_model='linear',
+                               drift_terms=['functional'],
+                               functional_drift=[func_well])
     z_func, ss_func = uk_func.execute('grid', gridx, gridy)
     uk_lin = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                              variogram_model='linear', drift_terms=['point_log'], point_drift=well)
+                              variogram_model='linear',
+                              drift_terms=['point_log'],
+                              point_drift=well)
     z_lin, ss_lin = uk_lin.execute('grid', gridx, gridy)
     assert_allclose(z_func, z_lin)
     assert_allclose(ss_func, ss_lin)
 
     uk_func = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                               variogram_model='linear', drift_terms=['functional'],
+                               variogram_model='linear',
+                               drift_terms=['functional'],
                                functional_drift=[func_x, func_y, func_well])
     z_func, ss_func = uk_func.execute('grid', gridx, gridy)
     uk_lin = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
-                              variogram_model='linear', drift_terms=['regional_linear', 'point_log'],
+                              variogram_model='linear',
+                              drift_terms=['regional_linear', 'point_log'],
                               point_drift=well)
     z_lin, ss_lin = uk_lin.execute('grid', gridx, gridy)
     assert_allclose(z_func, z_lin)
@@ -1047,9 +1094,11 @@ def test_force_exact():
     z, ss = ok.execute('grid', np.arange(0., 1.9, 0.1),
                        np.arange(2.1, 3.1, 0.1), backend='loop')
     assert not np.any(ss <= 1e-15)
-    z, ss = ok.execute('masked', np.arange(2.5, 3.5, 0.1),
-                       np.arange(2.5, 3.5, 0.25), backend='loop',
-                       mask=np.asarray(np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.))
+    z, ss = ok.execute(
+            'masked', np.arange(2.5, 3.5, 0.1),
+            np.arange(2.5, 3.5, 0.25), backend='loop',
+            mask=np.asarray(np.meshgrid(np.arange(2.5, 3.5, 0.1),
+                                        np.arange(2.5, 3.5, 0.25))[0] == 0.))
     assert ss[2, 5] <= 1e-15
     assert not np.allclose(ss, 0.)
 
@@ -1095,9 +1144,11 @@ def test_force_exact():
     z, ss = uk.execute('grid', np.arange(0., 1.9, 0.1),
                        np.arange(2.1, 3.1, 0.1), backend='vectorized')
     assert not(np.any(ss <= 1e-15))
-    z, ss = uk.execute('masked', np.arange(2.5, 3.5, 0.1),
-                       np.arange(2.5, 3.5, 0.25), backend='vectorized',
-                       mask=np.asarray(np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.))
+    z, ss = uk.execute(
+            'masked', np.arange(2.5, 3.5, 0.1),
+            np.arange(2.5, 3.5, 0.25), backend='vectorized',
+            mask=np.asarray(np.meshgrid(np.arange(2.5, 3.5, 0.1),
+                                        np.arange(2.5, 3.5, 0.25))[0] == 0.))
     assert (ss[2, 5] <= 1e-15)
     assert not np.allclose(ss, 0.)
     z, ss = uk.execute('grid', [1., 2., 3.], [1., 2., 3.], backend='loop')
@@ -1208,7 +1259,8 @@ def test_force_exact():
 def test_custom_variogram(sample_data_2d):
     data, (gridx, gridy, gridx_2), mask_ref = sample_data_2d
 
-    func = lambda params, dist: params[0] * np.log10(dist + params[1]) + params[2]
+    def func(params, dist):
+        return params[0] * np.log10(dist + params[1]) + params[2]
 
     with pytest.raises(ValueError):
         UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
@@ -1224,29 +1276,37 @@ def test_custom_variogram(sample_data_2d):
                          variogram_model='custom', variogram_function=func)
     uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
                           variogram_model='custom',
-                          variogram_parameters=[1., 1., 1.], variogram_function=func)
+                          variogram_parameters=[1., 1., 1.],
+                          variogram_function=func)
     assert uk.variogram_function([1., 1., 1.], 1.) == approx(1.3010, rel=1e-4)
     uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
                           variogram_model='linear')
-    uk.update_variogram_model('custom', variogram_parameters=[1., 1., 1.], variogram_function=func)
+    uk.update_variogram_model('custom', variogram_parameters=[1., 1., 1.],
+                              variogram_function=func)
     assert uk.variogram_function([1., 1., 1.], 1.) == approx(1.3010, rel=1e-4)
 
     with pytest.raises(ValueError):
-        OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2], variogram_model='mrow')
+        OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
+                        variogram_model='mrow')
     with pytest.raises(ValueError):
-        OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2], variogram_model='custom')
+        OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
+                        variogram_model='custom')
     with pytest.raises(ValueError):
         OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
                         variogram_model='custom', variogram_function=0)
     with pytest.raises(ValueError):
         OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
                         variogram_model='custom', variogram_function=func)
-    ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
-                         variogram_model='custom', variogram_parameters=[1., 1., 1.], variogram_function=func)
+    ok = OrdinaryKriging(
+            data[:, 0], data[:, 1], data[:, 2],
+            variogram_model='custom', variogram_parameters=[1., 1., 1.],
+            variogram_function=func)
     assert ok.variogram_function([1., 1., 1.], 1.) == approx(1.3010, rel=1e-4)
     ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
                          variogram_model='linear')
-    ok.update_variogram_model('custom', variogram_parameters=[1., 1., 1.], variogram_function=func)
+    ok.update_variogram_model(
+            'custom', variogram_parameters=[1., 1., 1.],
+            variogram_function=func)
     assert ok.variogram_function([1., 1., 1.], 1.) == approx(1.3010, rel=1e-4)
 
 
@@ -1255,28 +1315,39 @@ def test_ok3d(validation_ref):
     data, (ok_test_answer, gridx_ref, gridy_ref), _ = validation_ref
 
     # Test to compare K3D results to those obtained using KT3D_H2O.
-    # (M. Karanovic, M. Tonkin, and D. Wilson, 2009, Groundwater, vol. 47, no. 4, 580-586.)
+    # (M. Karanovic, M. Tonkin, and D. Wilson, 2009, Groundwater, vol. 47,
+    # no. 4, 580-586.)
     k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], np.zeros(data[:, 1].shape),
                             data[:, 2], variogram_model='exponential',
                             variogram_parameters=[500.0, 3000.0, 0.0])
-    k, ss = k3d.execute('grid', gridx_ref, gridy_ref, np.array([0.]), backend='vectorized')
+    k, ss = k3d.execute('grid', gridx_ref, gridy_ref, np.array([0.]),
+                        backend='vectorized')
     assert_allclose(np.squeeze(k), ok_test_answer)
-    k, ss = k3d.execute('grid', gridx_ref, gridy_ref, np.array([0.]), backend='loop')
+    k, ss = k3d.execute('grid', gridx_ref, gridy_ref, np.array([0.]),
+                        backend='loop')
     assert_allclose(np.squeeze(k), ok_test_answer)
 
     # Test to compare K3D results to those obtained using KT3D.
-    data = np.genfromtxt(os.path.join(BASE_DIR, 'test_data', 'test3d_data.txt'), skip_header=1)
-    ans = np.genfromtxt(os.path.join(BASE_DIR, 'test_data', 'test3d_answer.txt'))
+    data = np.genfromtxt(
+            os.path.join(BASE_DIR, 'test_data', 'test3d_data.txt'),
+            skip_header=1)
+    ans = np.genfromtxt(
+            os.path.join(BASE_DIR, 'test_data', 'test3d_answer.txt'))
     ans_z = ans[:, 0].reshape((10, 10, 10))
     ans_ss = ans[:, 1].reshape((10, 10, 10))
-    k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
-                            variogram_model='linear', variogram_parameters=[1., 0.1])
-    k, ss = k3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='vectorized')
+    k3d = OrdinaryKriging3D(
+            data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+            variogram_model='linear', variogram_parameters=[1., 0.1])
+    k, ss = k3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.),
+                        backend='vectorized')
     assert_allclose(k, ans_z, rtol=1e-3, atol=1e-8)
     assert_allclose(ss, ans_ss, rtol=1e-3, atol=1e-8)
-    k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
-                            variogram_model='linear', variogram_parameters=[1., 0.1])
-    k, ss = k3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='loop')
+    k3d = OrdinaryKriging3D(
+            data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+            variogram_model='linear', variogram_parameters=[1., 0.1])
+    k, ss = k3d.execute(
+            'grid', np.arange(10.), np.arange(10.), np.arange(10.),
+            backend='loop')
     assert_allclose(k, ans_z, rtol=1e-3, atol=1e-8)
     assert_allclose(ss, ans_ss, rtol=1e-3, atol=1e-8)
 
@@ -1284,14 +1355,19 @@ def test_ok3d(validation_ref):
 def test_ok3d_moving_window():
 
     # Test to compare K3D results to those obtained using KT3D.
-    data = np.genfromtxt(os.path.join(BASE_DIR, 'test_data', 'test3d_data.txt'),
-                         skip_header=1)
-    ans = np.genfromtxt(os.path.join(BASE_DIR, './test_data/test3d_answer.txt'))
+    data = np.genfromtxt(
+            os.path.join(BASE_DIR, 'test_data', 'test3d_data.txt'),
+            skip_header=1)
+    ans = np.genfromtxt(
+            os.path.join(BASE_DIR, './test_data/test3d_answer.txt'))
     ans_z = ans[:, 0].reshape((10, 10, 10))
     ans_ss = ans[:, 1].reshape((10, 10, 10))
     k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
-                            variogram_model='linear', variogram_parameters=[1., 0.1])
-    k, ss = k3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='loop', n_closest_points=10)
+                            variogram_model='linear',
+                            variogram_parameters=[1., 0.1])
+    k, ss = k3d.execute(
+            'grid', np.arange(10.), np.arange(10.), np.arange(10.),
+            backend='loop', n_closest_points=10)
     assert_allclose(k, ans_z, rtol=1e-3)
     assert_allclose(ss, ans_ss, rtol=1e-3)
 
@@ -1300,34 +1376,52 @@ def test_ok3d_uk3d_and_backends_produce_same_results(validation_ref):
 
     data, _, (uk_test_answer, gridx_ref, gridy_ref) = validation_ref
 
-    ok3d = OrdinaryKriging3D(data[:, 0], data[:, 1], np.zeros(data[:, 1].shape),
-                             data[:, 2], variogram_model='exponential',
-                             variogram_parameters=[500.0, 3000.0, 0.0])
-    ok_v, oss_v = ok3d.execute('grid', gridx_ref, gridy_ref, np.array([0.]), backend='vectorized')
-    ok_l, oss_l = ok3d.execute('grid', gridx_ref, gridy_ref, np.array([0.]), backend='loop')
+    ok3d = OrdinaryKriging3D(
+            data[:, 0], data[:, 1], np.zeros(data[:, 1].shape),
+            data[:, 2], variogram_model='exponential',
+            variogram_parameters=[500.0, 3000.0, 0.0])
+    ok_v, oss_v = ok3d.execute(
+            'grid', gridx_ref, gridy_ref, np.array([0.]), backend='vectorized')
+    ok_l, oss_l = ok3d.execute(
+            'grid', gridx_ref, gridy_ref, np.array([0.]), backend='loop')
 
-    uk3d = UniversalKriging3D(data[:, 0], data[:, 1], np.zeros(data[:, 1].shape),
-                              data[:, 2], variogram_model='exponential',
-                              variogram_parameters=[500., 3000., 0.])
-    uk_v, uss_v = uk3d.execute('grid', gridx_ref, gridy_ref, np.array([0.]), backend='vectorized')
+    uk3d = UniversalKriging3D(
+            data[:, 0], data[:, 1], np.zeros(data[:, 1].shape),
+            data[:, 2], variogram_model='exponential',
+            variogram_parameters=[500., 3000., 0.])
+    uk_v, uss_v = uk3d.execute(
+            'grid', gridx_ref, gridy_ref, np.array([0.]), backend='vectorized')
     assert_allclose(uk_v, ok_v)
-    uk_l, uss_l = uk3d.execute('grid', gridx_ref, gridy_ref, np.array([0.]), backend='loop')
+    uk_l, uss_l = uk3d.execute(
+            'grid', gridx_ref, gridy_ref, np.array([0.]), backend='loop')
     assert_allclose(uk_l, ok_l)
     assert_allclose(uk_l, uk_v)
     assert_allclose(uss_l, uss_v)
 
-    data = np.genfromtxt(os.path.join(BASE_DIR, 'test_data', 'test3d_data.txt'), skip_header=1)
-    ok3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
-                             variogram_model='linear', variogram_parameters=[1., 0.1])
-    ok_v, oss_v = ok3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='vectorized')
-    ok_l, oss_l = ok3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='loop')
+    data = np.genfromtxt(
+            os.path.join(BASE_DIR, 'test_data', 'test3d_data.txt'),
+            skip_header=1)
+    ok3d = OrdinaryKriging3D(
+            data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+            variogram_model='linear', variogram_parameters=[1., 0.1])
+    ok_v, oss_v = ok3d.execute(
+            'grid', np.arange(10.), np.arange(10.), np.arange(10.),
+            backend='vectorized')
+    ok_l, oss_l = ok3d.execute(
+            'grid', np.arange(10.), np.arange(10.), np.arange(10.),
+            backend='loop')
 
-    uk3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
-                              variogram_model='linear', variogram_parameters=[1., 0.1])
-    uk_v, uss_v = uk3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='vectorized')
+    uk3d = UniversalKriging3D(
+            data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+            variogram_model='linear', variogram_parameters=[1., 0.1])
+    uk_v, uss_v = uk3d.execute(
+            'grid', np.arange(10.), np.arange(10.), np.arange(10.),
+            backend='vectorized')
     assert_allclose(uk_v, ok_v)
     assert_allclose(uss_v, oss_v)
-    uk_l, uss_l = uk3d.execute('grid', np.arange(10.), np.arange(10.), np.arange(10.), backend='loop')
+    uk_l, uss_l = uk3d.execute(
+            'grid', np.arange(10.), np.arange(10.), np.arange(10.),
+            backend='loop')
     assert_allclose(uk_l, ok_l)
     assert_allclose(uss_l, oss_l)
     assert_allclose(uk_l, uk_v)
@@ -1354,8 +1448,10 @@ def test_ok3d_update_variogram_model(sample_data_3d):
 
     with pytest.raises(ValueError):
         k3d.update_variogram_model('blurg')
-    k3d.update_variogram_model('power', anisotropy_scaling_y=3.0, anisotropy_scaling_z=3.0,
-                               anisotropy_angle_x=45.0, anisotropy_angle_y=45.0, anisotropy_angle_z=45.0)
+    k3d.update_variogram_model(
+            'power', anisotropy_scaling_y=3.0, anisotropy_scaling_z=3.0,
+            anisotropy_angle_x=45.0, anisotropy_angle_y=45.0,
+            anisotropy_angle_z=45.0)
     assert variogram_model != k3d.variogram_model
     assert variogram_parameters != k3d.variogram_model_parameters
     assert anisotropy_scaling_y != k3d.anisotropy_scaling_y
@@ -1385,8 +1481,10 @@ def test_uk3d_update_variogram_model(sample_data_3d):
 
     with pytest.raises(ValueError):
         uk3d.update_variogram_model('blurg')
-    uk3d.update_variogram_model('power', anisotropy_scaling_y=3.0, anisotropy_scaling_z=3.0,
-                                anisotropy_angle_x=45.0, anisotropy_angle_y=45.0, anisotropy_angle_z=45.0)
+    uk3d.update_variogram_model(
+            'power', anisotropy_scaling_y=3.0,
+            anisotropy_scaling_z=3.0, anisotropy_angle_x=45.0,
+            anisotropy_angle_y=45.0, anisotropy_angle_z=45.0)
     assert not variogram_model == uk3d.variogram_model
     assert not variogram_parameters == uk3d.variogram_model_parameters
     assert not anisotropy_scaling_y == uk3d.anisotropy_scaling_y
@@ -1394,6 +1492,7 @@ def test_uk3d_update_variogram_model(sample_data_3d):
     assert not anisotropy_angle_x == uk3d.anisotropy_angle_x
     assert not anisotropy_angle_y == uk3d.anisotropy_angle_y
     assert not anisotropy_angle_z == uk3d.anisotropy_angle_z
+
 
 def test_ok3d_backends_produce_same_result(sample_data_3d):
 
@@ -1405,8 +1504,8 @@ def test_ok3d_backends_produce_same_result(sample_data_3d):
                                     backend='vectorized')
     k_k3d_l, ss_k3d_l = k3d.execute('grid', gridx_ref, gridy_ref, gridz_ref,
                                     backend='loop')
-    assert_allclose(k_k3d_v, k_k3d_l)
-    assert_allclose(ss_k3d_v, ss_k3d_l)
+    assert_allclose(k_k3d_v, k_k3d_l, rtol=1e-05, atol=1e-8)
+    assert_allclose(ss_k3d_v, ss_k3d_l, rtol=1e-05, atol=1e-8)
 
 
 def test_ok3d_execute(sample_data_3d):
@@ -1495,12 +1594,15 @@ def test_ok3d_execute(sample_data_3d):
     assert ss.shape == (1,)
 
     data = np.zeros((125, 4))
-    z, y, x = np.meshgrid(np.arange(0., 5., 1.), np.arange(0., 5., 1.), np.arange(0., 5., 1.))
+    z, y, x = np.meshgrid(np.arange(0., 5., 1.),
+                          np.arange(0., 5., 1.), np.arange(0., 5., 1.))
     data[:, 0] = np.ravel(x)
     data[:, 1] = np.ravel(y)
     data[:, 2] = np.ravel(z)
     data[:, 3] = np.ravel(z)
-    k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3], variogram_model='linear')
+    k3d = OrdinaryKriging3D(
+            data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+            variogram_model='linear')
     k, ss = k3d.execute('grid', np.arange(2., 3., 0.1), np.arange(2., 3., 0.1),
                         np.arange(0., 4., 1.), backend='vectorized')
     assert_allclose(k[0, :, :], 0., atol=0.01)
@@ -1513,12 +1615,17 @@ def test_ok3d_execute(sample_data_3d):
     assert_allclose(k[1, :, :], 1., rtol=1.e-2)
     assert_allclose(k[2, :, :], 2., rtol=1.e-2)
     assert_allclose(k[3, :, :], 3., rtol=1.e-2)
-    k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3], variogram_model='linear')
-    k, ss = k3d.execute('points', [2.5, 2.5, 2.5], [2.5, 2.5, 2.5], [1., 2., 3.], backend='vectorized')
+    k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+                            variogram_model='linear')
+    k, ss = k3d.execute(
+            'points', [2.5, 2.5, 2.5], [2.5, 2.5, 2.5], [1., 2., 3.],
+            backend='vectorized')
     assert_allclose(k[0], 1., atol=0.01)
     assert_allclose(k[1], 2., rtol=1.e-2)
     assert_allclose(k[2], 3., rtol=1.e-2)
-    k, ss = k3d.execute('points', [2.5, 2.5, 2.5], [2.5, 2.5, 2.5], [1., 2., 3.], backend='loop')
+    k, ss = k3d.execute(
+            'points', [2.5, 2.5, 2.5], [2.5, 2.5, 2.5], [1., 2., 3.],
+            backend='loop')
     assert_allclose(k[0], 1., atol=0.01)
     assert_allclose(k[1], 2., rtol=1.e-2)
     assert_allclose(k[2], 3., rtol=1.e-2)
@@ -1610,12 +1717,14 @@ def test_uk3d_execute(sample_data_3d):
     assert ss.shape == (1,)
 
     data = np.zeros((125, 4))
-    z, y, x = np.meshgrid(np.arange(0., 5., 1.), np.arange(0., 5., 1.), np.arange(0., 5., 1.))
+    z, y, x = np.meshgrid(np.arange(0., 5., 1.), np.arange(0., 5., 1.),
+                          np.arange(0., 5., 1.))
     data[:, 0] = np.ravel(x)
     data[:, 1] = np.ravel(y)
     data[:, 2] = np.ravel(z)
     data[:, 3] = np.ravel(z)
-    k3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3], variogram_model='linear')
+    k3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+                             variogram_model='linear')
     k, ss = k3d.execute('grid', np.arange(2., 3., 0.1), np.arange(2., 3., 0.1),
                         np.arange(0., 4., 1.), backend='vectorized')
     assert_allclose(k[0, :, :], 0., atol=0.01)
@@ -1628,12 +1737,17 @@ def test_uk3d_execute(sample_data_3d):
     assert_allclose(k[1, :, :], 1., rtol=1.e-2)
     assert_allclose(k[2, :, :], 2., rtol=1.e-2)
     assert_allclose(k[3, :, :], 3., rtol=1.e-2)
-    k3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3], variogram_model='linear')
-    k, ss = k3d.execute('points', [2.5, 2.5, 2.5], [2.5, 2.5, 2.5], [1., 2., 3.], backend='vectorized')
+    k3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+                             variogram_model='linear')
+    k, ss = k3d.execute(
+            'points', [2.5, 2.5, 2.5], [2.5, 2.5, 2.5], [1., 2., 3.],
+            backend='vectorized')
     assert_allclose(k[0], 1., atol=0.01)
     assert_allclose(k[1], 2., rtol=1.e-2)
     assert_allclose(k[2], 3., rtol=1.e-2)
-    k, ss = k3d.execute('points', [2.5, 2.5, 2.5], [2.5, 2.5, 2.5], [1., 2., 3.], backend='loop')
+    k, ss = k3d.execute(
+            'points', [2.5, 2.5, 2.5], [2.5, 2.5, 2.5], [1., 2., 3.],
+            backend='loop')
     assert_allclose(k[0], 1., atol=0.01)
     assert_allclose(k[1], 2., rtol=1.e-2)
     assert_allclose(k[2], 3., rtol=1.e-2)
@@ -1645,7 +1759,9 @@ def test_force_exact_3d(sample_data_3d):
 
     k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2],
                             data[:, 3], variogram_model='linear')
-    k, ss = k3d.execute('grid', [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], backend='vectorized')
+    k, ss = k3d.execute(
+            'grid', [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3],
+            backend='vectorized')
     assert k[2, 0, 0] == approx(0.9)
     assert ss[2, 0, 0] == approx(0.0)
     assert k[0, 2, 0] == approx(0.9)
@@ -1655,7 +1771,9 @@ def test_force_exact_3d(sample_data_3d):
     assert ss[2, 2, 2] != approx(0.0)
     assert ss[0, 0, 0] != approx(0.0)
 
-    k, ss = k3d.execute('grid', [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], backend='loop')
+    k, ss = k3d.execute(
+            'grid', [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3],
+            backend='loop')
     assert k[2, 0, 0] == approx(0.9)
     assert ss[2, 0, 0] == approx(0.0)
     assert k[0, 2, 0] == approx(0.9)
@@ -1667,7 +1785,9 @@ def test_force_exact_3d(sample_data_3d):
 
     k3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2],
                              data[:, 3], variogram_model='linear')
-    k, ss = k3d.execute('grid', [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], backend='vectorized')
+    k, ss = k3d.execute(
+            'grid', [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3],
+            backend='vectorized')
     assert k[2, 0, 0] == approx(0.9)
     assert ss[2, 0, 0] == approx(0.0)
     assert k[0, 2, 0] == approx(0.9)
@@ -1677,7 +1797,9 @@ def test_force_exact_3d(sample_data_3d):
     assert ss[2, 2, 2] != approx(0.0)
     assert ss[0, 0, 0] != approx(0.0)
 
-    k, ss = k3d.execute('grid', [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], backend='loop')
+    k, ss = k3d.execute(
+            'grid', [0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3],
+            backend='loop')
     assert k[2, 0, 0] == approx(0.9)
     assert ss[2, 0, 0] == approx(0.0)
     assert k[0, 2, 0] == approx(0.9)
@@ -1700,19 +1822,22 @@ def test_uk3d_specified_drift(sample_data_3d):
     with pytest.raises(TypeError):
         UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
                            variogram_model='linear',
-                           drift_terms=['specified'], specified_drift=data[:, 0])
+                           drift_terms=['specified'],
+                           specified_drift=data[:, 0])
     with pytest.raises(ValueError):
         UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
                            variogram_model='linear', drift_terms=['specified'],
                            specified_drift=[data[:2, 0]])
 
     uk_spec = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2],
-                                 data[:, 3], variogram_model='linear', drift_terms=['specified'],
+                                 data[:, 3], variogram_model='linear',
+                                 drift_terms=['specified'],
                                  specified_drift=[data[:, 0], data[:, 1],
                                                   data[:, 2]])
     with pytest.raises(ValueError):
-        uk_spec.execute('grid', gridx_ref, gridy_ref, gridz_ref,
-                        specified_drift_arrays=[gridx_ref, gridy_ref, gridz_ref])
+        uk_spec.execute(
+                'grid', gridx_ref, gridy_ref, gridz_ref,
+                specified_drift_arrays=[gridx_ref, gridy_ref, gridz_ref])
     with pytest.raises(TypeError):
         uk_spec.execute('grid', gridx_ref, gridy_ref, gridz_ref,
                         specified_drift_arrays=gridx_ref)
@@ -1735,24 +1860,27 @@ def test_uk3d_functional_drift(sample_data_3d):
 
     data, (gridx, gridy, gridz), mask_ref = sample_data_3d
 
-    func_x = lambda x, y, z: x
-    func_y = lambda x, y, z: y
-    func_z = lambda x, y, z: z
+    func_x = lambda x, y, z: x  # noqa
+    func_y = lambda x, y, z: y  # noqa
+    func_z = lambda x, y, z: z  # noqa
 
     with pytest.raises(ValueError):
         UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
-                           variogram_model='linear', drift_terms=['functional'])
+                           variogram_model='linear',
+                           drift_terms=['functional'])
     with pytest.raises(TypeError):
         UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
                            variogram_model='linear',
                            drift_terms=['functional'], functional_drift=func_x)
 
-    uk_func = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
-                                 variogram_model='linear', drift_terms=['functional'],
-                                 functional_drift=[func_x, func_y, func_z])
+    uk_func = UniversalKriging3D(
+            data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+            variogram_model='linear', drift_terms=['functional'],
+            functional_drift=[func_x, func_y, func_z])
     z_func, ss_func = uk_func.execute('grid', gridx, gridy, gridz)
-    uk_lin = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3],
-                                variogram_model='linear', drift_terms=['regional_linear'])
+    uk_lin = UniversalKriging3D(
+            data[:, 0], data[:, 1], data[:, 2], data[:, 3],
+            variogram_model='linear', drift_terms=['regional_linear'])
     z_lin, ss_lin = uk_lin.execute('grid', gridx, gridy, gridz)
     assert_allclose(z_func, z_lin)
     assert_allclose(ss_func, ss_lin)
@@ -1786,30 +1914,33 @@ def test_geometric_code():
     d = np.zeros((N, N))
     for i in range(N):
         for j in range(N):
-            d[i, j] = core.great_circle_distance(lon[i],lat[i],lon[j],lat[j])
+            d[i, j] = core.great_circle_distance(
+                    lon[i], lat[i], lon[j], lat[j])
 
     # Test agains reference values:
     assert_allclose(d, d_ref)
 
     # Test general features:
-    assert_allclose(d[np.eye(N,dtype=bool)], 0.0)
-    np.testing.assert_equal(d>=0.0, np.ones((N,N),dtype=bool))
-    assert_allclose(d,d.T)
-    np.testing.assert_equal(d<=180.0,np.ones((N,N),dtype=bool))
+    assert_allclose(d[np.eye(N, dtype=bool)], 0.0)
+    np.testing.assert_equal(d >= 0.0, np.ones((N, N), dtype=bool))
+    assert_allclose(d, d.T)
+    np.testing.assert_equal(d <= 180.0, np.ones((N, N), dtype=bool))
 
-    # Test great_circle_distance and euclid3_to_great_circle against each other:
+    # Test great_circle_distance and euclid3_to_great_circle against each other
     lon_ref = lon
     lat_ref = lat
     for i in range(len(lon_ref)):
         lon, lat = np.meshgrid(np.linspace(0, 360.0, 20),
                                np.linspace(-90.0, 90.0, 20))
-        dx = np.cos(np.pi/180.0*lon)*np.cos(np.pi/180.0*lat)- \
-             np.cos(np.pi/180.0*lon_ref[i])*np.cos(np.pi/180.0*lat_ref[i])
-        dy = np.sin(np.pi/180.0*lon)*np.cos(np.pi/180.0*lat)- \
-             np.sin(np.pi/180.0*lon_ref[i])*np.cos(np.pi/180.0*lat_ref[i])
+        dx = (np.cos(np.pi/180.0*lon)*np.cos(np.pi/180.0*lat) -
+              np.cos(np.pi/180.0*lon_ref[i])*np.cos(np.pi/180.0*lat_ref[i]))
+        dy = (np.sin(np.pi/180.0*lon)*np.cos(np.pi/180.0*lat) -
+              np.sin(np.pi/180.0*lon_ref[i])*np.cos(np.pi/180.0*lat_ref[i]))
         dz = np.sin(np.pi/180.0*lat) - np.sin(np.pi/180.0*lat_ref[i])
-        assert_allclose(core.great_circle_distance(lon_ref[i], lat_ref[i], lon, lat),
-            core.euclid3_to_great_circle(np.sqrt(dx**2+dy**2+dz**2)), rtol=1e-5)
+        assert_allclose(
+            core.great_circle_distance(lon_ref[i], lat_ref[i], lon, lat),
+            core.euclid3_to_great_circle(np.sqrt(dx**2+dy**2+dz**2)),
+            rtol=1e-5)
 
 
 def test_ok_geometric():
@@ -1818,7 +1949,6 @@ def test_ok_geometric():
     lon = 360.0*np.random.rand(50, 1)
     lat = 180.0*np.random.rand(50, 1) - 90.0
     z = np.random.rand(50, 1)
-    #data = np.concatenate((lon, lat, z), 1)
 
     # Generate grid:
     grid_lon = 360.0*np.random.rand(120, 1)

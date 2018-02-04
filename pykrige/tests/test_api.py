@@ -5,7 +5,6 @@ from itertools import product
 
 import numpy as np
 
-from pykrige.compat import SKLEARN_INSTALLED
 from pykrige.rk import Krige
 from pykrige.rk import threed_krige
 from pykrige.compat import GridSearchCV
