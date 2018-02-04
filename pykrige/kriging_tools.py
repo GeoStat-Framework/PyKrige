@@ -3,45 +3,18 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-__doc__ = """Code by Benjamin S. Murphy
+__doc__ = """
+PyKrige
+=======
+
+Code by Benjamin S. Murphy and the PyKrige Developers
 bscott.murphy@gmail.com
 
-Dependencies:
-    numpy
+Summary
+-------
+Methods for reading/writing ASCII grid files.
 
-Callable Methods:
-    write_asc_grid(X, Y, Z, filename='output.asc', style=1): Writes an MxN data grid
-        to an ASCII grid file (.*asc).
-        Inputs:
-            X (array-like, dim Nx1): X-coordinates of grid points at center
-                of cells.
-            Y (array-like, dim Mx1): Y-coordinates of grid points at center
-                of cells.
-            Z (array-like, dim MxN): Gridded data values. May be a masked array.
-            filename (string, optional): Name of output *.asc file.
-            style (int, optional): Determines how to write the *.asc file
-                header. Specifying 1 writes out DX, DY, XLLCENTER, YLLCENTER.
-                Specifying 2 writes out CELLSIZE (note DX must be the same
-                as DY), XLLCORNER, YLLCORNER. Default is 1.
-
-    read_asc_grid(filename, footer=0): Reads ASCII grid file (*.asc).
-        Inputs:
-            filename (string): Name of *.asc file.
-            footer (int, optional): Number of lines at bottom of *.asc file to skip.
-        Outputs:
-            grid_array (numpy array): MxN array of grid values,
-                where M is number of Y-coordinates and N is number
-                of X-coordinates. The array entry corresponding to
-                the lower-left coordinates is at index [M, 0], so that
-                the array is oriented as it would be in X-Y space.
-            x (numpy array): 1D array of N X-coordinates.
-            y (numpy array): 1D array of M Y-coordinates.
-            CELLSIZE (tuple or float): Either a two-tuple of (x-cell size,
-                y-cell size), or a float that specifies the uniform cell size.
-            NODATA (float): Value that specifies which entries are not
-                actual data.
-
-Copyright (c) 2015-2017 Benjamin S. Murphy
+Copyright (c) 2015-2018, PyKrige Developers
 """
 
 import numpy as np
@@ -50,7 +23,25 @@ import io
 
 
 def write_asc_grid(x, y, z, filename='output.asc', style=1):
-    """Writes gridded data to ASCII grid file (*.asc)"""
+    """Writes gridded data to ASCII grid file (*.asc). This is useful for
+    exporting data to a GIS program.
+
+    Parameters
+    ----------
+    x : array_like, dim Nx1
+        X-coordinates of grid points at center of cells.
+    y : array_like, dim Mx1
+        Y-coordinates of grid points at center of cells.
+    z : array_like, dim MxN
+        Gridded data values. May be a masked array.
+    filename : string, optional
+        Name of output *.asc file. Default name is 'output.asc'.
+    style : int, optional
+        Determines how to write the *.asc file header.
+        Specifying 1 writes out DX, DY, XLLCENTER, YLLCENTER.
+        Specifying 2 writes out CELLSIZE (note DX must be the same as DY),
+        XLLCORNER, YLLCORNER. Default is 1.
+    """
 
     if np.ma.is_masked(z):
         z = np.array(z.tolist(-999.))
@@ -62,32 +53,40 @@ def write_asc_grid(x, y, z, filename='output.asc', style=1):
     ncols = z.shape[1]
 
     if z.ndim != 2:
-        raise ValueError("Two-dimensional grid is required to write *.asc grid.")
+        raise ValueError("Two-dimensional grid is required to "
+                         "write *.asc grid.")
     if x.ndim > 1 or y.ndim > 1:
-        raise ValueError("Dimensions of X and/or Y coordinate arrays are not as expected. Could not write *.asc grid.")
+        raise ValueError("Dimensions of X and/or Y coordinate arrays are not "
+                         "as expected. Could not write *.asc grid.")
     if z.shape != (y.size, x.size):
-        warnings.warn("Grid dimensions are not as expected. Incorrect *.asc file generation may result.",
+        warnings.warn("Grid dimensions are not as expected. "
+                      "Incorrect *.asc file generation may result.",
                       RuntimeWarning)
     if np.amin(x) != x[0] or np.amin(y) != y[0]:
-        warnings.warn("Order of X or Y coordinates is not as expected. Incorrect *.asc file generation may result.",
+        warnings.warn("Order of X or Y coordinates is not as expected. "
+                      "Incorrect *.asc file generation may result.",
                       RuntimeWarning)
 
     dx = abs(x[1] - x[0])
     dy = abs(y[1] - y[0])
     if abs((x[-1] - x[0])/(x.shape[0] - 1)) != dx or \
        abs((y[-1] - y[0])/(y.shape[0] - 1)) != dy:
-        raise ValueError("X or Y spacing is not constant; *.asc grid cannot be written.")
+        raise ValueError("X or Y spacing is not constant; *.asc "
+                         "grid cannot be written.")
     cellsize = -1
     if style == 2:
         if dx != dy:
-            raise ValueError("X and Y spacing is not the same. Cannot write *.asc file in the specified format.")
+            raise ValueError("X and Y spacing is not the same. "
+                             "Cannot write *.asc file in the specified format.")
         cellsize = dx
 
     xllcenter = x[0]
     yllcenter = y[0]
 
-    xllcorner = -1   # Note that these values are flagged as -1. If there is a problem in trying
-    yllcorner = -1   # to write out style 2, the -1 value will appear in the output file.
+    # Note that these values are flagged as -1. If there is a problem in trying
+    # to write out style 2, the -1 value will appear in the output file.
+    xllcorner = -1
+    yllcorner = -1
     if style == 2:
         xllcorner = xllcenter - dx/2.0
         yllcorner = yllcenter - dy/2.0
@@ -122,14 +121,30 @@ def write_asc_grid(x, y, z, filename='output.asc', style=1):
 
 def read_asc_grid(filename, footer=0):
     """Reads ASCII grid file (*.asc).
-    footer kwarg specifies how many lines at end of *.asc file to skip.
-    Returns a NumPy array of the values (dim MxN, where M is
-    the number of Y-coordinates and N is the number of
-    X-coordinates); a NumPy array of the X-coordinates (dim N);
-    a NumPy array of the Y-coordinates (dim M); either a tuple
-    of the grid cell size in the x direction and the grid cell
-    size in the y direction (DX, DY) or the uniform grid cell size;
-    and the NO_DATA value.
+
+    Parameters
+    ----------
+    filename : str
+        Name of *.asc file.
+    footer : int, optional
+        Number of lines at bottom of *.asc file to skip.
+
+    Returns
+    -------
+    grid_array : numpy array
+        MxN array of grid values, where M is number of Y-coordinates and
+        N is number of X-coordinates. The array entry corresponding to
+        the lower-left coordinates is at index [M, 0], so that
+        the array is oriented as it would be in X-Y space.
+    x : numpy array
+        1D array of N X-coordinates.
+    y : numpy array
+        1D array of M Y-coordinates.
+    CELLSIZE : tuple or float
+        Either a two-tuple of (x-cell size, y-cell size),
+        or a float that specifies the uniform cell size.
+    NODATA : float
+        Value that specifies which entries are not actual data.
     """
 
     ncols = None
@@ -174,14 +189,16 @@ def read_asc_grid(filename, footer=0):
             else:
                 raise IOError("could not read *.asc file. Error in header.")
 
-            if (ncols is not None) and (nrows is not None) and \
+            if (ncols is not None) and \
+               (nrows is not None) and \
                (((xllcorner is not None) and (yllcorner is not None)) or
                 ((xllcenter is not None) and (yllcenter is not None))) and \
                ((cellsize is not None) or ((dx is not None) and (dy is not None))) and \
                (no_data is not None):
                 break
 
-    raw_grid_array = np.genfromtxt(filename, skip_header=header_lines, skip_footer=footer)
+    raw_grid_array = np.genfromtxt(filename, skip_header=header_lines,
+                                   skip_footer=footer)
     grid_array = np.flipud(raw_grid_array)
 
     if nrows != grid_array.shape[0] or ncols != grid_array.shape[1]:
@@ -204,8 +221,9 @@ def read_asc_grid(filename, footer=0):
         x = np.arange(xllcenter, xllcenter + ncols*cellsize, cellsize)
         y = np.arange(yllcenter, yllcenter + nrows*cellsize, cellsize)
 
-    # Sometimes x and y and can be an entry too long due to imprecision in calculating
-    # the upper cutoff for np.arange(); this bit takes care of that potential problem.
+    # Sometimes x and y and can be an entry too long due to imprecision
+    # in calculating the upper cutoff for np.arange(); this bit takes care of
+    # that potential problem.
     if x.size == ncols + 1:
         x = x[:-1]
     if y.size == nrows + 1:

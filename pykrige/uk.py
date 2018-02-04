@@ -3,23 +3,24 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-__doc__ = """Code by Benjamin S. Murphy
+__doc__ = """
+PyKrige
+=======
+
+Code by Benjamin S. Murphy and the PyKrige Developers
 bscott.murphy@gmail.com
 
-Dependencies:
-    numpy
-    scipy
-    matplotlib
+Summary
+-------
+Contains class UniversalKriging, provides greater control over 2D kriging by
+utilizing drift terms.
 
-Classes:
-    UniversalKriging: Provides greater control over 2D kriging by
-        utilizing drift terms.
-
-References:
-    P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
-    (Cambridge University Press, 1997) 272 p.
+References
+----------
+.. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
+    Hydrogeology, (Cambridge University Press, 1997) 272 p.
     
-Copyright (c) 2015-2017 Benjamin S. Murphy
+Copyright (c) 2015-2018, PyKrige Developers
 """
 
 import numpy as np
@@ -34,253 +35,149 @@ import warnings
 
 
 class UniversalKriging:
-    """class UniversalKriging
-    Provides greater control over 2D kriging by utilizing drift terms.
+    """Provides greater control over 2D kriging by utilizing drift terms.
 
-    Dependencies:
-        numpy
-        scipy
-        matplotlib
+    Parameters
+    ----------
+    x : array_like
+        X-coordinates of data points.
+    y : array_like
+        Y-coordinates of data points.
+    z : array_like
+        Values at data points.
+    variogram_model: str, optional)
+        Specified which variogram model to use; may be one of the following:
+        linear, power, gaussian, spherical, exponential, hole-effect.
+        Default is linear variogram model. To utilize a custom variogram model,
+        specify 'custom'; you must also provide variogram_parameters and
+        variogram_function. Note that the hole-effect model is only
+        technically correct for one-dimensional problems.
+    variogram_parameters: list or dict, optional
+        Parameters that define the specified variogram model. If not provided,
+        parameters will be automatically calculated using a "soft" L1 norm
+        minimization scheme. For variogram model parameters provided in a dict,
+        the required dict keys vary according to the specified variogram
+        model: ::
+            linear - {'slope': slope, 'nugget': nugget}
+            power - {'scale': scale, 'exponent': exponent, 'nugget': nugget}
+            gaussian - {'sill': s, 'range': r, 'nugget': n}
+                        OR
+                       {'psill': p, 'range': r, 'nugget':n}
+            spherical - {'sill': s, 'range': r, 'nugget': n}
+                         OR
+                        {'psill': p, 'range': r, 'nugget':n}
+            exponential - {'sill': s, 'range': r, 'nugget': n}
+                           OR
+                          {'psill': p, 'range': r, 'nugget':n}
+            hole-effect - {'sill': s, 'range': r, 'nugget': n}
+                           OR
+                          {'psill': p, 'range': r, 'nugget':n}
+        Note that either the full sill or the partial sill
+        (psill = sill - nugget) can be specified in the dict.
+        For variogram model parameters provided in a list, the entries
+        must be as follows: ::
+            linear - [slope, nugget]
+            power - [scale, exponent, nugget]
+            gaussian - [sill, range, nugget]
+            spherical - [sill, range, nugget]
+            exponential - [sill, range, nugget]
+            hole-effect - [sill, range, nugget]
+        Note that the full sill (NOT the partial sill) must be specified
+        in the list format.
+        For a custom variogram model, the parameters are required, as custom
+        variogram models will not automatically be fit to the data.
+        Furthermore, the parameters must be specified in list format, in the
+        order in which they are used in the callable function (see
+        variogram_function for more information). The code does not check
+        that the provided list contains the appropriate number of parameters
+        for the custom variogram model, so an incorrect parameter list in
+        such a case will probably trigger an esoteric exception someplace
+        deep in the code.
+        NOTE that, while the list format expects the full sill, the code
+        itself works internally with the partial sill.
+    variogram_function : callable, optional
+        A callable function that must be provided if variogram_model is
+        specified as 'custom'. The function must take only two arguments:
+        first, a list of parameters for the variogram model; second,
+        the distances at which to calculate the variogram model. The list
+        provided in variogram_parameters will be passed to the function
+        as the first argument.
+    nlags : int, optional
+        Number of averaging bins for the semivariogram. Default is 6.
+    weight : bool, optional
+        Flag that specifies if semivariance at smaller lags should be weighted
+        more heavily when automatically calculating variogram model.
+        The routine is currently hard-coded such  that the weights are
+        calculated from a logistic function, so weights at small lags are ~1
+        and weights at the longest lags are ~0; the center of the logistic
+        weighting is hard-coded to be at 70% of the distance from the shortest
+        lag to the largest lag. Setting this parameter to True indicates that
+        weights will be applied. Default is False.
+        (Kitanidis suggests that the values at smaller lags are more
+        important in fitting a variogram model, so the option is provided
+        to enable such weighting.)
+    anisotropy_scaling : float, optional
+        Scalar stretching value to take into account anisotropy.
+        Default is 1 (effectively no stretching).
+        Scaling is applied in the y-direction in the rotated data frame
+        (i.e., after adjusting for the anisotropy_angle, if anisotropy_angle
+        is not 0).
+    anisotropy_angle : float, optional
+        CCW angle (in degrees) by which to rotate coordinate system in order
+        to take into account anisotropy. Default is 0 (no rotation).
+        Note that the coordinate system is rotated.
+    drift_terms : list of strings, optional
+        List of drift terms to include in universal kriging. Supported drift
+        terms are currently 'regional_linear', 'point_log', 'external_Z',
+        'specified', and 'functional'.
+    point_drift : array_like, optional
+        Array-like object that contains the coordinates and strengths of the
+        point-logarithmic drift terms. Array shape must be Nx3, where N is the
+        number of point drift terms. First column (index 0) must contain
+        x-coordinates, second column (index 1) must contain y-coordinates,
+        and third column (index 2) must contain the strengths of each
+        point term. Strengths are relative, so only the relation of the values
+        to each other matters. Note that the code will appropriately deal with
+        point-logarithmic terms that are at the same coordinates as an
+        evaluation point or data point, but Python will still kick out a
+        warning message that an ln(0) has been encountered. If the problem
+        involves anisotropy, the well coordinates will be adjusted and the
+        drift values will be calculated in the adjusted data frame.
+    external_drift : array_like, optional
+        Gridded data used for the external Z scalar drift term.
+        Must be dim MxN, where M is in the y-direction and N is in the
+        x-direction. Grid spacing does not need to be constant. If grid spacing
+        is not constant, must specify the grid cell sizes. If the problem
+        involves anisotropy, the external drift values are extracted based on
+        the pre-adjusted coordinates (i.e., the original coordinate system).
+    external_drift_x : array_like, optional
+        X-coordinates for gridded external Z-scalar data. Must be dim M or Mx1
+        (where M is the number of grid cells in the x-direction).
+        The coordinate is treated as the center of the cell.
+    external_drift_y : array_like, optional
+        Y-coordinates for gridded external Z-scalar data. Must be dim N or Nx1
+        (where N is the number of grid cells in the y-direction).
+        The coordinate is treated as the center of the cell.
+    specified_drift : list of array-like objects, optional
+        List of arrays that contain the drift values at data points.
+        The arrays must be dim N, where N is the number of data points.
+        Any number of specified-drift terms may be used.
+    functional_drift : list of callable objects, optional
+        List of callable functions that will be used to evaluate drift terms.
+        The function must be a function of only the two spatial coordinates
+        and must return a single value for each coordinate pair.
+        It must be set up to be called with only two arguments, first an array
+        of x values and second an array of y values. If the problem involves
+        anisotropy, the drift values are calculated in the adjusted data frame.
+    verbose : bool, optional
+        Enables program text output to monitor kriging process.
+        Default is False (off).
+    enable_plotting : boolean, optional
+        Enables plotting to display variogram. Default is False (off).
 
-    Inputs:
-        X (array-like): X-coordinates of data points.
-        Y (array-like): Y-coordinates of data points.
-        Z (array-like): Values at data points.
-
-        variogram_model (string, optional): Specified which variogram model to
-            use; may be one of the following: linear, power, gaussian,
-            spherical, exponential, hole-effect. Default is linear variogram
-            model. To utilize a custom variogram model, specify 'custom';
-            you must also provide variogram_parameters and variogram_function.
-            Note that the hole-effect model is only technically correct
-            for one-dimensional problems.
-        variogram_parameters (list or dict, optional): Parameters that define
-            the specified variogram model. If not provided, parameters will be
-            automatically calculated using a "soft" L1 norm minimization scheme.
-            For variogram model parameters provided in a dict, the required
-            dict keys vary according to the specified variogram model:
-                linear - {'slope': slope, 'nugget': nugget}
-                power - {'scale': scale, 'exponent': exponent, 'nugget': nugget}
-                gaussian - {'sill': s, 'range': r, 'nugget': n}
-                            OR
-                           {'psill': p, 'range': r, 'nugget':n}
-                spherical - {'sill': s, 'range': r, 'nugget': n}
-                             OR
-                            {'psill': p, 'range': r, 'nugget':n}
-                exponential - {'sill': s, 'range': r, 'nugget': n}
-                               OR
-                              {'psill': p, 'range': r, 'nugget':n}
-                hole-effect - {'sill': s, 'range': r, 'nugget': n}
-                               OR
-                              {'psill': p, 'range': r, 'nugget':n}
-            Note that either the full sill or the partial sill
-            (psill = sill - nugget) can be specified in the dict.
-            For variogram model parameters provided in a list, the entries
-            must be as follows:
-                linear - [slope, nugget]
-                power - [scale, exponent, nugget]
-                gaussian - [sill, range, nugget]
-                spherical - [sill, range, nugget]
-                exponential - [sill, range, nugget]
-                hole-effect - [sill, range, nugget]
-            Note that the full sill (NOT the partial sill) must be specified
-            in the list format.
-            For a custom variogram model, the parameters are required, as custom
-            variogram models will not automatically be fit to the data.
-            Furthermore, the parameters must be specified in list format, in the
-            order in which they are used in the callable function (see
-            variogram_function for more information). The code does not check
-            that the provided list contains the appropriate number of parameters
-            for the custom variogram model, so an incorrect parameter list in
-            such a case will probably trigger an esoteric exception someplace
-            deep in the code.
-            NOTE that, while the list format expects the full sill, the code
-            itself works internally with the partial sill.
-        variogram_function (callable, optional): A callable function that must
-            be provided if variogram_model is specified as 'custom'.
-            The function must take only two arguments: first, a list of
-            parameters for the variogram model; second, the distances at which
-            to calculate the variogram model. The list provided in
-            variogram_parameters will be passed to the function as the
-            first argument.
-        nlags (int, optional): Number of averaging bins for the semivariogram.
-            Default is 6.
-        weight (boolean, optional): Flag that specifies if semivariance at
-            smaller lags should be weighted more heavily when automatically
-            calculating variogram model. The routine is currently hard-coded
-            such  that the weights are calculated from a logistic function,
-            so weights at small lags are ~1 and weights at the longest lags
-            are ~0; the center of the logistic weighting is hard-coded to be
-            at 70% of the distance from the shortest lag to the largest lag.
-            Setting this parameter to True indicates that weights will be
-            applied. Default is False.
-            (Kitanidis suggests that the values at smaller lags are more
-            important in fitting a variogram model, so the option is provided
-            to enable such weighting.)
-        anisotropy_scaling (float, optional): Scalar stretching value to take
-            into account anisotropy. Default is 1 (effectively no stretching).
-            Scaling is applied in the y-direction in the rotated data frame
-            (i.e., after adjusting for the anisotropy_angle, if anisotropy_angle
-            is not 0).
-        anisotropy_angle (float, optional): CCW angle (in degrees) by which to
-            rotate coordinate system in order to take into account anisotropy.
-            Default is 0 (no rotation).
-            Note that the coordinate system is rotated.
-
-        drift_terms (list of strings, optional): List of drift terms to include
-            in universal kriging. Supported drift terms are currently
-            'regional_linear', 'point_log', 'external_Z', 'specified', and
-            'functional'.
-        point_drift (array-like, optional): Array-like object that contains the
-            coordinates and strengths of the point-logarithmic drift terms.
-            Array shape must be Nx3, where N is the number of point drift terms.
-            First column (index 0) must contain x-coordinates, second column
-            (index 1) must contain y-coordinates, and third column (index 2)
-            must contain the strengths of each point term. Strengths are
-            relative, so only the relation of the values to each other matters.
-            Note that the code will appropriately deal with point-logarithmic
-            terms that are at the same coordinates as an evaluation point or
-            data point, but Python will still kick out a warning message that
-            an ln(0) has been encountered. If the problem involves anisotropy,
-            the well coordinates will be adjusted and the drift values will be
-            calculated in the adjusted data frame.
-        external_drift (array-like, optional): Gridded data used for the
-            external Z scalar drift term. Must be dim MxN, where M is in the
-            y-direction and N is in the x-direction. Grid spacing does not need
-            to be constant. If grid spacing is not constant, must specify the
-            grid cell sizes. If the problem involves anisotropy, the external
-            drift values are extracted based on the pre-adjusted coordinates
-            (i.e., the original coordinate system).
-        external_drift_x (array-like, optional): X-coordinates for gridded
-            external Z-scalar data. Must be dim M or Mx1 (where M is the number
-            of grid cells in the x-direction). The coordinate is treated as
-            the center of the cell.
-        external_drift_y (array-like, optional): Y-coordinates for gridded
-            external Z-scalar data. Must be dim N or Nx1 (where N is the
-            number of grid cells in the y-direction). The coordinate is
-            treated as the center of the cell.
-        specified_drift (list of array-like objects, optional): List of arrays
-            that contain the drift values at data points. The arrays must be
-            dim N, where N is the number of data points. Any number of
-            specified-drift terms may be used.
-        functional_drift (list of callable objects, optional): List of callable
-            functions that will be used to evaluate drift terms. The function
-            must be a function of only the two spatial coordinates and must
-            return a single value for each coordinate pair. It must be set up
-            to be called with only two arguments, first an array of x values
-            and second an array of y values. If the problem involves anisotropy,
-            the drift values are calculated in the adjusted data frame.
-
-        verbose (Boolean, optional): Enables program text output to monitor
-            kriging process. Default is False (off).
-        enable_plotting (Boolean, optional): Enables plotting to display
-            variogram. Default is False (off).
-
-    Callable Methods:
-        display_variogram_model(): Displays semivariogram and variogram model.
-
-        update_variogram_model(variogram_model, variogram_parameters=None,
-                               nlags=6, weight=False, anisotropy_scaling=1.0,
-                               anisotropy_angle=0.0)):
-            Changes the variogram model and variogram parameters for
-            the kriging system.
-            Inputs:
-                variogram_model (string): May be any of the variogram models
-                    listed above. May also be 'custom', in which case
-                    variogram_parameters and variogram_function must be
-                    specified.
-                variogram_parameters (list or dict, optional): List or dict of
-                    variogram model parameters, as explained above.
-                    If not provided, a best fit model will be calculated as
-                    described above.
-                variogram_function (callable, optional): A callable function
-                    that must be provided if variogram_model is specified as
-                    'custom'. See above for more information.
-                nlags (int, optional): Number of averaging bins for the
-                    semivariogram. Defualt is 6.
-                weight (boolean, optional): Flag that specifies if semivariance
-                    at smaller lags should be weighted more heavily when
-                    automatically calculating the variogram model. See above for
-                    more information. True indicates that weights will be
-                    applied. Default is False.
-                anisotropy_scaling (float, optional): Scalar stretching value to
-                    take into account anisotropy. Default is 1 (effectively no
-                    stretching). Scaling is applied in the y-direction.
-                anisotropy_angle (float, optional): CCW angle (in degrees) by
-                    which to rotate coordinate system in order to take into
-                    account anisotropy. Default is 0 (no rotation).
-
-        switch_verbose(): Enables/disables program text output. No arguments.
-        switch_plotting(): Enables/disable variogram plot display. No arguments.
-
-        get_epsilon_residuals(): Returns the epsilon residuals of the
-            variogram fit. No arguments.
-        plot_epsilon_residuals(): Plots the epsilon residuals of the variogram
-            fit in the order in which they were calculated. No arguments.
-
-        get_statistics(): Returns the Q1, Q2, and cR statistics for the
-            variogram fit (in that order). No arguments.
-
-        print_statistics(): Prints out the Q1, Q2, and cR statistics for
-            the variogram fit. NOTE that ideally Q1 is close to zero,
-            Q2 is close to 1, and cR is as small as possible.
-
-        execute(style, xpoints, ypoints, mask=None): Calculates a kriged grid.
-            Inputs:
-                style (string): Specifies how to treat input kriging points.
-                    Specifying 'grid' treats xpoints and ypoints as two arrays
-                    of x and y coordinates that define a rectangular grid.
-                    Specifying 'points' treats xpoints and ypoints as two arrays
-                    that provide coordinate pairs at which to solve the kriging
-                    system. Specifying 'masked' treats xpoints and ypoints as
-                    two arrays of x and y coordinates that define a rectangular
-                    grid and uses mask to only evaluate specific points in the
-                    grid.
-                xpoints (array-like, dim Nx1): If style is specific as 'grid' or
-                    'masked', x-coordinates of MxN grid. If style is specified
-                    as 'points', x-coordinates of specific points at which to
-                    solve kriging system.
-                ypoints (array-like, dim Mx1): If style is specified as 'grid'
-                    or 'masked', y-coordinates of MxN grid. If style is
-                    specified as 'points', y-coordinates of specific points at
-                    which to solve kriging system.
-                mask (boolean array, dim MxN, optional): Specifies the points
-                    in the rectangular grid defined by xpoints and ypoints that
-                    are to be excluded in the kriging calculations. Must be
-                    provided if style is specified as 'masked'. False indicates
-                    that the point should not be masked; True indicates that
-                    the point should be masked.
-                backend (string, optional): Specifies which approach to use in
-                    kriging. Specifying 'vectorized' will solve the entire
-                    kriging problem at once in a vectorized operation. This
-                    approach is faster but also can consume a significant amount
-                    of memory for large grids and/or large datasets. Specifying
-                    'loop' will loop through each point at which the kriging
-                    system is to be solved. This approach is slower but also
-                    less memory-intensive. Default is 'vectorized'.
-                    Note that the Cython backend is not supported for UK.
-                specified_drift_arrays (list of numpy arrays, optional):
-                    Specifies the drift values at the points at which the
-                    kriging system is to be evaluated. Required if 'specified'
-                    drift provided in the list of drift terms when instantiating
-                    the UniversalKriging class. Must be a list of arrays in the
-                    same order as the list provided when instantiating the
-                    kriging object. Array(s) must be the same dimension as the
-                    specified grid or have the same number of points as the
-                    specified points; i.e., the arrays either must be dim MxN,
-                    where M is the number of y grid-points and N is the number
-                    of x grid-points, or dim M, where M is the number of points
-                    at which to evaluate the kriging system.
-            Outputs:
-                zvalues (numpy array, dim MxN or dim Nx1): Z-values of specified
-                    grid or at the specified set of points. If style was
-                    specified as 'masked', zvalues will be a numpy masked array.
-                sigmasq (numpy array, dim MxN or dim Nx1): Variance at specified
-                    grid points or at the specified set of points. If style was
-                    specified as 'masked', sigmasq will be a numpy masked array.
-
-    References:
-        P.K. Kitanidis, Introduction to Geostatistcs: Applications in
+    References
+    ----------
+    .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
         Hydrogeology, (Cambridge University Press, 1997) 272 p.
     """
 
@@ -313,9 +210,12 @@ class UniversalKriging:
         # Code assumes 1D input arrays. Ensures that any extraneous dimensions
         # don't get in the way. Copies are created to avoid any problems with
         # referencing the original passed arguments.
-        self.X_ORIG = np.atleast_1d(np.squeeze(np.array(x, copy=True, dtype=np.float64)))
-        self.Y_ORIG = np.atleast_1d(np.squeeze(np.array(y, copy=True, dtype=np.float64)))
-        self.Z = np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float64)))
+        self.X_ORIG = \
+            np.atleast_1d(np.squeeze(np.array(x, copy=True, dtype=np.float64)))
+        self.Y_ORIG = \
+            np.atleast_1d(np.squeeze(np.array(y, copy=True, dtype=np.float64)))
+        self.Z = \
+            np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float64)))
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
@@ -329,18 +229,21 @@ class UniversalKriging:
         self.anisotropy_angle = anisotropy_angle
         if self.verbose:
             print("Adjusting data for anisotropy...")
-        self.X_ADJUSTED, self.Y_ADJUSTED = _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
-                                                                  [self.XCENTER, self.YCENTER],
-                                                                  [self.anisotropy_scaling],
-                                                                  [self.anisotropy_angle]).T
+        self.X_ADJUSTED, self.Y_ADJUSTED = \
+            _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                                   [self.XCENTER, self.YCENTER],
+                                   [self.anisotropy_scaling],
+                                   [self.anisotropy_angle]).T
 
         # set up variogram model and parameters...
         self.variogram_model = variogram_model
         if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
-            raise ValueError("Specified variogram model '%s' is not supported." % variogram_model)
+            raise ValueError("Specified variogram model '%s' "
+                             "is not supported." % variogram_model)
         elif self.variogram_model == 'custom':
             if variogram_function is None or not callable(variogram_function):
-                raise ValueError("Must specify callable function for custom variogram model.")
+                raise ValueError("Must specify callable function for "
+                                 "custom variogram model.")
             else:
                 self.variogram_function = variogram_function
         else:
@@ -400,8 +303,9 @@ class UniversalKriging:
         if self.verbose:
             print("Initializing drift terms...")
 
-        # Note that the regional linear drift values will be based on the adjusted coordinate system.
-        # Really, it doesn't actually matter which coordinate system is used here.
+        # Note that the regional linear drift values will be based
+        # on the adjusted coordinate system, Really, it doesn't actually
+        # matter which coordinate system is used here.
         if 'regional_linear' in drift_terms:
             self.regional_linear_drift = True
             if self.verbose:
@@ -409,12 +313,14 @@ class UniversalKriging:
         else:
             self.regional_linear_drift = False
 
-        # External Z scalars are extracted using the original (unadjusted) coordinates.
+        # External Z scalars are extracted using the original
+        # (unadjusted) coordinates.
         if 'external_Z' in drift_terms:
             if external_drift is None:
                 raise ValueError("Must specify external Z drift terms.")
             if external_drift_x is None or external_drift_y is None:
-                raise ValueError("Must specify coordinates of external Z drift terms.")
+                raise ValueError("Must specify coordinates of "
+                                 "external Z drift terms.")
             self.external_Z_drift = True
             if external_drift.shape[0] != external_drift_y.shape[0] or \
                external_drift.shape[1] != external_drift_x.shape[0]:
@@ -422,8 +328,8 @@ class UniversalKriging:
                    external_drift.shape[1] == external_drift_y.shape[0]:
                     self.external_Z_drift = np.array(external_drift.T)
                 else:
-                    raise ValueError("External drift dimensions do not match provided "
-                                     "x- and y-coordinate dimensions.")
+                    raise ValueError("External drift dimensions do not match "
+                                     "provided x- and y-coordinate dimensions.")
             else:
                 self.external_Z_array = np.array(external_drift)
             self.external_Z_array_x = np.array(external_drift_x).flatten()
@@ -438,45 +344,52 @@ class UniversalKriging:
         # Well coordinates are rotated into adjusted coordinate frame.
         if 'point_log' in drift_terms:
             if point_drift is None:
-                raise ValueError("Must specify location(s) and strength(s) of point drift terms.")
+                raise ValueError("Must specify location(s) and strength(s) "
+                                 "of point drift terms.")
             self.point_log_drift = True
             point_log = np.atleast_2d(np.squeeze(np.array(point_drift, copy=True)))
             self.point_log_array = np.zeros(point_log.shape)
             self.point_log_array[:, 2] = point_log[:, 2]
-            self.point_log_array[:, :2] = _adjust_for_anisotropy(np.vstack((point_log[:, 0], point_log[:, 1])).T,
-                                                                 [self.XCENTER, self.YCENTER],
-                                                                 [self.anisotropy_scaling],
-                                                                 [self.anisotropy_angle])
+            self.point_log_array[:, :2] = \
+                _adjust_for_anisotropy(np.vstack((point_log[:, 0],
+                                                  point_log[:, 1])).T,
+                                       [self.XCENTER, self.YCENTER],
+                                       [self.anisotropy_scaling],
+                                       [self.anisotropy_angle])
             if self.verbose:
-                print("Implementing external point-logarithmic drift; number of points =",
-                      self.point_log_array.shape[0], '\n')
+                print("Implementing external point-logarithmic drift; "
+                      "number of points =", self.point_log_array.shape[0], '\n')
         else:
             self.point_log_drift = False
 
         if 'specified' in drift_terms:
             if type(specified_drift) is not list:
-                raise TypeError("Arrays for specified drift terms must be encapsulated in a list.")
+                raise TypeError("Arrays for specified drift terms must be "
+                                "encapsulated in a list.")
             if len(specified_drift) == 0:
-                raise ValueError("Must provide at least one drift-value array when using the "
-                                 "'specified' drift capability.")
+                raise ValueError("Must provide at least one drift-value array "
+                                 "when using the 'specified' drift capability.")
             self.specified_drift = True
             self.specified_drift_data_arrays = []
             for term in specified_drift:
                 specified = np.squeeze(np.array(term, copy=True))
                 if specified.size != self.X_ORIG.size:
-                    raise ValueError("Must specify the drift values for each data point when using the "
-                                     "'specified' drift capability.")
+                    raise ValueError("Must specify the drift values for each "
+                                     "data point when using the 'specified' "
+                                     "drift capability.")
                 self.specified_drift_data_arrays.append(specified)
         else:
             self.specified_drift = False
 
-        # The provided callable functions will be evaluated using the adjusted coordinates.
+        # The provided callable functions will be evaluated using
+        # the adjusted coordinates.
         if 'functional' in drift_terms:
             if type(functional_drift) is not list:
-                raise TypeError("Callables for functional drift terms must be encapsulated in a list.")
+                raise TypeError("Callables for functional drift terms must "
+                                "be encapsulated in a list.")
             if len(functional_drift) == 0:
-                raise ValueError("Must provide at least one callable object when using the "
-                                 "'functional' drift capability.")
+                raise ValueError("Must provide at least one callable object "
+                                 "when using the 'functional' drift capability.")
             self.functional_drift = True
             self.functional_drift_terms = functional_drift
         else:
@@ -520,15 +433,22 @@ class UniversalKriging:
                         xn = x[m, n]
                         yn = y[m, n]
 
-                if xn > np.amax(self.external_Z_array_x) or xn < np.amin(self.external_Z_array_x) or \
-                   yn > np.amax(self.external_Z_array_y) or yn < np.amin(self.external_Z_array_y):
-                    raise ValueError("External drift array does not cover specified kriging domain.")
+                if xn > np.amax(self.external_Z_array_x) or \
+                   xn < np.amin(self.external_Z_array_x) or \
+                   yn > np.amax(self.external_Z_array_y) or \
+                   yn < np.amin(self.external_Z_array_y):
+                    raise ValueError("External drift array does not cover "
+                                     "specified kriging domain.")
 
                 # bilinear interpolation
-                external_x2_index = np.amin(np.where(self.external_Z_array_x >= xn)[0])
-                external_x1_index = np.amax(np.where(self.external_Z_array_x <= xn)[0])
-                external_y2_index = np.amin(np.where(self.external_Z_array_y >= yn)[0])
-                external_y1_index = np.amax(np.where(self.external_Z_array_y <= yn)[0])
+                external_x2_index = \
+                    np.amin(np.where(self.external_Z_array_x >= xn)[0])
+                external_x1_index = \
+                    np.amax(np.where(self.external_Z_array_x <= xn)[0])
+                external_y2_index = \
+                    np.amin(np.where(self.external_Z_array_y >= yn)[0])
+                external_y1_index = \
+                    np.amax(np.where(self.external_Z_array_y <= yn)[0])
                 if external_y1_index == external_y2_index:
                     if external_x1_index == external_x2_index:
                         z = self.external_Z_array[external_y1_index, external_x1_index]
@@ -580,7 +500,37 @@ class UniversalKriging:
     def update_variogram_model(self, variogram_model, variogram_parameters=None,
                                variogram_function=None, nlags=6, weight=False,
                                anisotropy_scaling=1., anisotropy_angle=0.):
-        """Allows user to update variogram type and/or variogram model parameters."""
+        """Allows user to update variogram type and/or
+        variogram model parameters.
+
+        Parameters
+        ----------
+        variogram_model : str
+            May be any of the variogram models listed above.
+            May also be 'custom', in which case variogram_parameters and
+            variogram_function must be specified.
+        variogram_parameters : list or dict, optional
+            List or dict of variogram model parameters, as explained above.
+            If not provided, a best fit model will be calculated as
+            described above.
+        variogram_function : callable, optional
+            A callable function that must be provided if variogram_model is
+            specified as 'custom'. See above for more information.
+        nlags : int, optional
+            Number of averaging bins for the semivariogram. Defualt is 6.
+        weight : boolean, optional
+            Flag that specifies if semivariance at smaller lags should be
+            weighted more heavily when automatically calculating the
+            variogram model. See above for more information. True indicates
+            that weights will be applied. Default is False.
+        anisotropy_scaling : float, optional
+            Scalar stretching value to take into account anisotropy.
+            Default is 1 (effectively no stretching).
+            Scaling is applied in the y-direction.
+        anisotropy_angle : float, optional
+            CCW angle (in degrees) by which to rotate coordinate system in
+            order to take into account anisotropy. Default is 0 (no rotation).
+        """
 
         if anisotropy_scaling != self.anisotropy_scaling or \
            anisotropy_angle != self.anisotropy_angle:
@@ -599,7 +549,8 @@ class UniversalKriging:
             raise ValueError("Specified variogram model '%s' is not supported." % variogram_model)
         elif self.variogram_model == 'custom':
             if variogram_function is None or not callable(variogram_function):
-                raise ValueError("Must specify callable function for custom variogram model.")
+                raise ValueError("Must specify callable function for "
+                                 "custom variogram model.")
             else:
                 self.variogram_function = variogram_function
         else:
@@ -660,7 +611,8 @@ class UniversalKriging:
         ax = fig.add_subplot(111)
         ax.plot(self.lags, self.semivariance, 'r*')
         ax.plot(self.lags,
-                self.variogram_function(self.variogram_model_parameters, self.lags), 'k-')
+                self.variogram_function(self.variogram_model_parameters,
+                                        self.lags), 'k-')
         plt.show()
 
     def switch_verbose(self):
@@ -684,9 +636,16 @@ class UniversalKriging:
         plt.show()
 
     def get_statistics(self):
+        """Returns the Q1, Q2, and cR statistics for the variogram fit
+        (in that order). No arguments.
+        """
         return self.Q1, self.Q2, self.cR
 
     def print_statistics(self):
+        """Prints out the Q1, Q2, and cR statistics for the variogram fit.
+        NOTE that ideally Q1 is close to zero, Q2 is close to 1,
+        and cR is as small as possible.
+        """
         print("Q1 =", self.Q1)
         print("Q2 =", self.Q2)
         print("cR =", self.cR)
@@ -694,7 +653,8 @@ class UniversalKriging:
     def _get_kriging_matrix(self, n, n_withdrifts):
         """Assembles the kriging matrix."""
 
-        xy = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
+        xy = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
+                             self.Y_ADJUSTED[:, np.newaxis]), axis=1)
         d = cdist(xy, xy, 'euclidean')
         if self.UNBIAS:
             a = np.zeros((n_withdrifts+1, n_withdrifts+1))
@@ -735,7 +695,8 @@ class UniversalKriging:
                 a[i, :n] = func(self.X_ADJUSTED, self.Y_ADJUSTED)
                 i += 1
         if i != n_withdrifts:
-            warnings.warn("Error in creating kriging matrix. Kriging may fail.", RuntimeWarning)
+            warnings.warn("Error in creating kriging matrix. Kriging may fail.",
+                          RuntimeWarning)
         if self.UNBIAS:
             a[n_withdrifts, :n] = 1.0
             a[:n, n_withdrifts] = 1.0
@@ -743,7 +704,8 @@ class UniversalKriging:
 
         return a
 
-    def _exec_vector(self, a, bd, xy, xy_orig, mask, n_withdrifts, spec_drift_grids):
+    def _exec_vector(self, a, bd, xy, xy_orig, mask,
+                     n_withdrifts, spec_drift_grids):
         """Solves the kriging system as a vectorized operation. This method
         can take a lot of memory for large grids and/or large datasets."""
 
@@ -792,12 +754,14 @@ class UniversalKriging:
                 b[:, i, 0] = func(xy[:, 0], xy[:, 1])
                 i += 1
         if i != n_withdrifts:
-            warnings.warn("Error in setting up kriging system. Kriging may fail.", RuntimeWarning)
+            warnings.warn("Error in setting up kriging system. "
+                          "Kriging may fail.", RuntimeWarning)
         if self.UNBIAS:
             b[:, n_withdrifts, 0] = 1.0
 
         if (~mask).any():
-            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n_withdrifts+1, axis=1)
+            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis],
+                               n_withdrifts+1, axis=1)
             b = np.ma.array(b, mask=mask_b)
 
         if self.UNBIAS:
@@ -809,7 +773,8 @@ class UniversalKriging:
 
         return zvalues, sigmasq
 
-    def _exec_loop(self, a, bd_all, xy, xy_orig, mask, n_withdrifts, spec_drift_grids):
+    def _exec_loop(self, a, bd_all, xy, xy_orig, mask,
+                   n_withdrifts, spec_drift_grids):
         """Solves the kriging system by looping over all specified points.
         Less memory-intensive, but involves a Python-level loop."""
 
@@ -863,7 +828,8 @@ class UniversalKriging:
                     b[i, 0] = func(xy[j, 0], xy[j, 1])
                     i += 1
             if i != n_withdrifts:
-                warnings.warn("Error in setting up kriging system. Kriging may fail.", RuntimeWarning)
+                warnings.warn("Error in setting up kriging system. "
+                              "Kriging may fail.", RuntimeWarning)
             if self.UNBIAS:
                 b[n_withdrifts, 0] = 1.0
 
@@ -873,78 +839,96 @@ class UniversalKriging:
 
         return zvalues, sigmasq
 
-    def execute(self, style, xpoints, ypoints, mask=None, backend='vectorized', specified_drift_arrays=None):
-        """Calculates a kriged grid and the associated variance. Includes drift terms.
+    def execute(self, style, xpoints, ypoints, mask=None,
+                backend='vectorized', specified_drift_arrays=None):
+        """Calculates a kriged grid and the associated variance.
+        Includes drift terms.
 
-        This is now the method that performs the main kriging calculation. Note that currently
-        measurements (i.e., z values) are considered 'exact'. This means that, when a specified
-        coordinate for interpolation is exactly the same as one of the data points, the variogram
-        evaluated at the point is forced to be zero. Also, the diagonal of the kriging matrix is
-        also always forced to be zero. In forcing the variogram evaluated at data points to be zero,
-        we are effectively saying that there is no variance at that point (no uncertainty,
+        This is now the method that performs the main kriging calculation.
+        Note that currently measurements (i.e., z values) are considered
+        'exact'. This means that, when a specified coordinate for interpolation
+        is exactly the same as one of the data points, the variogram evaluated
+        at the point is forced to be zero. Also, the diagonal of the kriging
+        matrix is also always forced to be zero. In forcing the variogram
+        evaluated at data points to be zero, we are effectively saying that
+        there is no variance at that point (no uncertainty,
         so the value is 'exact').
 
-        In the future, the code may include an extra 'exact_values' boolean flag that can be
-        adjusted to specify whether to treat the measurements as 'exact'. Setting the flag
-        to false would indicate that the variogram should not be forced to be zero at zero distance
-        (i.e., when evaluated at data points). Instead, the uncertainty in the point will be
-        equal to the nugget. This would mean that the diagonal of the kriging matrix would be set to
-        the nugget instead of to zero.
+        In the future, the code may include an extra 'exact_values' boolean
+        flag that can be adjusted to specify whether to treat the measurements
+        as 'exact'. Setting the flag to false would indicate that the variogram
+        should not be forced to be zero at zero distance (i.e., when evaluated
+        at data points). Instead, the uncertainty in the point will be equal to
+        the nugget. This would mean that the diagonal of the kriging matrix
+        would be set to the nugget instead of to zero.
 
-        Inputs:
-            style (string): Specifies how to treat input kriging points.
-                Specifying 'grid' treats xpoints and ypoints as two arrays of
-                x and y coordinates that define a rectangular grid.
-                Specifying 'points' treats xpoints and ypoints as two arrays
-                that provide coordinate pairs at which to solve the kriging system.
-                Specifying 'masked' treats xpoints and ypoints as two arrays of
-                x and y coordinates that define a rectangular grid and uses mask
-                to only evaluate specific points in the grid.
-            xpoints (array-like, dim N): If style is specific as 'grid' or 'masked',
-                x-coordinates of MxN grid. If style is specified as 'points',
-                x-coordinates of specific points at which to solve kriging system.
-            ypoints (array-like, dim M): If style is specified as 'grid' or 'masked',
-                y-coordinates of MxN grid. If style is specified as 'points',
-                y-coordinates of specific points at which to solve kriging system.
-                Note that in this case, xpoints and ypoints must have the same dimensions
-                (i.e., M = N).
-            mask (boolean array, dim MxN, optional): Specifies the points in the rectangular
-                grid defined by xpoints and ypoints that are to be excluded in the
-                kriging calculations. Must be provided if style is specified as 'masked'.
-                False indicates that the point should not be masked, so the kriging system
-                will be solved at the point.
-                True indicates that the point should be masked, so the kriging system should
-                will not be solved at the point.
-            backend (string, optional): Specifies which approach to use in kriging.
-                Specifying 'vectorized' will solve the entire kriging problem at once in a
-                vectorized operation. This approach is faster but also can consume a
-                significant amount of memory for large grids and/or large datasets.
-                Specifying 'loop' will loop through each point at which the kriging system
-                is to be solved. This approach is slower but also less memory-intensive.
-                Default is 'vectorized'. Note that Cython backend is not supported for UK.
-            specified_drift_arrays (list of array-like objects, optional): Specifies the drift
-                values at the points at which the kriging system is to be evaluated. Required if
-                'specified' drift provided in the list of drift terms when instantiating the
-                UniversalKriging class. Must be a list of arrays in the same order as the list
-                provided when instantiating the kriging object. Array(s) must be the same dimension
-                as the specified grid or have the same number of points as the specified points;
-                i.e., the arrays either must be dim MxN, where M is the number of y grid-points
-                and N is the number of x grid-points, or dim M, where M is the number of points
-                at which to evaluate the kriging system.
-        Outputs:
-            zvalues (numpy array, dim MxN or dim Nx1): Z-values of specified grid or at the
-                specified set of points. If style was specified as 'masked', zvalues will
-                be a numpy masked array.
-            sigmasq (numpy array, dim MxN or dim Nx1): Variance at specified grid points or
-                at the specified set of points. If style was specified as 'masked', sigmasq
-                will be a numpy masked array.
+        Parameters
+        ----------
+        style : str
+            Specifies how to treat input kriging points. Specifying 'grid'
+            treats xpoints and ypoints as two arrays of x and y coordinates
+            that define a rectangular grid. Specifying 'points' treats xpoints
+            and ypoints as two arrays that provide coordinate pairs at which
+            to solve the kriging system. Specifying 'masked' treats xpoints and
+            ypoints as two arrays of x and y coordinates that define a
+            rectangular grid and uses mask to only evaluate specific points
+            in the grid.
+        xpoints : array_like, dim N
+            If style is specific as 'grid' or 'masked', x-coordinates of
+            MxN grid. If style is specified as 'points', x-coordinates of
+            specific points at which to solve kriging system.
+        ypoints : array-like, dim M)
+            If style is specified as 'grid' or 'masked', y-coordinates of
+            MxN grid. If style is specified as 'points', y-coordinates of
+            specific points at which to solve kriging system.
+            Note that in this case, xpoints and ypoints must have the same
+            dimensions (i.e., M = N).
+        mask : boolean array, dim MxN, optional
+            Specifies the points in the rectangular grid defined by xpoints and
+            ypoints that are to be excluded in the kriging calculations.
+            Must be provided if style is specified as 'masked'. False indicates
+            that the point should not be masked, so the kriging system will be
+            solved at the point. True indicates that the point should be masked,
+            so the kriging system should will not be solved at the point.
+        backend : str, optional
+            Specifies which approach to use in kriging. Specifying 'vectorized'
+            will solve the entire kriging problem at once in a vectorized
+            operation. This approach is faster but also can consume a
+            significant amount of memory for large grids and/or large datasets.
+            Specifying 'loop' will loop through each point at which the kriging
+            system is to be solved. This approach is slower but also less
+            memory-intensive. Default is 'vectorized'.
+            Note that Cython backend is not supported for UK.
+        specified_drift_arrays : list of array-like objects, optional
+            Specifies the drift values at the points at which the kriging
+            system is to be evaluated. Required if 'specified' drift provided
+            in the list of drift terms when instantiating the UniversalKriging
+            class. Must be a list of arrays in the same order as the list
+            provided when instantiating the kriging object. Array(s) must be
+            the same dimension as the specified grid or have the same number of
+            points as the specified points; i.e., the arrays either must be
+            dim MxN, where M is the number of y grid-points and N is the number
+            of x grid-points, or dim M, where M is the number of points
+            at which to evaluate the kriging system.
+
+        Returns
+        -------
+        zvalues : ndarray, dim MxN or dim Nx1
+            Z-values of specified grid or at the specified set of points.
+            If style was specified as 'masked', zvalues will be a numpy
+            masked array.
+        sigmasq : ndarray, dim MxN or dim Nx1
+            Variance at specified grid points or at the specified set of points.
+            If style was specified as 'masked', sigmasq will be a numpy
+            masked array.
         """
 
         if self.verbose:
             print("Executing Universal Kriging...\n")
 
         if style != 'grid' and style != 'masked' and style != 'points':
-            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
+            raise ValueError("style argument must be 'grid', 'points', "
+                             "or 'masked'")
 
         n = self.X_ADJUSTED.shape[0]
         n_withdrifts = n
@@ -967,12 +951,14 @@ class UniversalKriging:
         if style in ['grid', 'masked']:
             if style == 'masked':
                 if mask is None:
-                    raise IOError("Must specify boolean masking array when style is 'masked'.")
+                    raise IOError("Must specify boolean masking array when "
+                                  "style is 'masked'.")
                 if mask.shape[0] != ny or mask.shape[1] != nx:
                     if mask.shape[0] == nx and mask.shape[1] == ny:
                         mask = mask.T
                     else:
-                        raise ValueError("Mask dimensions do not match specified grid dimensions.")
+                        raise ValueError("Mask dimensions do not match "
+                                         "specified grid dimensions.")
                 mask = mask.flatten()
             npt = ny*nx
             grid_x, grid_y = np.meshgrid(xpts, ypts)
@@ -981,65 +967,86 @@ class UniversalKriging:
 
         elif style == 'points':
             if xpts.size != ypts.size:
-                raise ValueError("xpoints and ypoints must have same dimensions "
-                                 "when treated as listing discrete points.")
+                raise ValueError("xpoints and ypoints must have same "
+                                 "dimensions when treated as listing "
+                                 "discrete points.")
             npt = nx
         else:
-            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
+            raise ValueError("style argument must be 'grid', 'points', "
+                             "or 'masked'")
 
         if specified_drift_arrays is None:
             specified_drift_arrays = []
         spec_drift_grids = []
         if self.specified_drift:
             if len(specified_drift_arrays) == 0:
-                raise ValueError("Must provide drift values for kriging points when using "
-                                 "'specified' drift capability.")
+                raise ValueError("Must provide drift values for kriging points "
+                                 "when using 'specified' drift capability.")
             if type(specified_drift_arrays) is not list:
-                raise TypeError("Arrays for specified drift terms must be encapsulated in a list.")
+                raise TypeError("Arrays for specified drift terms must be "
+                                "encapsulated in a list.")
             for spec in specified_drift_arrays:
                 if style in ['grid', 'masked']:
                     if spec.ndim < 2:
-                        raise ValueError("Dimensions of drift values array do not match specified grid dimensions.")
+                        raise ValueError("Dimensions of drift values array do "
+                                         "not match specified grid dimensions.")
                     elif spec.shape[0] != ny or spec.shape[1] != nx:
                         if spec.shape[0] == nx and spec.shape[1] == ny:
                             spec_drift_grids.append(np.squeeze(spec.T))
                         else:
-                            raise ValueError("Dimensions of drift values array do not match specified grid dimensions.")
+                            raise ValueError("Dimensions of drift values array "
+                                             "do not match specified grid "
+                                             "dimensions.")
                     else:
                         spec_drift_grids.append(np.squeeze(spec))
                 elif style == 'points':
                     if spec.ndim != 1:
-                        raise ValueError("Dimensions of drift values array do not match specified grid dimensions.")
+                        raise ValueError("Dimensions of drift values array do "
+                                         "not match specified grid dimensions.")
                     elif spec.shape[0] != xpts.size:
-                        raise ValueError("Number of supplied drift values in array do not match "
-                                         "specified number of kriging points.")
+                        raise ValueError("Number of supplied drift values in "
+                                         "array do not match specified number "
+                                         "of kriging points.")
                     else:
                         spec_drift_grids.append(np.squeeze(spec))
             if len(spec_drift_grids) != len(self.specified_drift_data_arrays):
-                raise ValueError("Inconsistent number of specified drift terms supplied.")
+                raise ValueError("Inconsistent number of specified drift "
+                                 "terms supplied.")
         else:
             if len(specified_drift_arrays) != 0:
-                warnings.warn("Provided specified drift values, but 'specified' drift was not initialized during "
-                              "instantiation of UniversalKriging class.", RuntimeWarning)
+                warnings.warn("Provided specified drift values, but "
+                              "'specified' drift was not initialized during "
+                              "instantiation of UniversalKriging class.",
+                              RuntimeWarning)
 
-        xy_points_original = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
-        xpts, ypts = _adjust_for_anisotropy(np.vstack((xpts, ypts)).T, [self.XCENTER, self.YCENTER],
-                                            [self.anisotropy_scaling], [self.anisotropy_angle]).T
-        xy_points = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
-        xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1)
+        xy_points_original = \
+            np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
+        xpts, ypts = _adjust_for_anisotropy(np.vstack((xpts, ypts)).T,
+                                            [self.XCENTER, self.YCENTER],
+                                            [self.anisotropy_scaling],
+                                            [self.anisotropy_angle]).T
+        xy_points = \
+            np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
+        xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
+                                  self.Y_ADJUSTED[:, np.newaxis]), axis=1)
 
         if style != 'masked':
             mask = np.zeros(npt, dtype='bool')
 
         bd = cdist(xy_points,  xy_data, 'euclidean')
         if backend == 'vectorized':
-            zvalues, sigmasq = self._exec_vector(a, bd, xy_points, xy_points_original,
-                                                 mask, n_withdrifts, spec_drift_grids)
+            zvalues, sigmasq = self._exec_vector(a, bd, xy_points,
+                                                 xy_points_original,
+                                                 mask, n_withdrifts,
+                                                 spec_drift_grids)
         elif backend == 'loop':
-            zvalues, sigmasq = self._exec_loop(a, bd, xy_points, xy_points_original,
-                                               mask, n_withdrifts, spec_drift_grids)
+            zvalues, sigmasq = self._exec_loop(a, bd, xy_points,
+                                               xy_points_original,
+                                               mask, n_withdrifts,
+                                               spec_drift_grids)
         else:
-            raise ValueError('Specified backend {} is not supported for 2D universal kriging.'.format(backend))
+            raise ValueError('Specified backend {} is not supported '
+                             'for 2D universal kriging.'.format(backend))
 
         if style == 'masked':
             zvalues = np.ma.array(zvalues, mask=mask)
