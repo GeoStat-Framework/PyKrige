@@ -28,11 +28,11 @@ def write_asc_grid(x, y, z, filename='output.asc', style=1):
 
     Parameters
     ----------
-    x : array_like, dim Nx1
+    x : array_like, shape (N,) or (N, 1)
         X-coordinates of grid points at center of cells.
-    y : array_like, dim Mx1
+    y : array_like, shape (M,) or (M, 1)
         Y-coordinates of grid points at center of cells.
-    z : array_like, dim MxN
+    z : array_like, shape (M, N)
         Gridded data values. May be a masked array.
     filename : string, optional
         Name of output *.asc file. Default name is 'output.asc'.
@@ -131,14 +131,14 @@ def read_asc_grid(filename, footer=0):
 
     Returns
     -------
-    grid_array : numpy array
-        MxN array of grid values, where M is number of Y-coordinates and
+    grid_array : numpy array, shape (M, N)
+        (M, N) array of grid values, where M is number of Y-coordinates and
         N is number of X-coordinates. The array entry corresponding to
         the lower-left coordinates is at index [M, 0], so that
         the array is oriented as it would be in X-Y space.
-    x : numpy array
+    x : numpy array, shape (N,)
         1D array of N X-coordinates.
-    y : numpy array
+    y : numpy array, shape (M,)
         1D array of M Y-coordinates.
     CELLSIZE : tuple or float
         Either a two-tuple of (x-cell size, y-cell size),

@@ -153,8 +153,8 @@ class UniversalKriging3D:
         and 'functional'.
     specified_drift : list of array-like objects, optional
         List of arrays that contain the drift values at data points.
-        The arrays must be dim N, where N is the number of data points.
-        Any number of specified-drift terms may be used.
+        The arrays must be shape (N,) or (N, 1), where N is the number of
+        data points. Any number of specified-drift terms may be used.
     functional_drift : list of callable objects, optional
         List of callable functions that will be used to evaluate drift terms.
         The function must be a function of only the three spatial coordinates
@@ -497,7 +497,7 @@ class UniversalKriging3D:
         return self.epsilon
 
     def plot_epsilon_residuals(self):
-        """Plots the epsilon residuals for the variogram fit. No arguments"""
+        """Plots the epsilon residuals for the variogram fit. No arguments."""
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.scatter(range(self.epsilon.size), self.epsilon, c='k', marker='*')
@@ -710,23 +710,23 @@ class UniversalKriging3D:
             'masked' treats xpoints, ypoints, and zpoints as arrays of x, y,
             and z coordinates that define a rectangular grid and uses mask
             to only evaluate specific points in the grid.
-        xpoints : array_like, dim N
+        xpoints : array_like, shape (N,) or (N, 1)
             If style is specific as 'grid' or 'masked', x-coordinates of
-            MxNxL grid. If style is specified as 'points', x-coordinates of
+            LxMxN grid. If style is specified as 'points', x-coordinates of
             specific points at which to solve kriging system.
-        ypoints : array_like, dim M
+        ypoints : array_like, shape (M,) or (M, 1)
             If style is specified as 'grid' or 'masked', y-coordinates of
             LxMxN grid. If style is specified as 'points', y-coordinates of
             specific points at which to solve kriging system. Note that in this
             case, xpoints, ypoints, and zpoints must have the same dimensions
             (i.e., L = M = N).
-        zpoints : array_like, dim L
+        zpoints : array_like, shape (L,) or (L, 1)
             If style is specified as 'grid' or 'masked', z-coordinates of
             LxMxN grid. If style is specified as 'points', z-coordinates of
             specific points at which to solve kriging system. Note that in this
             case, xpoints, ypoints, and zpoints must have the same dimensions
             (i.e., L = M = N).
-        mask : boolean array, dim LxMxN, optional
+        mask : boolean array, shape (L, M, N), optional
             Specifies the points in the rectangular grid defined by xpoints,
             ypoints, zpoints that are to be excluded in the kriging
             calculations. Must be provided if style is specified as 'masked'.
@@ -750,18 +750,18 @@ class UniversalKriging3D:
             provided when instantiating the kriging object. Array(s) must be
             the same dimension as the specified grid or have the same number
             of points as the specified points; i.e., the arrays either must be
-            dim LxMxN, where L is the number of z grid-points, M is the number
-            of y grid-points, and N is the number of x grid-points, or dim N,
-            where N is the number of points at which to evaluate the
-            kriging system.
+            shape (L, M, N), where L is the number of z grid-points,
+            M is the number of y grid-points, and N is the number of
+            x grid-points, or shape (N,) or (N, 1), where N is the number of
+            points at which to evaluate the kriging system.
 
         Returns
         -------
-        kvalues : ndarray, dim LxMxN or dim N
+        kvalues : ndarray, shape (L, M, N) or (N,) or (N, 1)
             Interpolated values of specified grid or at the specified set
             of points. If style was specified as 'masked', kvalues will be a
             numpy masked array.
-        sigmasq : ndarray, dim LxMxN or dim N
+        sigmasq : ndarray, shape (L, M, N) or (N,) or (N, 1)
             Variance at specified grid points or at the specified set of points.
             If style was specified as 'masked', sigmasq will be a numpy
             masked array.

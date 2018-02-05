@@ -398,7 +398,7 @@ class OrdinaryKriging3D:
             print("cR =", self.cR, '\n')
 
     def display_variogram_model(self):
-        """Displays variogram model with the actual binned data"""
+        """Displays variogram model with the actual binned data."""
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(self.lags, self.semivariance, 'r*')
@@ -592,23 +592,23 @@ class OrdinaryKriging3D:
             Specifying 'masked' treats xpoints, ypoints, and zpoints as arrays
             of x, y, and z coordinates that define a rectangular grid and uses
             mask to only evaluate specific points in the grid.
-        xpoints : array_like, dim N
+        xpoints : array_like, shape (N,) or (N, 1)
             If style is specific as 'grid' or 'masked', x-coordinates of
             LxMxN grid. If style is specified as 'points', x-coordinates of
             specific points at which to solve kriging system.
-        ypoints : array-like, dim M
+        ypoints : array-like, shape (M,) or (M, 1)
             If style is specified as 'grid' or 'masked', y-coordinates of
             LxMxN grid. If style is specified as 'points', y-coordinates of
             specific points at which to solve kriging system.
             Note that in this case, xpoints, ypoints, and zpoints must have the
             same dimensions (i.e., L = M = N).
-        zpoints : array-like, dim L
+        zpoints : array-like, shape (L,) or (L, 1)
             If style is specified as 'grid' or 'masked', z-coordinates of
             LxMxN grid. If style is specified as 'points', z-coordinates of
             specific points at which to solve kriging system.
             Note that in this case, xpoints, ypoints, and zpoints must have the
             same dimensions (i.e., L = M = N).
-        mask : boolean array, dim LxMxN, optional
+        mask : boolean array, shape (L, M, N), optional
             Specifies the points in the rectangular grid defined by xpoints,
             ypoints, zpoints that are to be excluded in the
             kriging calculations. Must be provided if style is specified
@@ -633,11 +633,11 @@ class OrdinaryKriging3D:
 
         Returns
         -------
-        kvalues : ndarray, dim LxMxN or dim Nx1
+        kvalues : ndarray, shape (L, M, N) or (N, 1)
             Interpolated values of specified grid or at the specified set
             of points. If style was specified as 'masked', kvalues will be a
             numpy masked array.
-        sigmasq : ndarray, dim LxMxN or dim Nx1
+        sigmasq : ndarray, shape (L, M, N) or (N, 1)
             Variance at specified grid points or at the specified set of points.
             If style was specified as 'masked', sigmasq will be a numpy
             masked array.

@@ -45,7 +45,7 @@ class UniversalKriging:
         Y-coordinates of data points.
     z : array_like
         Values at data points.
-    variogram_model: str, optional)
+    variogram_model: str, optional
         Specified which variogram model to use; may be one of the following:
         linear, power, gaussian, spherical, exponential, hole-effect.
         Default is linear variogram model. To utilize a custom variogram model,
@@ -132,8 +132,8 @@ class UniversalKriging:
         'specified', and 'functional'.
     point_drift : array_like, optional
         Array-like object that contains the coordinates and strengths of the
-        point-logarithmic drift terms. Array shape must be Nx3, where N is the
-        number of point drift terms. First column (index 0) must contain
+        point-logarithmic drift terms. Array shape must be (N, 3), where N is
+        the number of point drift terms. First column (index 0) must contain
         x-coordinates, second column (index 1) must contain y-coordinates,
         and third column (index 2) must contain the strengths of each
         point term. Strengths are relative, so only the relation of the values
@@ -145,23 +145,23 @@ class UniversalKriging:
         drift values will be calculated in the adjusted data frame.
     external_drift : array_like, optional
         Gridded data used for the external Z scalar drift term.
-        Must be dim MxN, where M is in the y-direction and N is in the
+        Must be shape (M, N), where M is in the y-direction and N is in the
         x-direction. Grid spacing does not need to be constant. If grid spacing
         is not constant, must specify the grid cell sizes. If the problem
         involves anisotropy, the external drift values are extracted based on
         the pre-adjusted coordinates (i.e., the original coordinate system).
     external_drift_x : array_like, optional
-        X-coordinates for gridded external Z-scalar data. Must be dim M or Mx1
-        (where M is the number of grid cells in the x-direction).
+        X-coordinates for gridded external Z-scalar data. Must be shape (M,)
+        or (M, 1), where M is the number of grid cells in the x-direction.
         The coordinate is treated as the center of the cell.
     external_drift_y : array_like, optional
-        Y-coordinates for gridded external Z-scalar data. Must be dim N or Nx1
-        (where N is the number of grid cells in the y-direction).
+        Y-coordinates for gridded external Z-scalar data. Must be shape (N,)
+        or (N, 1), where N is the number of grid cells in the y-direction.
         The coordinate is treated as the center of the cell.
     specified_drift : list of array-like objects, optional
         List of arrays that contain the drift values at data points.
-        The arrays must be dim N, where N is the number of data points.
-        Any number of specified-drift terms may be used.
+        The arrays must be shape (N,) or (N, 1), where N is the number of
+        data points. Any number of specified-drift terms may be used.
     functional_drift : list of callable objects, optional
         List of callable functions that will be used to evaluate drift terms.
         The function must be a function of only the two spatial coordinates
@@ -606,7 +606,7 @@ class UniversalKriging:
             print("cR =", self.cR, '\n')
 
     def display_variogram_model(self):
-        """Displays variogram model with the actual binned data"""
+        """Displays variogram model with the actual binned data."""
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(self.lags, self.semivariance, 'r*')
@@ -873,17 +873,17 @@ class UniversalKriging:
             ypoints as two arrays of x and y coordinates that define a
             rectangular grid and uses mask to only evaluate specific points
             in the grid.
-        xpoints : array_like, dim N
+        xpoints : array_like, shape (N,) or (N, 1)
             If style is specific as 'grid' or 'masked', x-coordinates of
             MxN grid. If style is specified as 'points', x-coordinates of
             specific points at which to solve kriging system.
-        ypoints : array-like, dim M)
+        ypoints : array-like, shape (M,) or (M, 1)
             If style is specified as 'grid' or 'masked', y-coordinates of
             MxN grid. If style is specified as 'points', y-coordinates of
             specific points at which to solve kriging system.
             Note that in this case, xpoints and ypoints must have the same
             dimensions (i.e., M = N).
-        mask : boolean array, dim MxN, optional
+        mask : boolean array, shape (M, N), optional
             Specifies the points in the rectangular grid defined by xpoints and
             ypoints that are to be excluded in the kriging calculations.
             Must be provided if style is specified as 'masked'. False indicates
@@ -907,17 +907,17 @@ class UniversalKriging:
             provided when instantiating the kriging object. Array(s) must be
             the same dimension as the specified grid or have the same number of
             points as the specified points; i.e., the arrays either must be
-            dim MxN, where M is the number of y grid-points and N is the number
-            of x grid-points, or dim M, where M is the number of points
-            at which to evaluate the kriging system.
+            shape (M, N), where M is the number of y grid-points and N is the
+            number of x grid-points, or shape (M, ) or (N, 1), where M is the
+            number of  points at which to evaluate the kriging system.
 
         Returns
         -------
-        zvalues : ndarray, dim MxN or dim Nx1
+        zvalues : ndarray, shape (M, N) or (N, 1)
             Z-values of specified grid or at the specified set of points.
             If style was specified as 'masked', zvalues will be a numpy
             masked array.
-        sigmasq : ndarray, dim MxN or dim Nx1
+        sigmasq : ndarray, shape (M, N) or (N, 1)
             Variance at specified grid points or at the specified set of points.
             If style was specified as 'masked', sigmasq will be a numpy
             masked array.

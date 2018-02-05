@@ -12,50 +12,9 @@ bscott.murphy@gmail.com
 
 Summary
 -------
-Function definitions for variogram models.
-
-Routines
---------
-linear_variogram_model(m, d)
-    m : array_like
-        [slope, nugget]
-    d : array_like
-        Points at which to calculate variogram model.
-power_variogram_model(m, d)
-    m : array_like
-        [scale, exponent, nugget]
-    d : array_like
-        Points at which to calculate variogram model.
-gaussian_variogram_model(m, d)
-    m : array_like
-        [psill, range, nugget]
-    d : array_like
-        Points at which to calculate variogram model.
-exponential_variogram_model(m, d)
-    m : array_like
-        [psill, range, nugget]
-    d : array_like
-        Points at which to calculate variogram model.
-spherical_variogram_model(m, d)
-    m : array_like
-        [psill, range, nugget]
-    d : array_like
-        Points at which to calculate variogram model.
-hole_effect_variogram_model(m, d)
-    m : array_like
-        [psill, range, nugget]
-    d : array_like
-        Points at which to calculate variogram model.
-
-.. note :: These functions use the partial sill (psill = sill - nugget) rather
-            than the full sill. The PyKrige user interface by default takes
-            the full sill (although this can be changed with a flag), but it's
-            safer to perform automatic variogram estimation using
-            the partial sill
-
-.. note :: Kitanidis says the hole-effect variogram model is only correct for
-    the 1D case. It's implemented here for completeness and should
-    be used cautiously.
+Function definitions for variogram models. In each function, m is a list of
+defining parameters and d is an array of the distance values at which to
+calculate the variogram model.
 
 References
 ----------
@@ -69,12 +28,14 @@ import numpy as np
 
 
 def linear_variogram_model(m, d):
+    """Linear model, m is [slope, nugget]"""
     slope = float(m[0])
     nugget = float(m[1])
     return slope * d + nugget
 
 
 def power_variogram_model(m, d):
+    """Power model, m is [scale, exponent, nugget]"""
     scale = float(m[0])
     exponent = float(m[1])
     nugget = float(m[2])
@@ -82,6 +43,7 @@ def power_variogram_model(m, d):
 
 
 def gaussian_variogram_model(m, d):
+    """Gaussian model, m is [psill, range, nugget]"""
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
@@ -89,6 +51,7 @@ def gaussian_variogram_model(m, d):
 
 
 def exponential_variogram_model(m, d):
+    """Exponential model, m is [psill, range, nugget]"""
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
@@ -96,6 +59,7 @@ def exponential_variogram_model(m, d):
 
 
 def spherical_variogram_model(m, d):
+    """Spherical model, m is [psill, range, nugget]"""
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
@@ -104,6 +68,7 @@ def spherical_variogram_model(m, d):
 
 
 def hole_effect_variogram_model(m, d):
+    """Hole Effect model, m is [psill, range, nugget]"""
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])

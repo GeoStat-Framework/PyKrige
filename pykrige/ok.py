@@ -95,14 +95,14 @@ class OrdinaryKriging:
         deep in the code.
         NOTE that, while the list format expects the full sill, the code
         itself works internally with the partial sill.
-    variogram_function : callable, optional)
+    variogram_function : callable, optional
         A callable function that must be provided if variogram_model is
         specified as 'custom'. The function must take only two arguments:
         first, a list of parameters for the variogram model; second, the
         distances at which to calculate the variogram model. The list
         provided in variogram_parameters will be passed to the function
         as the first argument.
-    nlags : int, optional)
+    nlags : int, optional
         Number of averaging bins for the semivariogram. Default is 6.
     weight : bool, optional
         Flag that specifies if semivariance at smaller lags should be weighted
@@ -395,7 +395,7 @@ class OrdinaryKriging:
             print("cR =", self.cR, '\n')
 
     def display_variogram_model(self):
-        """Displays variogram model with the actual binned data"""
+        """Displays variogram model with the actual binned data."""
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(self.lags, self.semivariance, 'r*')
@@ -578,62 +578,62 @@ class OrdinaryKriging:
 
         Parameters
         ----------
-            style : str
-                Specifies how to treat input kriging points. Specifying 'grid'
-                treats xpoints and ypoints as two arrays of x and y coordinates
-                that define a rectangular grid. Specifying 'points' treats
-                xpoints and ypoints as two arrays that provide coordinate pairs
-                at which to solve the kriging system. Specifying 'masked'
-                treats xpoints and ypoints as two arrays of x and y coordinates
-                that define a rectangular grid and uses mask to only evaluate
-                specific points in the grid.
-            xpoints : array_like, dim N
-                If style is specific as 'grid' or 'masked',
-                x-coordinates of MxN grid. If style is specified as 'points',
-                x-coordinates of specific points at which to solve
-                kriging system.
-            ypoints : array_like, dim M
-                If style is specified as 'grid' or 'masked',
-                y-coordinates of MxN grid. If style is specified as 'points',
-                y-coordinates of specific points at which to solve kriging
-                system. Note that in this case, xpoints and ypoints must have
-                the same dimensions (i.e., M = N).
-            mask : bool, array_like, dim MxN, optional
-                Specifies the points in the rectangular grid defined
-                by xpoints and ypoints that are to be excluded in the
-                kriging calculations. Must be provided if style is specified
-                as 'masked'. False indicates that the point should not be
-                masked, so the kriging system will be solved at the point.
-                True indicates that the point should be masked, so the kriging
-                system should will not be solved at the point.
-            backend : str, optional
-                Specifies which approach to use in kriging.
-                Specifying 'vectorized' will solve the entire kriging problem
-                at once in a vectorized operation. This approach is faster but
-                also can consume a significant amount of memory for large grids
-                and/or large datasets. Specifying 'loop' will loop through each
-                point at which the kriging system is to be solved.
-                This approach is slower but also less memory-intensive.
-                Specifying 'C' will utilize a loop in Cython.
-                Default is 'vectorized'.
-            n_closest_points : int, optional
-                For kriging with a moving window, specifies the number of
-                nearby points to use in the calculation. This can speed up the
-                calculation for large datasets, but should be used
-                with caution. As Kitanidis notes, kriging with a moving window
-                can produce unexpected oddities if the variogram model
-                is not carefully chosen.
+        style : str
+            Specifies how to treat input kriging points. Specifying 'grid'
+            treats xpoints and ypoints as two arrays of x and y coordinates
+            that define a rectangular grid. Specifying 'points' treats
+            xpoints and ypoints as two arrays that provide coordinate pairs
+            at which to solve the kriging system. Specifying 'masked'
+            treats xpoints and ypoints as two arrays of x and y coordinates
+            that define a rectangular grid and uses mask to only evaluate
+            specific points in the grid.
+        xpoints : array_like, shape (N,) or (N, 1)
+            If style is specific as 'grid' or 'masked',
+            x-coordinates of MxN grid. If style is specified as 'points',
+            x-coordinates of specific points at which to solve
+            kriging system.
+        ypoints : array_like, shape (M,) or (M, 1)
+            If style is specified as 'grid' or 'masked',
+            y-coordinates of MxN grid. If style is specified as 'points',
+            y-coordinates of specific points at which to solve kriging
+            system. Note that in this case, xpoints and ypoints must have
+            the same dimensions (i.e., M = N).
+        mask : bool, array_like, shape (M, N), optional
+            Specifies the points in the rectangular grid defined
+            by xpoints and ypoints that are to be excluded in the
+            kriging calculations. Must be provided if style is specified
+            as 'masked'. False indicates that the point should not be
+            masked, so the kriging system will be solved at the point.
+            True indicates that the point should be masked, so the kriging
+            system should will not be solved at the point.
+        backend : str, optional
+            Specifies which approach to use in kriging.
+            Specifying 'vectorized' will solve the entire kriging problem
+            at once in a vectorized operation. This approach is faster but
+            also can consume a significant amount of memory for large grids
+            and/or large datasets. Specifying 'loop' will loop through each
+            point at which the kriging system is to be solved.
+            This approach is slower but also less memory-intensive.
+            Specifying 'C' will utilize a loop in Cython.
+            Default is 'vectorized'.
+        n_closest_points : int, optional
+            For kriging with a moving window, specifies the number of
+            nearby points to use in the calculation. This can speed up the
+            calculation for large datasets, but should be used
+            with caution. As Kitanidis notes, kriging with a moving window
+            can produce unexpected oddities if the variogram model
+            is not carefully chosen.
 
         Returns
         -------
-            zvalues : ndarray, dim MxN or dim Nx1
-                Z-values of specified grid or at the specified set of points.
-                If style was specified as 'masked', zvalues will
-                be a numpy masked array.
-            sigmasq : ndarray, dim MxN or dim Nx1
-                Variance at specified grid points or at the specified
-                set of points. If style was specified as 'masked', sigmasq
-                will be a numpy masked array.
+        zvalues : ndarray, shape (M, N) or (N, 1)
+            Z-values of specified grid or at the specified set of points.
+            If style was specified as 'masked', zvalues will
+            be a numpy masked array.
+        sigmasq : ndarray, shape (M, N) or (N, 1)
+            Variance at specified grid points or at the specified
+            set of points. If style was specified as 'masked', sigmasq
+            will be a numpy masked array.
         """
 
         if self.verbose:

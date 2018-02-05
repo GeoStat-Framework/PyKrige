@@ -11,5 +11,6 @@ Contents
    :maxdepth: 2
 
    overview
+   variogram_models
    api
    examples/index
