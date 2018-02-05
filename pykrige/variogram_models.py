@@ -3,62 +3,39 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-__doc__ = """Code by Benjamin S. Murphy
+__doc__ = """
+PyKrige
+=======
+
+Code by Benjamin S. Murphy and the PyKrige Developers
 bscott.murphy@gmail.com
 
-Dependencies:
-    numpy
+Summary
+-------
+Function definitions for variogram models. In each function, m is a list of
+defining parameters and d is an array of the distance values at which to
+calculate the variogram model.
 
-Methods:
+References
+----------
+.. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
+    Hydrogeology, (Cambridge University Press, 1997) 272 p.
 
-    linear_variogram_model(m, d):
-        m (array-like): [slope, nugget]
-        d (array-like): Points at which to calculate variogram model.
-
-    power_variogram_model(m, d):
-        m (array-like): [scale, exponent, nugget]
-        d (array-like): Points at which to calculate variogram model.
-
-    gaussian_variogram_model(m, d):
-        m (array-like): [psill, range, nugget]
-        d (array-like): Points at which to calculate variogram model.
-
-    exponential_variogram_model(m, d):
-        m (array-like): [psill, range, nugget]
-        d (array-like): Points at which to calculate variogram model.
-
-    spherical_variogram_model(m, d):
-        m (array-like): [psill, range, nugget]
-        d (array-like): Points at which to calculate variogram model.
-
-    hole_effect_variogram_model(m, d):
-        m (array-like): [psill, range, nugget]
-        d (array-like): Points at which to calculate variogram model.
-
-*** NOTE these functions use the partial sill (psill = sill - nugget) rather than the full sill...
-    the PyKrige user interface by default takes the full sill (although this can be changed with a flag),
-    but it's safer to perform automatic variogram estimation using the partial sill
-
-*** ALSO NOTE that Kitanidis says the hole-effect variogram model is only correct for the 1D case...
-    it's implemented here for completeness and should be used cautiously...
-
-References:
-    P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
-    (Cambridge University Press, 1997) 272 p.
-
-Copyright (c) 2015-2017 Benjamin S. Murphy
+Copyright (c) 2015-2018, PyKrige Developers
 """
 
 import numpy as np
 
 
 def linear_variogram_model(m, d):
+    """Linear model, m is [slope, nugget]"""
     slope = float(m[0])
     nugget = float(m[1])
     return slope * d + nugget
 
 
 def power_variogram_model(m, d):
+    """Power model, m is [scale, exponent, nugget]"""
     scale = float(m[0])
     exponent = float(m[1])
     nugget = float(m[2])
@@ -66,6 +43,7 @@ def power_variogram_model(m, d):
 
 
 def gaussian_variogram_model(m, d):
+    """Gaussian model, m is [psill, range, nugget]"""
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
@@ -73,6 +51,7 @@ def gaussian_variogram_model(m, d):
 
 
 def exponential_variogram_model(m, d):
+    """Exponential model, m is [psill, range, nugget]"""
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
@@ -80,6 +59,7 @@ def exponential_variogram_model(m, d):
 
 
 def spherical_variogram_model(m, d):
+    """Spherical model, m is [psill, range, nugget]"""
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
@@ -88,6 +68,7 @@ def spherical_variogram_model(m, d):
 
 
 def hole_effect_variogram_model(m, d):
+    """Hole Effect model, m is [psill, range, nugget]"""
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])

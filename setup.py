@@ -22,8 +22,9 @@ DESC = 'Kriging Toolkit for Python'
 LDESC = 'PyKrige is a kriging toolkit for Python that supports two- and ' \
         'three-dimensional ordinary and universal kriging.'
 PACKAGES = ['pykrige']
-PCKG_DAT = {'pykrige': ['README.md', 'CHANGELOG.md', 'LICENSE.txt', 'MANIFEST.in',
-                        join('test_data', '*.txt'), join('test_data', '*.asc')]}
+PCKG_DAT = {'pykrige': ['README.md', 'CHANGELOG.md', 'LICENSE.txt',
+                        'MANIFEST.in', join('test_data', '*.txt'),
+                        join('test_data', '*.asc')]}
 REQ = ['numpy', 'scipy', 'matplotlib']
 
 for req in REQ:
@@ -68,8 +69,8 @@ class BuildFailed(Exception):
     pass
 
 
-# This is how I was originally trying to get around the Cython extension troubles...
-# Keeping it here for reference...
+# This is how I was originally trying to get around the
+# Cython extension troubles... Keeping it here for reference...
 #
 # class BuildExtCompilerCheck(build_ext):
 #     def build_extensions(self):
@@ -89,20 +90,31 @@ def run_setup(with_cython):
     if with_cython:
         import numpy as np
         if sys.platform != 'win32':
-            compile_args = dict(extra_compile_args=['-O2', '-march=core2', '-mtune=corei7'],
-                                extra_link_args=['-O2', '-march=core2', '-mtune=corei7'])
+            compile_args = dict(extra_compile_args=['-O2', '-march=core2',
+                                                    '-mtune=corei7'],
+                                extra_link_args=['-O2', '-march=core2',
+                                                 '-mtune=corei7'])
         else:
             compile_args = {}
         
-        ext_modules = [Extension("pykrige.lib.cok", ["pykrige/lib/cok.pyx"], **compile_args),
-                       Extension("pykrige.lib.variogram_models", ["pykrige/lib/variogram_models.pyx"], **compile_args)]
+        ext_modules = [Extension("pykrige.lib.cok",
+                                 ["pykrige/lib/cok.pyx"],
+                                 **compile_args),
+                       Extension("pykrige.lib.variogram_models",
+                                 ["pykrige/lib/variogram_models.pyx"],
+                                 **compile_args)]
         
-        # Transfered python 3 switch here. On python 3 machines, will use lapack_py3.pyx
+        # Transfered python 3 switch here.
+        # On python 3 machines, will use lapack_py3.pyx
         # instead of lapack.pyx to build .lib.lapack
         if sys.version_info[0] == 3:
-            ext_modules += [Extension("pykrige.lib.lapack", ["pykrige/lib/lapack_py3.pyx"], **compile_args)]
+            ext_modules += [Extension("pykrige.lib.lapack",
+                                      ["pykrige/lib/lapack_py3.pyx"],
+                                      **compile_args)]
         else:
-            ext_modules += [Extension("pykrige.lib.lapack", ["pykrige/lib/lapack.pyx"], **compile_args)]
+            ext_modules += [Extension("pykrige.lib.lapack",
+                                      ["pykrige/lib/lapack.pyx"],
+                                      **compile_args)]
 
         class TryBuildExt(build_ext):
             def build_extensions(self):
@@ -110,20 +122,25 @@ def run_setup(with_cython):
                     build_ext.build_extensions(self)
                 except ext_errors:
                     print("**************************************************")
-                    print("WARNING: Cython extensions failed to build. Falling back to pure Python implementation.\n"
-                         "See https://github.com/bsmurphy/PyKrige/issues/8 for more information.")
+                    print("WARNING: Cython extensions failed to build. "
+                          "Falling back to pure Python implementation.\n"
+                          "See https://github.com/bsmurphy/PyKrige/issues/8 "
+                          "for more information.")
                     print("**************************************************")
                     raise BuildFailed()
 
         cmd = {'build_ext': TryBuildExt}
 
-        setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL, url=URL, description=DESC,
-              long_description=LDESC, packages=PACKAGES, package_data=PCKG_DAT, classifiers=CLSF,
-              ext_modules=ext_modules, include_dirs=[np.get_include()], cmdclass=cmd)
+        setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL,
+              url=URL, description=DESC, long_description=LDESC,
+              packages=PACKAGES, package_data=PCKG_DAT, classifiers=CLSF,
+              ext_modules=ext_modules, include_dirs=[np.get_include()],
+              cmdclass=cmd)
 
     else:
-        setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL, url=URL, description=DESC,
-              long_description=LDESC, packages=PACKAGES, package_data=PCKG_DAT, classifiers=CLSF)
+        setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL,
+              url=URL, description=DESC, long_description=LDESC,
+              packages=PACKAGES, package_data=PCKG_DAT, classifiers=CLSF)
 
 try:
     run_setup(try_cython)

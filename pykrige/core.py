@@ -3,54 +3,19 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-__doc__ = """Code by Benjamin S. Murphy
+__doc__ = """
+PyKrige
+=======
+
+Code by Benjamin S. Murphy and the PyKrige Developers
 bscott.murphy@gmail.com
 
-Dependencies:
-    numpy
-    scipy
+Summary
+-------
+Methods used by multiple classes.
 
-Functions:
-    _adjust_for_anisotropy(X, y, center, scaling, angle):
-        Returns X_adj array of adjusted data coordinates. Angles are CCW about
-        specified axes. Scaling is applied in rotated coordinate system.
-    _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
-        Makes a list of variogram model parameters in the expected order if the
-        user has provided the model parameters. If not, returns None, which
-        will ensure that the automatic variogram estimation routine is
-        triggered.
-    _initialize_variogram_model(X, y, variogram_model,
-                                variogram_model_parameters, variogram_function,
-                                nlags, weight, coordinates_type):
-        Returns lags, semivariance, and variogram model parameters.
-        Variogram model parameters are estimated if user did not provide them.
-    _variogram_residuals(params, x, y, variogram_function, weight):
-        Called by _calculate_variogram_model.
-    _calculate_variogram_model(lags, semivariance, variogram_model,
-                               variogram_function, weight):
-        Returns variogram model parameters that minimize the RMSE between the
-        specified variogram function and the actual calculated variogram points.
-    _krige(X, y, coords, variogram_function, variogram_model_parameters,
-           coordinates_type):
-        Function that solves the ordinary kriging system for a single specified
-        point. Returns Z value and sigma squared for the specified coordinates.
-        Used in statistics calculation.
-    _find_statistics(X, y, variogram_funtion, variogram_model_parameters,
-                     coordinates_type):
-        Returns the delta, sigma, and epsilon values for the variogram fit.
-        These arrays are used for statistics calculations.
-    calcQ1(epsilon):
-        Returns the Q1 statistic for the variogram fit (see Kitanidis).
-    calcQ2(epsilon):
-        Returns the Q2 statistic for the variogram fit (see Kitanidis).
-    calc_cR(Q2, sigma):
-        Returns the cR statistic for the variogram fit (see Kitanidis).
-    great_circle_distance(lon1, lat1, lon2, lat2):
-        Returns the great circle distance between two arrays of points given in
-        spherical coordinates. Spherical coordinates are expected in degrees.
-        Angle definition follows standard longitude/latitude definition.
-
-References:
+References
+----------
 [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in Hydrogeology,
     (Cambridge University Press, 1997) 272 p.
 
@@ -58,7 +23,7 @@ References:
     with Application of Nested Equations, Survey Review 23 (176),
     (Directorate of Overseas Survey, Kingston Road, Tolworth, Surrey 1975)
 
-Copyright (c) 2015-2017 Benjamin S. Murphy
+Copyright (c) 2015-2018, PyKrige Developers
 """
 
 import numpy as np
@@ -69,12 +34,15 @@ eps = 1.e-10   # Cutoff for comparison to zero
 
 
 def great_circle_distance(lon1, lat1, lon2, lat2):
-    """
-    Calculate the great circle distance between one or multiple
-    pairs of points on a unit sphere.
+    """Calculate the great circle distance between one or multiple pairs of
+    points given in spherical coordinates. Spherical coordinates are expected
+    in degrees. Angle definition follows standard longitude/latitude definition.
+    This uses the arctan version of the great-circle distance function
+    (en.wikipedia.org/wiki/Great-circle_distance) for increased
+    numerical stability.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     lon1: float scalar or numpy array
         Longitude coordinate(s) of the first element(s) of the point
         pair(s), given in degrees.
@@ -93,11 +61,11 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
     arrays of length N or scalars.
 
 
-    Returns:
-    --------
+    Returns
+    -------
     distance: float scalar or numpy array
-              The great circle distance(s) (in degrees) between the
-              given pair(s) of points.
+        The great circle distance(s) (in degrees) between the
+        given pair(s) of points.
 
     """
     # Convert to radians:
@@ -123,23 +91,19 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
 
 
 def euclid3_to_great_circle(euclid3_distance):
-    """
-    Convert euclidean distance between points on a unit sphere to
+    """Convert euclidean distance between points on a unit sphere to
     the corresponding great circle distance.
 
-
-    Parameters:
-    -----------
+    Parameters
+    ----------
     euclid3_distance: float scalar or numpy array
         The euclidean three-space distance(s) between points on a
         unit sphere, thus between [0,2].
 
-
-    Returns:
-    --------
+    Returns
+    -------
     great_circle_dist: float scalar or numpy array
-        The corresponding great circle distance(s) between the
-        points.
+        The corresponding great circle distance(s) between the points.
     """
     # Eliminate some possible numerical errors:
     euclid3_distance[euclid3_distance>2.0] = 2.0
@@ -148,18 +112,19 @@ def euclid3_to_great_circle(euclid3_distance):
 
 def _adjust_for_anisotropy(X, center, scaling, angle):
     """Adjusts data coordinates to take into account anisotropy.
-    Can also be used to take into account data scaling.
+    Can also be used to take into account data scaling. Angles are CCW about
+    specified axes. Scaling is applied in rotated coordinate system.
 
     Parameters
     ----------
-    X: ndarray
+    X : ndarray
         float array [n_samples, n_dim], the input array of coordinates
-    center: ndarray
+    center : ndarray
         float array [n_dim], the coordinate of centers
-    scaling: ndarray
+    scaling : ndarray
         float array [n_dim - 1], the scaling of last two dimensions
     angle : ndarray
-        float array [2*n_dim - 3], the anysotropy angle (degrees)
+        float array [2*n_dim - 3], the anisotropy angle (degrees)
 
     Returns
     -------
@@ -206,11 +171,16 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
     """Converts the user input for the variogram model parameters into the
     format expected in the rest of the code.
 
+    Makes a list of variogram model parameters in the expected order if the
+    user has provided the model parameters. If not, returns None, which
+    will ensure that the automatic variogram estimation routine is
+    triggered.
+
     Parameters
     ----------
-    variogram_model: str
+    variogram_model : str
         specifies the variogram model type
-    variogram_model_parameters: list, dict, or None
+    variogram_model_parameters : list, dict, or None
         parameters provided by the user, can also be None if the user
         did not specify the variogram model parameters; if None,
         this function returns None, that way the automatic variogram
@@ -218,7 +188,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
 
     Returns
     -------
-    parameter_list: list
+    parameter_list : list
         variogram model parameters stored in a list in the expected order;
         if variogram_model is 'custom', model parameters should already
         be encapsulated in a list, so the list is returned unaltered;
@@ -376,6 +346,7 @@ def _initialize_variogram_model(X, y, variogram_model,
                                 nlags, weight, coordinates_type):
     """Initializes the variogram model for kriging. If user does not specify
     parameters, calls automatic variogram estimation routine.
+    Returns lags, semivariance, and variogram model parameters.
 
     Parameters
     ----------
@@ -516,6 +487,7 @@ def _initialize_variogram_model(X, y, variogram_model,
 def _variogram_residuals(params, x, y, variogram_function, weight):
     """Function used in variogram model estimation. Returns residuals between
     calculated variogram and actual data (lags/semivariance).
+    Called by _calculate_variogram_model.
 
     Parameters
     ----------
@@ -559,6 +531,8 @@ def _variogram_residuals(params, x, y, variogram_function, weight):
 def _calculate_variogram_model(lags, semivariance, variogram_model,
                                variogram_function, weight):
     """Function that fits a variogram model when parameters are not specified.
+    Returns variogram model parameters that minimize the RMSE between the
+    specified variogram function and the actual calculated variogram points.
 
     Parameters
     ----------
@@ -610,8 +584,8 @@ def _calculate_variogram_model(lags, semivariance, variogram_model,
 
 def _krige(X, y, coords, variogram_function,
            variogram_model_parameters, coordinates_type):
-    """Sets up and solves the kriging matrix for the given coordinate pair.
-    This function is only used for the statistics calculations.
+    """Sets up and solves the ordinary kriging system for the given
+    coordinate pair. This function is only used for the statistics calculations.
 
     Parameters
     ----------
@@ -695,6 +669,8 @@ def _krige(X, y, coords, variogram_function,
 def _find_statistics(X, y, variogram_function,
                      variogram_model_parameters, coordinates_type):
     """Calculates variogram fit statistics.
+    Returns the delta, sigma, and epsilon values for the variogram fit.
+    These arrays are used for statistics calculations.
 
     Parameters
     ----------
@@ -754,12 +730,15 @@ def _find_statistics(X, y, variogram_function,
 
 
 def calcQ1(epsilon):
+    """Returns the Q1 statistic for the variogram fit (see [1])."""
     return abs(np.sum(epsilon)/(epsilon.shape[0] - 1))
 
 
 def calcQ2(epsilon):
+    """Returns the Q2 statistic for the variogram fit (see [1])."""
     return np.sum(epsilon**2)/(epsilon.shape[0] - 1)
 
 
 def calc_cR(Q2, sigma):
+    """Returns the cR statistic for the variogram fit (see [1])."""
     return Q2 * np.exp(np.sum(np.log(sigma**2))/sigma.shape[0])
