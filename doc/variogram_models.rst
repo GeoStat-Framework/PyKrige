@@ -47,17 +47,17 @@ is the nugget term.
 
 Variables are defined as:
 
-*d* = distance values at which to calculate the variogram
+:math:`d` = distance values at which to calculate the variogram
 
-*p* = partial sill (psill = sill - nugget)
+:math:`p` = partial sill (psill = sill - nugget)
 
-*r* = range
+:math:`r` = range
 
-*n* = nugget
+:math:`n` = nugget
 
-*s* = scaling factor or slope
+:math:`s` = scaling factor or slope
 
-*e* = exponent for power model
+:math:`e` = exponent for power model
 
 For stationary variogram models (gaussian, exponential, spherical, and
 hole-effect models), the partial sill is defined as the difference between
@@ -75,15 +75,20 @@ For nonstationary models (linear and power models, with unbounded spatial
 variances), the nugget has the same meaning. The exponent  for the power-law
 model should be between 0 and 2 [1].
 
-.. note :: The PyKrige user interface by default takes the full sill.
-This default behavior can be changed with a keyword flag, so that the user
-can supply the partial sill instead. The code internally uses the partial sill
-(psill = sill - nugget) rather than the full sill, as it's safer to perform
-automatic variogram estimation using the partial sill.
+**A few important notes:**
 
-.. note :: According to [1], the hole-effect variogram model is only correct
-for the 1D case. It's implemented here for completeness and should
-be used cautiously.
+The PyKrige user interface by default takes the full sill. This default behavior
+can be changed with a keyword flag, so that the user can supply the partial sill
+instead. The code internally uses the partial sill (psill = sill - nugget)
+rather than the full sill, as it's safer to perform automatic variogram
+estimation using the partial sill.
+
+The exact definitions of the variogram models here may differ from those used
+elsewhere. Keep that in mind when switching from another kriging code over to
+PyKrige.
+
+According to [1], the hole-effect variogram model is only correct for the
+1D case. It's implemented here for completeness and should be used cautiously.
 
 References
 ----------
