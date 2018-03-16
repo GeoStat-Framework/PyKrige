@@ -48,5 +48,6 @@ from .ok import OrdinaryKriging
 from .uk import UniversalKriging
 from .ok3d import OrdinaryKriging3D
 from .uk3d import UniversalKriging3D
+from .rk import RegressionKriging
 
-__all__ = ['ok', 'uk', 'ok3d', 'uk3d', 'kriging_tools']
+__all__ = ['ok', 'uk', 'ok3d', 'uk3d', 'kriging_tools', 'rk']
