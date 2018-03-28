@@ -39,14 +39,14 @@ References
 ----------
 .. [1] P.K. Kitanidis, Introduction to Geostatistics: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
-    
+
 Copyright (c) 2015-2018, PyKrige Developers
 """
 
-from . import kriging_tools as kt
-from .ok import OrdinaryKriging
-from .uk import UniversalKriging
-from .ok3d import OrdinaryKriging3D
-from .uk3d import UniversalKriging3D
+from . import kriging_tools as kt  # noqa
+from .ok import OrdinaryKriging  # noqa
+from .uk import UniversalKriging  # noqa
+from .ok3d import OrdinaryKriging3D  # noqa
+from .uk3d import UniversalKriging3D  # noqa
 
 __all__ = ['ok', 'uk', 'ok3d', 'uk3d', 'kriging_tools']

@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import numpy as np
+
 __doc__ = """
 PyKrige
 =======
@@ -23,8 +25,6 @@ References
 
 Copyright (c) 2015-2018, PyKrige Developers
 """
-
-import numpy as np
 
 
 def linear_variogram_model(m, d):
