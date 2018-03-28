@@ -26,7 +26,7 @@ The code supports 2D and 3D ordinary and universal kriging. Standard variogram m
 See the `documentation <http://pykrige.readthedocs.io/en/latest/>`_ for more details.
 
 Installation
-------------
+^^^^^^^^^^^^
 
 PyKrige requires Python 2.7 or 3.5+ as well as numpy, scipy and matplotlib. It can be installed from PyPi with,
 
@@ -103,7 +103,7 @@ Parameter Tuning
 
 A scikit-learn compatible API for parameter tuning by cross-validation is exposed in `sklearn.model_selection.GridSearchCV <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html>`_. See the `Krige CV <http://pykrige.readthedocs.io/en/latest/examples/krige_cv.html#sphx-glr-examples-krige-cv-py>`_ example for a more practical illustration.
 
-In it's current form, the `pykrige.rk.Krige <http://pykrige.readthedocs.io/en/latest/generated/pykrige.rk.Krige.html#pykrige.rk.Krige>`_ class can be used to optimise all the common parameters of `OrdinaryKriging` and `UniversalKriging`.
+In it's current form, the `pykrige.rk.Krige <http://pykrige.readthedocs.io/en/latest/generated/pykrige.rk.Krige.html#pykrige.rk.Krige>`_ class can be used to optimise all the common parameters of ``OrdinaryKriging`` and ``UniversalKriging``.
 
 
 Regression Kriging
@@ -112,5 +112,8 @@ Regression Kriging
 `Regression kriging <https://en.wikipedia.org/wiki/Regression-Kriging>`_ can be performed with `pykrige.rk.RegressionKriging <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html>`_. This class takes as parameters a scikit-learn regression model, and details of either either the ``OrdinaryKriging`` or the ``UniversalKriging`` class, and performs a correction steps on the ML regression prediction.
  
 A demonstration of the regression kriging is provided in the `corresponding example <http://pykrige.readthedocs.io/en/latest/examples/regression_kriging2d.html#sphx-glr-examples-regression-kriging2d-py>`_.
+
+License
+^^^^^^^
 
 PyKrige uses the BSD 3-Clause License.
