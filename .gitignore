@@ -7,6 +7,10 @@ doc/_build/
 dist/*
 *.c
 *.so
+.cache/
+doc/examples/
+doc/generated/
+doc/modules/
 
 examples/meuse_example_data/*
 *.ipynb_checkpoints/*
