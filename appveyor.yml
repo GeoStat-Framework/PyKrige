@@ -26,9 +26,8 @@ init:
 install:
   - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
   - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
   - conda info -a
-  - "conda create -q -n krige-env python=%PYTHON_VERSION% numpy scipy nose matplotlib cython scikit-learn pytest pytest-cov"
+  - conda create -q -n krige-env python=%PYTHON_VERSION% numpy scipy nose matplotlib cython scikit-learn pytest pytest-cov
   - activate krige-env
   - pip install coverage
   - pip install -e .
