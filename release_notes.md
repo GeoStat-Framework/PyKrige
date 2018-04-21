@@ -1,7 +1,7 @@
 # PyKrige Changelog
 
 ## Version 1.4
-*In developement*
+*April 21, 2018*
 
 ### New features  
 
