@@ -9,8 +9,8 @@ Kriging Toolkit for Python
 .. image:: https://anaconda.org/conda-forge/pykrige/badges/version.svg
   :target: https://github.com/conda-forge/pykrige-feedstock
 
-.. image:: https://readthedocs.org/projects/pykrige/badge/?version=latest
-    :target: http://pykrige.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/pykrige/badge/?version=stable
+    :target: http://pykrige.readthedocs.io/en/stable/?badge=stable
     :alt: Documentation Status
 
 .. image:: https://travis-ci.org/bsmurphy/PyKrige.svg?branch=master
@@ -21,28 +21,44 @@ Kriging Toolkit for Python
 
 
 
-The code supports two- and three- dimensional ordinary and universal kriging. Standard variogram models (linear, power, spherical, gaussian, exponential) are built in, but custom variogram models can also be used with the code. The kriging methods are separated into four classes. Examples of their uses are shown below. The two-dimensional universal kriging code currently supports regional-linear, point-logarithmic, and external drift terms, while the three-dimensional universal kriging code supports a regional-linear drift term in all three spatial dimensions. Both universal kriging classes also support generic 'specified' and 'functional' drift capabilities. With the 'specified' drift capability, the user may manually specify the values of the drift(s) at each data point and all grid points. With the 'functional' drift capability, the user may provide callable function(s) of the spatial coordinates that define the drift(s). The package includes a module that contains functions that should be useful in working with ASCII grid files (`*.asc`).
+The code supports 2D and 3D ordinary and universal kriging. Standard variogram models
+(linear, power, spherical, gaussian, exponential) are built in, but custom variogram models can also be used.
+The 2D universal kriging code currently supports regional-linear, point-logarithmic, and external drift terms,
+while the 3D universal kriging code supports a regional-linear drift term in all three spatial dimensions.
+Both universal kriging classes also support generic 'specified' and 'functional' drift capabilities.
+With the 'specified' drift capability, the user may manually specify the values of the drift(s) at each data
+point and all grid points. With the 'functional' drift capability, the user may provide callable function(s)
+of the spatial coordinates that define the drift(s). The package includes a module that contains functions
+that should be useful in working with ASCII grid files (`*.asc`).
 
-PyKrige is on PyPi, so installation is as simple as typing the following into a command line.
+See the documentation at `http://pykrige.readthedocs.io/en/stable/ <http://pykrige.readthedocs.io/en/stable/>`_ for more details.
+
+Installation
+^^^^^^^^^^^^
+
+PyKrige requires Python 2.7 or 3.5+ as well as numpy, scipy and matplotlib. It can be installed from PyPi with,
 
 .. code:: bash
 
     pip install pykrige
 
-To update PyKrige from PyPi, type the following into a command line.
+scikit-learn is an optional dependency needed for parameter tuning and regression kriging.
+
+
+If you use conda, PyKrige can be installed from the `conda-forge` channel with,
 
 .. code:: bash
 
-    pip install --upgrade pykrige
+    conda install -c conda-forge pykrige
 
-PyKrige uses the BSD 3-Clause License.
 
 Ordinary Kriging Example
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+First we will create a 2D dataset together with the associated x, y grids,
+
 .. code:: python
 
-    from pykrige.ok import OrdinaryKriging
     import numpy as np
     import pykrige.kriging_tools as kt
     
@@ -164,16 +180,24 @@ Three-Dimensional Kriging Example
 Kriging Parameters Tuning
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-PyKrige also exposes a scikit learn compatible API, which can be used to perform parameter tuning including the krige algorithm using `sklearn.model_selection.GridSearchCV <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html>`_. Once `scikit-learn` is installed, you can run the corresponding example with
-`python path/to/examples/krige_cv.py`
-
-In it's current form, the `pykrige.rk.Krige` class can be used to optimise all the common parameters of `OrdinaryKriging` and `UniversalKriging` classes.
+A scikit-learn compatible API for parameter tuning by cross-validation is exposed in
+`sklearn.model_selection.GridSearchCV <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html>`_.
+See the `Krige CV <http://pykrige.readthedocs.io/en/stable/examples/krige_cv.html#sphx-glr-examples-krige-cv-py>`_
+example for a more practical illustration.
 
 
 Regression Kriging
 ^^^^^^^^^^^^^^^^^^
 
-PyKrige exposes a class `pykrige.rk.RegressionKriging` that can be used to perform `regression kriging <https://en.wikipedia.org/wiki/Regression-Kriging>`_. This class takes as parameters a `scikit-learn` regression model, and details of either the Ordinary/UniversalKriging class, and performs a correction steps on the ML regression prediction.
+`Regression kriging <https://en.wikipedia.org/wiki/Regression-Kriging>`_ can be performed
+with `pykrige.rk.RegressionKriging <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html>`_.
+This class takes as parameters a scikit-learn regression model, and details of either either
+the ``OrdinaryKriging`` or the ``UniversalKriging`` class, and performs a correction steps on the ML regression prediction.
  
-A demonstration of the regression kriging is provided in `examples.regression_kriging.py`. Once again, `scikit-learn` is required to use this functionality.
+A demonstration of the regression kriging is provided in the 
+`corresponding example <http://pykrige.readthedocs.io/en/stable/examples/regression_kriging2d.html#sphx-glr-examples-regression-kriging2d-py>`_.
 
+License
+^^^^^^^
+
+PyKrige uses the BSD 3-Clause License.

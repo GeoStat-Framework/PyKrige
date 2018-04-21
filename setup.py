@@ -19,10 +19,12 @@ AUTHOR = 'Benjamin S. Murphy'
 EMAIL = 'bscott.murphy@gmail.com'
 URL = 'https://github.com/bsmurphy/PyKrige'
 DESC = 'Kriging Toolkit for Python'
-LDESC = 'PyKrige is a kriging toolkit for Python that supports two- and ' \
-        'three-dimensional ordinary and universal kriging.'
+
+with open('README.rst', 'r') as fh:
+    LDESC = fh.read()
+
 PACKAGES = ['pykrige']
-PCKG_DAT = {'pykrige': ['README.md', 'CHANGELOG.md', 'LICENSE.txt',
+PCKG_DAT = {'pykrige': ['README.rst', 'CHANGELOG.md', 'LICENSE.txt',
                         'MANIFEST.in', join('test_data', '*.txt'),
                         join('test_data', '*.asc')]}
 REQ = ['numpy', 'scipy', 'matplotlib']
