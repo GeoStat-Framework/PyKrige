@@ -404,19 +404,19 @@ class OrdinaryKriging:
                                         self.lags), 'k-')
         plt.show()
 
-    def get_variogram_model_points(self):
+    def get_variogram_points(self):
         """Obtain the data pairs for the variogram model.
-           It is possible to save the model to a file if output_file
-           indicates the full path to 
+           returns a numpy.array with the form [lag, variogram_value_at_lag]
         """
         variogram_points = self.variogram_function(self.variogram_model_parameters, self.lags)
 
         return np.array([self.lags, variogram_points])
 
     def save_variogram_to_file(self, output_file, separator=" "):
-        """Obtain the data pairs for the variogram model.
-           It is possible to save the model to a file if output_file
-           indicates the full path to 
+        """Save the variogram model to a file with name output_file 
+           with the form `lag variogram_value_at_lag` the separator
+           variable specifies which character will separate lags from
+           variogram values, and defaults to a single space.
         """
         variogram_points = self.variogram_function(self.variogram_model_parameters, self.lags)
 
