@@ -615,6 +615,34 @@ class UniversalKriging:
                                         self.lags), 'k-')
         plt.show()
 
+    def get_variogram_model_points(self):
+        """Obtain the data pairs for the variogram model.
+           It is possible to save the model to a file if output_file
+           indicates the full path to 
+        """
+        variogram_points = self.variogram_function(self.variogram_model_parameters, self.lags)
+
+        return np.array([self.lags, variogram_points])
+
+    def save_variogram_to_file(self, output_file, separator=" "):
+        """Obtain the data pairs for the variogram model.
+           It is possible to save the model to a file if output_file
+           indicates the full path to 
+        """
+        variogram_points = self.variogram_function(self.variogram_model_parameters, self.lags)
+
+        if output_file != None:
+            try:
+                with open(output_file,"w") as out:
+                    for l in range(len(self.lags)):
+                        print("{}{}{}".format(self.lags[l],
+                                              separator,
+                                              variogram_points[l]), file=out)
+            except IOError:
+                print("Couldn't save to file {}".format(output_file))
+            except:
+                print("An error has ocurred while saving {}".format(output_file))
+
     def switch_verbose(self):
         """Allows user to switch code talk-back on/off. Takes no arguments."""
         self.verbose = not self.verbose
