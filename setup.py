@@ -98,14 +98,14 @@ def run_setup(with_cython):
                                                  '-mtune=corei7'])
         else:
             compile_args = {}
-        
+
         ext_modules = [Extension("pykrige.lib.cok",
                                  ["pykrige/lib/cok.pyx"],
                                  **compile_args),
                        Extension("pykrige.lib.variogram_models",
                                  ["pykrige/lib/variogram_models.pyx"],
                                  **compile_args)]
-        
+
         # Transfered python 3 switch here.
         # On python 3 machines, will use lapack_py3.pyx
         # instead of lapack.pyx to build .lib.lapack
@@ -143,6 +143,7 @@ def run_setup(with_cython):
         setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL,
               url=URL, description=DESC, long_description=LDESC,
               packages=PACKAGES, package_data=PCKG_DAT, classifiers=CLSF)
+
 
 try:
     run_setup(try_cython)
