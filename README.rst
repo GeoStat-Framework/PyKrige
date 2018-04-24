@@ -9,8 +9,8 @@ Kriging Toolkit for Python
 .. image:: https://anaconda.org/conda-forge/pykrige/badges/version.svg
   :target: https://github.com/conda-forge/pykrige-feedstock
 
-.. image:: https://readthedocs.org/projects/pykrige/badge/?version=stable
-    :target: http://pykrige.readthedocs.io/en/stable/?badge=stable
+.. image:: https://readthedocs.org/projects/pykrige/badge/?version=latest
+    :target: http://pykrige.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
 .. image:: https://travis-ci.org/bsmurphy/PyKrige.svg?branch=master
@@ -31,7 +31,7 @@ point and all grid points. With the 'functional' drift capability, the user may 
 of the spatial coordinates that define the drift(s). The package includes a module that contains functions
 that should be useful in working with ASCII grid files (`*.asc`).
 
-See the documentation at `http://pykrige.readthedocs.io/en/stable/ <http://pykrige.readthedocs.io/en/stable/>`_ for more details.
+See the documentation at `http://pykrige.readthedocs.io/ <http://pykrige.readthedocs.io/>`_ for more details.
 
 Installation
 ^^^^^^^^^^^^
@@ -182,7 +182,7 @@ Kriging Parameters Tuning
 
 A scikit-learn compatible API for parameter tuning by cross-validation is exposed in
 `sklearn.model_selection.GridSearchCV <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html>`_.
-See the `Krige CV <http://pykrige.readthedocs.io/en/stable/examples/krige_cv.html#sphx-glr-examples-krige-cv-py>`_
+See the `Krige CV <http://pykrige.readthedocs.io/en/latest/examples/krige_cv.html#sphx-glr-examples-krige-cv-py>`_
 example for a more practical illustration.
 
 
@@ -190,12 +190,12 @@ Regression Kriging
 ^^^^^^^^^^^^^^^^^^
 
 `Regression kriging <https://en.wikipedia.org/wiki/Regression-Kriging>`_ can be performed
-with `pykrige.rk.RegressionKriging <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html>`_.
+with `pykrige.rk.RegressionKriging <http://pykrige.readthedocs.io/en/latest/examples/regression_kriging2d.html>`_.
 This class takes as parameters a scikit-learn regression model, and details of either either
 the ``OrdinaryKriging`` or the ``UniversalKriging`` class, and performs a correction steps on the ML regression prediction.
  
 A demonstration of the regression kriging is provided in the 
-`corresponding example <http://pykrige.readthedocs.io/en/stable/examples/regression_kriging2d.html#sphx-glr-examples-regression-kriging2d-py>`_.
+`corresponding example <http://pykrige.readthedocs.io/en/latest/examples/regression_kriging2d.html#sphx-glr-examples-regression-kriging2d-py>`_.
 
 License
 ^^^^^^^

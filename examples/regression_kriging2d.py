@@ -4,6 +4,7 @@ Regression kriging
 
 An example of regression kriging
 """
+import sys
 
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
@@ -19,8 +20,13 @@ lr_model = LinearRegression(normalize=True, copy_X=True, fit_intercept=False)
 
 models = [svr_model, rf_model, lr_model]
 
+try:
+    housing = fetch_california_housing()
+except PermissionError:
+    # this dataset can occasionally fail to download on Windows
+    sys.exit(0)
+
 # take the first 5000 as Kriging is memory intensive
-housing = fetch_california_housing()
 p = housing['data'][:5000, :-2]
 x = housing['data'][:5000, -2:]
 target = housing['target'][:5000]
