@@ -14,7 +14,7 @@ from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatfo
 ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
 
 NAME = 'PyKrige'
-VERSION = '1.4.0rc1'
+VERSION = '1.4.0'
 AUTHOR = 'Benjamin S. Murphy'
 EMAIL = 'bscott.murphy@gmail.com'
 URL = 'https://github.com/bsmurphy/PyKrige'
