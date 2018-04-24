@@ -62,7 +62,11 @@ def test_regression_krige():
 @pytest.mark.skipif(not SKLEARN_INSTALLED,
                     reason="requires scikit-learn")
 def test_krige_housing():
-    housing = fetch_california_housing()
+    try:
+        housing = fetch_california_housing()
+    except PermissionError:
+        # This can raise permission error on Appveyor
+        pytest.skip('Failed to load california housing dataset')
 
     # take only first 1000
     p = housing['data'][:1000, :-2]
