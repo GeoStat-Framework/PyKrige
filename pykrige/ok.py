@@ -405,32 +405,14 @@ class OrdinaryKriging:
         plt.show()
 
     def get_variogram_points(self):
-        """Obtain the data pairs for the variogram model.
-           returns a numpy.array with the form [lag, variogram_value_at_lag]
+        """Obtain the evaluation of the variogram function at each of the
+        provided lags.
+
+        Returns
+        -------
+        returns the evaluation of the variogram_function at each of the lags
         """
-        variogram_points = self.variogram_function(self.variogram_model_parameters, self.lags)
-
-        return np.array([self.lags, variogram_points])
-
-    def save_variogram_to_file(self, output_file, separator=" "):
-        """Save the variogram model to a file with name output_file 
-           with the form `lag variogram_value_at_lag` the separator
-           variable specifies which character will separate lags from
-           variogram values, and defaults to a single space.
-        """
-        variogram_points = self.variogram_function(self.variogram_model_parameters, self.lags)
-
-        if output_file != None:
-            try:
-                with open(output_file,"w") as out:
-                    for l in range(len(self.lags)):
-                        print("{}{}{}".format(self.lags[l],
-                                              separator,
-                                              variogram_points[l]), file=out)
-            except IOError:
-                print("Couldn't save to file {}".format(output_file))
-            except:
-                print("An error has ocurred while saving {}".format(output_file))
+        return self.lags, self.variogram_function(self.variogram_model_parameters, self.lags)
 
     def switch_verbose(self):
         """Allows user to switch code talk-back on/off. Takes no arguments."""

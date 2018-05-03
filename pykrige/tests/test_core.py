@@ -395,6 +395,32 @@ def test_ok_update_variogram_model(validation_ref):
     assert anisotropy_angle != ok.anisotropy_angle
 
 
+def test_ok_get_variogram_points(validation_ref):
+    # Test to compare the variogram of OK results to those obtained using
+    # KT3D_H2O.
+    # (M. Karanovic, M. Tonkin, and D. Wilson, 2009, Groundwater,
+    # vol. 47, no. 4, 580-586.)
+
+    # Variogram parameters
+    _variogram_parameters = [500.0, 3000.0, 0.0]
+
+    data, _, (ok_test_answer, gridx, gridy) = validation_ref
+    
+    ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
+                          variogram_model='exponential',
+                          variogram_parameters=_variogram_parameters)
+
+    # Get the variogram points from the UniversalKriging instance
+    lags, calculated_variogram = ok.get_variogram_points()
+
+    # Generate the expected variogram points according to the
+    # exponential variogram model 
+    expected_variogram = variogram_models.exponential_variogram_model(
+                         _variogram_parameters, lags)
+
+    assert_allclose(calculated_variogram, expected_variogram)
+
+
 def test_ok_execute(sample_data_2d):
 
     data, (gridx, gridy, _), mask_ref = sample_data_2d
@@ -542,6 +568,33 @@ def test_uk_update_variogram_model(sample_data_2d):
     assert variogram_parameters != uk.variogram_model_parameters
     assert anisotropy_scaling != uk.anisotropy_scaling
     assert anisotropy_angle != uk.anisotropy_angle
+
+
+def test_uk_get_variogram_points(validation_ref):
+    # Test to compare the variogram of UK with linear drift to results from 
+    # KT3D_H2O.
+    # (M. Karanovic, M. Tonkin, and D. Wilson, 2009, Groundwater,
+    # vol. 47, no. 4, 580-586.)
+
+    # Variogram parameters
+    _variogram_parameters = [500.0, 3000.0, 0.0]
+
+    data, _, (uk_test_answer, gridx, gridy) = validation_ref
+    
+    uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
+                          variogram_model='exponential',
+                          variogram_parameters=_variogram_parameters,
+                          drift_terms=['regional_linear'])
+
+    # Get the variogram points from the UniversalKriging instance
+    lags, calculated_variogram = uk.get_variogram_points()
+
+    # Generate the expected variogram points according to the
+    # exponential variogram model 
+    expected_variogram = variogram_models.exponential_variogram_model(
+                         _variogram_parameters, lags)
+
+    assert_allclose(calculated_variogram, expected_variogram)
 
 
 def test_uk_calculate_data_point_zscalars(sample_data_2d):
