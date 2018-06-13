@@ -89,6 +89,36 @@ def great_circle_distance(lon1, lat1, lon2, lat2):
 
     return 180.0 / np.pi * np.arctan2(np.sqrt((c2*np.sin(dlon))**2 + (c1*s2-s1*c2*cd)**2), s1*s2+c1*c2*cd)
 
+def great_circle_distance_c(lonlat1, lonlat2):
+    """Returns the great circle distance between points in the compplex
+inputs lonlat1 and lonlat2. Points are encoded in the input arrays as
+(lon_degrees+I*lat_degrees). This is done to support vectorized calls
+in the calculation of all-pairs of distances.
+    """
+    #
+    # return great_circle_distance(lonlat1.real,lonlat1.imag\
+    #                             ,lonlat2.real,lonlat2.imag)
+
+    # Convert to radians:
+    lat1 = np.array(lonlat1.imag)*np.pi/180.0
+    lat2 = np.array(lonlat2.imag)*np.pi/180.0
+    dlon = (lonlat1.real-lonlat2.real)*np.pi/180.0
+
+    # Evaluate trigonometric functions that need to be evaluated more
+    # than once:
+    c1 = np.cos(lat1)
+    s1 = np.sin(lat1)
+    c2 = np.cos(lat2)
+    s2 = np.sin(lat2)
+    cd = np.cos(dlon)
+
+    # This uses the arctan version of the great-circle distance function
+    # from en.wikipedia.org/wiki/Great-circle_distance for increased
+    # numerical stability.
+    # Formula can be obtained from [2] combining eqns. (14)-(16)
+    # for spherical geometry (f=0).
+
+    return 180.0 / np.pi * np.arctan2(np.sqrt((c2*np.sin(dlon))**2 + (c1*s2-s1*c2*cd)**2), s1*s2+c1*c2*cd)
 
 def euclid3_to_great_circle(euclid3_distance):
     """Convert euclidean distance between points on a unit sphere to
