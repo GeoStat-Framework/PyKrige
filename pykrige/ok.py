@@ -439,19 +439,19 @@ class OrdinaryKriging:
         print("Q2 =", self.Q2)
         print("cR =", self.cR)
 
-    def _get_kriging_matrix(self, n, xy=None, coordinates_type='euclidean'):
+    def _get_kriging_matrix(self, n, xy=None, coordinates='euclidean'):
         """Assembles the kriging matrix."""
 
         
-        if coordinates_type == 'euclidean':
+        if coordinates == 'euclidean':
             xy = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
                                  self.Y_ADJUSTED[:, np.newaxis]), axis=1)
             d = cdist(xy, xy, 'euclidean')
-        elif coordinates_type == 'geographic':
+        elif coordinates == 'geographic':
             d = core.great_circle_distance_c(xy[:,np.newaxis],xy)
         else:
             raise ValueError("Only 'euclidean' and 'geographic' are valid "
-                             "values for coordinates_type-keyword.")            
+                             "values for coordinates-keyword.")            
             
         a = np.zeros((n+1, n+1))
         a[:n, :n] = - self.variogram_function(self.variogram_model_parameters,
@@ -562,7 +562,7 @@ class OrdinaryKriging:
         return zvalues, sigmasq
 
     def execute(self, style, xpoints, ypoints, mask=None, backend='vectorized',
-                n_closest_points=None,coordinates_type='euclidean'):
+                n_closest_points=None,coordinates='euclidean'):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation.
@@ -656,7 +656,7 @@ class OrdinaryKriging:
         n = self.X_ADJUSTED.shape[0]
         nx = xpts.size
         ny = ypts.size
-        a = self._get_kriging_matrix(n,coordinates_type=coordinates)
+        a = self._get_kriging_matrix(n,coordinates=coordinates)
 
         if style in ['grid', 'masked']:
             if style == 'masked':
@@ -717,7 +717,7 @@ class OrdinaryKriging:
             # Packed-complex version. 
             xy_data_c   = self.X_ADJUSTED + 1j*self.Y_ADJUSTED
             xy_points_c = xpts + 1j*ypts
-            a = self._get_kriging_matrix(n,xy_data_c,coordinates_type=self.coordinates_type)
+            a = self._get_kriging_matrix(n,xy_data_c,coordinates=self.coordinates_type)
             
 
         if style != 'masked':
@@ -767,7 +767,7 @@ class OrdinaryKriging:
                 bd = core.great_circle_distance_c(xy_points_c[:,np.newaxis],xy_data_c)
             else:
                 raise ValueError("Only 'euclidean' and 'geographic' are valid "
-                                 "values for coordinates_type-keyword.")
+                                 "values for coordinates-keyword.")
             
             if backend == 'vectorized':
                 zvalues, sigmasq = self._exec_vector(a, bd, mask)
