@@ -60,6 +60,7 @@ First we will create a 2D dataset together with the associated x, y grids,
 .. code:: python
 
     import numpy as np
+    from pykrige.ok import OrdinaryKriging
     import pykrige.kriging_tools as kt
     
     data = np.array([[0.3, 1.2, 0.47],
