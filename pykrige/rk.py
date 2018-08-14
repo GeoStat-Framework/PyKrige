@@ -32,59 +32,59 @@ class Krige(RegressorMixin, BaseEstimator):
 
     """
 
-    def __init__(self,
-                 method='ordinary',
-                 variogram_model='linear',
-                 nlags=6,
-                 weight=False,
-                 n_closest_points=10,
-                 verbose=False,
-                 variogram_parameters=None):
+        def __init__(self,
+                     method='ordinary',
+                     variogram_model='linear',
+                     nlags=6,
+                     weight=False,
+                     n_closest_points=10,
+                     variogram_parameters=None,
+                     verbose=False):
 
-        validate_method(method)
-        self.variogram_model = variogram_model
-        self.verbose = verbose
-        self.nlags = nlags
-        self.weight = weight
-        self.model = None  # not trained
-        self.n_closest_points = n_closest_points
-        self.method = method
-        self.variogram_parameters = variogram_parameters
+            validate_method(method)
+            self.variogram_model = variogram_model
+            self.verbose = verbose
+            self.nlags = nlags
+            self.weight = weight
+            self.model = None  # not trained
+            self.n_closest_points = n_closest_points
+            self.method = method
+            self.variogram_parameters = variogram_parameters
 
-    def fit(self, x, y, *args, **kwargs):
-        """
-        Parameters
-        ----------
-        x: ndarray
-            array of Points, (x, y) pairs of shape (N, 2) for 2d kriging
-            array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
-        y: ndarray
-            array of targets (N, )
-        """
+        def fit(self, x, y, *args, **kwargs):
+            """
+            Parameters
+            ----------
+            x: ndarray
+                array of Points, (x, y) pairs of shape (N, 2) for 2d kriging
+                array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
+            y: ndarray
+                array of targets (N, )
+            """
 
-        points = self._dimensionality_check(x)
+            points = self._dimensionality_check(x)
 
-        # if condition required to address backward compatibility
-        if self.method in threed_krige:
-            self.model = krige_methods[self.method](
-                val=y,
-                variogram_model=self.variogram_model,
-                nlags=self.nlags,
-                weight=self.weight,
-                verbose=self.verbose,
-                variogram_parameters=self.variogram_parameters,
-                **points
-            )
-        else:
-            self.model = krige_methods[self.method](
-                z=y,
-                variogram_model=self.variogram_model,
-                nlags=self.nlags,
-                weight=self.weight,
-                verbose=self.verbose,
-                variogram_parameters=self.variogram_parameters,
-                **points
-            )
+            # if condition required to address backward compatibility
+            if self.method in threed_krige:
+                self.model = krige_methods[self.method](
+                    val=y,
+                    variogram_model=self.variogram_model,
+                    nlags=self.nlags,
+                    weight=self.weight,
+                    variogram_parameters=self.variogram_parameters,
+                    verbose=self.verbose,
+                    **points
+                )
+            else:
+                self.model = krige_methods[self.method](
+                    z=y,
+                    variogram_model=self.variogram_model,
+                    nlags=self.nlags,
+                    weight=self.weight,
+                    variogram_parameters=self.variogram_parameters,
+                    verbose=self.verbose,
+                    **points
+                )
 
     def _dimensionality_check(self, x, ext=''):
         if self.method in ('ordinary', 'universal'):
