@@ -404,6 +404,23 @@ class OrdinaryKriging:
                                         self.lags), 'k-')
         plt.show()
 
+    def get_variogram_points(self):
+        """Returns both the lags and the variogram function evaluated at each
+        of them.
+
+        The evaluation of the variogram function and the lags are produced
+        internally. This method is convenient when the user wants to access to
+        the lags and the resulting variogram (according to the model provided)
+        for further analysis.
+
+        Returns
+        -------
+        (tuple) tuple containing:
+            lags (array) - the lags at which the variogram was evaluated
+            variogram (array) - the variogram function evaluated at the lags
+        """
+        return self.lags, self.variogram_function(self.variogram_model_parameters, self.lags)
+
     def switch_verbose(self):
         """Allows user to switch code talk-back on/off. Takes no arguments."""
         self.verbose = not self.verbose
