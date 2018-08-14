@@ -38,7 +38,8 @@ class Krige(RegressorMixin, BaseEstimator):
                  nlags=6,
                  weight=False,
                  n_closest_points=10,
-                 verbose=False):
+                 verbose=False,
+                 variogram_parameters=None):
 
         validate_method(method)
         self.variogram_model = variogram_model
@@ -48,6 +49,7 @@ class Krige(RegressorMixin, BaseEstimator):
         self.model = None  # not trained
         self.n_closest_points = n_closest_points
         self.method = method
+        self.variogram_parameters = variogram_parameters
 
     def fit(self, x, y, *args, **kwargs):
         """
@@ -70,6 +72,7 @@ class Krige(RegressorMixin, BaseEstimator):
                 nlags=self.nlags,
                 weight=self.weight,
                 verbose=self.verbose,
+                variogram_parameters=self.variogram_parameters,
                 **points
             )
         else:
@@ -79,6 +82,7 @@ class Krige(RegressorMixin, BaseEstimator):
                 nlags=self.nlags,
                 weight=self.weight,
                 verbose=self.verbose,
+                variogram_parameters=self.variogram_parameters,
                 **points
             )
 
@@ -271,5 +275,3 @@ class RegressionKriging:
         return r2_score(y_pred=self.predict(p, x),
                         y_true=y,
                         sample_weight=sample_weight)
-
-
