@@ -12,7 +12,7 @@ from pykrige.compat import GridSearchCV
 import pytest
 
 from pykrige.compat import SKLEARN_INSTALLED
-
+from decimal import Decimal
 
 def _method_and_variogram():
     method = ['ordinary', 'universal', 'ordinary3d', 'universal3d']
@@ -55,38 +55,27 @@ def test_krige():
 @pytest.mark.skipif(not SKLEARN_INSTALLED,
                     reason="scikit-learn not installed")
 def test_gridsearch_cv_variogram_parameters():
-    # First dictionary with a dictionary in the place of the variogram_parameters
-    param_dict3d_1 = {"method": ["ordinary3d"], "variogram_model": ["linear"],
+    param_dict3d = {"method": ["ordinary3d"], "variogram_model": ["linear"],
                  "variogram_parameters": [{'slope': 1.0, 'nugget': 1.0},
                                           {'slope': 2.0, 'nugget': 1.0}]
                }
-    # First dictionary with a list of lists in the place of the variogram_parameters
-    param_dict3d_2 = {"method": ["ordinary3d"], "variogram_model": ["linear"],
-                 "variogram_parameters": [[1.0,1.0],
-                                          [2.0,1.0]]
-               }
 
-    estimator1 = GridSearchCV(Krige(), param_dict3d_1, verbose=True)
-    estimator2 = GridSearchCV(Krige(), param_dict3d_2, verbose=True)
+    estimator = GridSearchCV(Krige(), param_dict3d, verbose=True)
 
     # dummy data
-    np.random.seed(42)
-    X3 = np.random.randint(0, 400, size=(100, 3)).astype(float)
-    y = 5 * np.random.rand(100)
+    seed = np.random.RandomState(42)
+    X3 = 400. * (1 + seed.rand(100, 3))
+    y = 5 * seed.rand(100)
 
     # run the gridsearch
-    estimator1.fit(X=X3, y=y)
-    estimator2.fit(X=X3, y=y)
+    estimator.fit(X=X3, y=y)
 
-    # Expected best parameters
+    # Expected best parameters and score
     best_params = [1.0,1.0]
-    if hasattr(estimator1, 'best_score_') and hasattr(estimator2, 'best_score_'):
-        # To test that the best scores are the same for the two estimators
-        assert estimator1.best_score_ == estimator2.best_score_
-    if hasattr(estimator1, 'best_params_') and hasattr(estimator2, 'best_params_'):
-        for i,k in enumerate(estimator1.best_params_["variogram_parameters"].keys()):
-            # To show that the best parameters are the same for the two estimators
-            assert estimator1.best_params_["variogram_parameters"][k] == \
-                    estimator2.best_params_["variogram_parameters"][i]
-            # To show that the best parameters are the one expected :
-            assert estimator1.best_params_["variogram_parameters"][k] == best_params[i]
+    # best_score = -0.4624793735893478
+    best_score = round(Decimal(-0.462479373589),12)
+
+    if hasattr(estimator, 'best_params_'):
+        assert len(estimator.cv_results_['param_variogram_parameters'])==len(param_dict3d["variogram_parameters"])
+        for i,k in enumerate(estimator.best_params_["variogram_parameters"]):
+            assert estimator.best_params_["variogram_parameters"][k] == best_params[i]
