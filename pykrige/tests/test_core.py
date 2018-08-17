@@ -2013,3 +2013,27 @@ def test_ok_geometric():
 
     # Execute on grid:
     z, ss = OK.execute('grid', grid_lon, grid_lat)
+
+
+def test_ok_geometric_closest_points():
+    # Generate random data:
+    np.random.seed(89239413)
+    lon = 360.0*np.random.rand(50, 1)
+    lat = 180.0*np.random.rand(50, 1) - 90.0
+    z = np.random.rand(50, 1)
+
+    # Generate grid:
+    grid_lon = 360.0*np.random.rand(120, 1)
+    grid_lat = 180.0*np.random.rand(120, 1) - 90.0
+
+    # Create ordinary kriging object:
+    OK = OrdinaryKriging(lon, lat, z, variogram_model='linear', verbose=False,
+                         enable_plotting=False, coordinates_type='geographic')
+
+    # Execute on grid:
+    with pytest.raises(ValueError):
+        # Test OK raising ValueError when closest_points == 1:
+        z, ss = OK.execute('grid', grid_lon, grid_lat, n_closest_points=1,
+                           backend='C')
+    z, ss = OK.execute('grid', grid_lon, grid_lat, n_closest_points=5,
+                       backend='C')
