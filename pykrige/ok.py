@@ -665,6 +665,11 @@ class OrdinaryKriging:
             raise ValueError("style argument must be 'grid', "
                              "'points', or 'masked'")
 
+        if n_closest_points is not None and n_closest_points <= 1:
+            # If this is not checked, nondescriptive errors emerge
+            # later in the code.
+            raise ValueError("n_closest_points has to be at least two!")
+
         xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
         ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
         n = self.X_ADJUSTED.shape[0]
@@ -704,28 +709,16 @@ class OrdinaryKriging:
                                                 [self.XCENTER, self.YCENTER],
                                                 [self.anisotropy_scaling],
                                                 [self.anisotropy_angle]).T
+            # Prepare for cdist:
             xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
                                       self.Y_ADJUSTED[:, np.newaxis]), axis=1)
             xy_points = np.concatenate((xpts[:, np.newaxis],
                                         ypts[:, np.newaxis]), axis=1)
         elif self.coordinates_type == 'geographic':
-            # Quick version: Only difference between euclidean and spherical
-            # space regarding kriging is the distance metric.
-            # Since the relationship between three dimensional euclidean
-            # distance and great circle distance on the sphere is monotonous,
-            # use the existing (euclidean) infrastructure for nearest neighbour
-            # search and distance calculation in euclidean three space and
-            # convert distances to great circle distances afterwards.
-            lon_d = self.X_ADJUSTED[:, np.newaxis] * np.pi / 180.0
-            lat_d = self.Y_ADJUSTED[:, np.newaxis] * np.pi / 180.0
-            xy_data = np.concatenate((np.cos(lon_d) * np.cos(lat_d),
-                                      np.sin(lon_d) * np.cos(lat_d),
-                                      np.sin(lat_d)), axis=1)
-            lon_p = xpts[:, np.newaxis] * np.pi / 180.0
-            lat_p = ypts[:, np.newaxis] * np.pi / 180.0
-            xy_points = np.concatenate((np.cos(lon_p) * np.cos(lat_p),
-                                        np.sin(lon_p) * np.cos(lat_p),
-                                        np.sin(lat_p)), axis=1)
+            # In spherical coordinates, we do not correct for anisotropy.
+            # Also, we don't use scipy.spatial.cdist, so we do not have to
+            # format the input data accordingly.
+            pass
 
         if style != 'masked':
             mask = np.zeros(npt, dtype='bool')
@@ -746,13 +739,36 @@ class OrdinaryKriging:
             c_pars = {key: getattr(self, key) for key in ['Z', 'eps', 'variogram_model_parameters', 'variogram_function']}
 
         if n_closest_points is not None:
+            if self.coordinates_type == 'geographic':
+                # To make use of the KDTree, we have to convert the
+                # spherical coordinates into three dimensional Euclidean
+                # coordinates, since the standard KDTree cannot handle
+                # the periodicity.
+                # Do the conversion just for the step involving the KDTree:
+                lon_d = self.X_ADJUSTED[:, np.newaxis] * np.pi / 180.0
+                lat_d = self.Y_ADJUSTED[:, np.newaxis] * np.pi / 180.0
+                xy_data = np.concatenate((np.cos(lon_d) * np.cos(lat_d),
+                                          np.sin(lon_d) * np.cos(lat_d),
+                                          np.sin(lat_d)), axis=1)
+                lon_p = xpts[:, np.newaxis] * np.pi / 180.0
+                lat_p = ypts[:, np.newaxis] * np.pi / 180.0
+                xy_points = np.concatenate((np.cos(lon_p) * np.cos(lat_p),
+                                            np.sin(lon_p) * np.cos(lat_p),
+                                            np.sin(lat_p)), axis=1)
+
             from scipy.spatial import cKDTree
             tree = cKDTree(xy_data)
             bd, bd_idx = tree.query(xy_points, k=n_closest_points, eps=0.0)
+
             if self.coordinates_type == 'geographic':
-                # Convert euclidean distances to great circle distances:
-                bd = core.euclid3_to_great_circle(bd)
-            
+                # Between the nearest neighbours from Euclidean search,
+                # calculate the great circle distance using the standard method:
+                x_points = np.tile(xpts[:,np.newaxis],(1,n_closest_points))
+                y_points = np.tile(ypts[:,np.newaxis],(1,n_closest_points))
+                bd = core.great_circle_distance(x_points, y_points,
+                                                self.X_ADJUSTED[bd_idx],
+                                                self.Y_ADJUSTED[bd_idx])
+
             if backend == 'loop':
                 zvalues, sigmasq = \
                     self._exec_loop_moving_window(a, bd, mask, bd_idx)
@@ -765,11 +781,13 @@ class OrdinaryKriging:
                 raise ValueError('Specified backend {} for a moving window '
                                  'is not supported.'.format(backend))
         else:
-            bd = cdist(xy_points,  xy_data, 'euclidean')
-            if self.coordinates_type == 'geographic':
-                # Convert euclidean distances to great circle distances:
-                bd = core.euclid3_to_great_circle(bd)
-            
+            if self.coordinates_type == 'euclidean':
+                bd = cdist(xy_points,  xy_data, 'euclidean')
+            elif self.coordinates_type == 'geographic':
+                bd = core.great_circle_distance(xpts[:,np.newaxis],
+                                                ypts[:,np.newaxis],
+                                                self.X_ADJUSTED, self.Y_ADJUSTED)
+
             if backend == 'vectorized':
                 zvalues, sigmasq = self._exec_vector(a, bd, mask)
             elif backend == 'loop':
