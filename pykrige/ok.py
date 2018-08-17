@@ -459,9 +459,14 @@ class OrdinaryKriging:
     def _get_kriging_matrix(self, n):
         """Assembles the kriging matrix."""
 
-        xy = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
-                             self.Y_ADJUSTED[:, np.newaxis]), axis=1)
-        d = cdist(xy, xy, 'euclidean')
+        if self.coordinates_type == 'euclidean':
+            xy = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
+                                 self.Y_ADJUSTED[:, np.newaxis]), axis=1)
+            d = cdist(xy, xy, 'euclidean')
+        elif self.coordinates_type == 'geographic':
+            d = core.great_circle_distance(self.X_ADJUSTED[:,np.newaxis],
+                                           self.Y_ADJUSTED[:,np.newaxis],
+                                           self.X_ADJUSTED, self.Y_ADJUSTED)
         a = np.zeros((n+1, n+1))
         a[:n, :n] = - self.variogram_function(self.variogram_model_parameters,
                                               d)
