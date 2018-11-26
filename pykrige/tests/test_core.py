@@ -2021,7 +2021,7 @@ def test_ok_geographic_vs_euclid():
     # system and compare the kriging results in that coordinate
     # system with the geographic-option results.
     # If data point distance to the north pole is small enough
-    # (choose maximum 0.01°), the differences due to curvature
+    # (choose maximum 0.01 degrees), the differences due to curvature
     # should be negligible.
     np.random.seed(89239413)
     from_north = 1e-2*np.random.random(5)
