@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 from pytest import approx
 from numpy.testing import assert_allclose
+from scipy.spatial.distance import cdist
 
 from pykrige import kriging_tools as kt
 from pykrige import core
@@ -2049,8 +2050,8 @@ def test_ok_geographic_vs_euclid():
     # Calculate and compare distance matrices ensuring that that part
     # of the workflow works as intended (tested: 2e-9 is currently the
     # match for this setup):
-    d_eucl = np.sqrt(  (x[:,np.newaxis] - grid_x[np.newaxis,:])**2
-                     + (y[:,np.newaxis] - grid_y[np.newaxis,:])**2)
+    d_eucl = cdist(np.concatenate([x[:,np.newaxis],y[:,np.newaxis]],axis=1),
+                   np.concatenate([grid_x[:,np.newaxis],grid_y[:,np.newaxis]],axis=1))
     d_geo = core.great_circle_distance(lon[:,np.newaxis], lat[:,np.newaxis],
                  grid_lon[np.newaxis,:], grid_lat[np.newaxis,:])
     assert_allclose(d_eucl,d_geo, rtol=2e-9)
@@ -2068,7 +2069,7 @@ def test_ok_geographic_vs_euclid():
     zxy, ss = OK_xy.execute('points', grid_x, grid_y)
     zwrong, ss = OK_wrong.execute('points', grid_lon, grid_lat)
 
-    # Assert equivalence / difference (tested: 1e-5 is currently the
+    # Assert equivalence / difference (tested: 2e-5 is currently the
     # match for this setup):
     assert_allclose(zgeo, zxy, rtol=2e-5)
     assert not np.any(zgeo == 0)
