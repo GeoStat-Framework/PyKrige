@@ -2070,7 +2070,7 @@ def test_ok_geographic_vs_euclid():
 
     # Assert equivalence / difference (tested: 1e-5 is currently the
     # match for this setup):
-    assert_allclose(zgeo, zxy, rtol=1e-5)
+    assert_allclose(zgeo, zxy, rtol=2e-5)
     assert not np.any(zgeo == 0)
     assert np.abs((zgeo-zwrong)/zgeo).max() > 1.0
 
