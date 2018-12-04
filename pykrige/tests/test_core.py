@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 from pytest import approx
 from numpy.testing import assert_allclose
+from scipy.spatial.distance import cdist
 
 from pykrige import kriging_tools as kt
 from pykrige import core
@@ -1996,7 +1997,7 @@ def test_geometric_code():
             rtol=1e-5)
 
 
-def test_ok_geometric():
+def test_ok_geographic():
     # Generate random data:
     np.random.seed(89239413)
     lon = 360.0*np.random.rand(50, 1)
@@ -2013,3 +2014,87 @@ def test_ok_geometric():
 
     # Execute on grid:
     z, ss = OK.execute('grid', grid_lon, grid_lat)
+
+
+def test_ok_geographic_vs_euclid():
+    # Generate some random data close to the north pole.
+    # Then we use a polar projected 2d euclidean coordinate
+    # system and compare the kriging results in that coordinate
+    # system with the geographic-option results.
+    # If data point distance to the north pole is small enough
+    # (choose maximum 0.01 degrees), the differences due to curvature
+    # should be negligible.
+    np.random.seed(89239413)
+    from_north = 1e-2*np.random.random(5)
+    lat = 90.0-from_north
+    lon = 360.0*np.random.random(5)
+    z = np.random.random(5)
+    z -= z.mean()
+    x = from_north * np.cos(np.deg2rad(lon))
+    y = from_north * np.sin(np.deg2rad(lon))
+
+    # Generate grids:
+    grid_lon = 360.0 * np.linspace(0, 1, 50)
+    grid_from_north = np.linspace(0,0.01,10)
+    grid_lat = 90.0 - grid_from_north
+    grid_x = grid_from_north[:,np.newaxis] * np.cos(np.deg2rad(grid_lon[np.newaxis,:]))
+    grid_y = grid_from_north[:,np.newaxis] * np.sin(np.deg2rad(grid_lon[np.newaxis,:]))
+    grid_lon, grid_lat = np.meshgrid(grid_lon, grid_lat, indexing='xy')
+
+    # Flatten the grids:
+    grid_x = grid_x.flatten()
+    grid_y = grid_y.flatten()
+    grid_lon = grid_lon.flatten()
+    grid_lat = grid_lat.flatten()
+
+    # Calculate and compare distance matrices ensuring that that part
+    # of the workflow works as intended (tested: 2e-9 is currently the
+    # match for this setup):
+    d_eucl = cdist(np.concatenate([x[:,np.newaxis],y[:,np.newaxis]],axis=1),
+                   np.concatenate([grid_x[:,np.newaxis],grid_y[:,np.newaxis]],axis=1))
+    d_geo = core.great_circle_distance(lon[:,np.newaxis], lat[:,np.newaxis],
+                 grid_lon[np.newaxis,:], grid_lat[np.newaxis,:])
+    assert_allclose(d_eucl,d_geo, rtol=2e-9)
+
+    # Create ordinary kriging objects:
+    OK_geo = OrdinaryKriging(lon, lat, z, variogram_model='linear', verbose=False,
+                             enable_plotting=False, coordinates_type='geographic')
+    OK_xy = OrdinaryKriging(x, y, z, variogram_model='linear', verbose=False,
+                            enable_plotting=False)
+    OK_wrong = OrdinaryKriging(lon, lat, z, variogram_model='linear', verbose=False,
+                               enable_plotting=False)
+
+    # Execute on grid:
+    zgeo, ss = OK_geo.execute('points', grid_lon, grid_lat)
+    zxy, ss = OK_xy.execute('points', grid_x, grid_y)
+    zwrong, ss = OK_wrong.execute('points', grid_lon, grid_lat)
+
+    # Assert equivalence / difference (tested: 2e-5 is currently the
+    # match for this setup):
+    assert_allclose(zgeo, zxy, rtol=2e-5)
+    assert not np.any(zgeo == 0)
+    assert np.abs((zgeo-zwrong)/zgeo).max() > 1.0
+
+
+def test_ok_geometric_closest_points():
+    # Generate random data:
+    np.random.seed(89239413)
+    lon = 360.0*np.random.rand(50, 1)
+    lat = 180.0*np.random.rand(50, 1) - 90.0
+    z = np.random.rand(50, 1)
+
+    # Generate grid:
+    grid_lon = 360.0*np.random.rand(120, 1)
+    grid_lat = 180.0*np.random.rand(120, 1) - 90.0
+
+    # Create ordinary kriging object:
+    OK = OrdinaryKriging(lon, lat, z, variogram_model='linear', verbose=False,
+                         enable_plotting=False, coordinates_type='geographic')
+
+    # Execute on grid:
+    with pytest.raises(ValueError):
+        # Test OK raising ValueError when closest_points == 1:
+        z, ss = OK.execute('grid', grid_lon, grid_lat, n_closest_points=1,
+                           backend='C')
+    z, ss = OK.execute('grid', grid_lon, grid_lat, n_closest_points=5,
+                       backend='C')
