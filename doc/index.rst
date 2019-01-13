@@ -14,3 +14,4 @@ Contents
    variogram_models
    api
    examples/index
+   release_notes

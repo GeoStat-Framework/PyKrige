@@ -1,4 +1,4 @@
-# PyKrige Changelog
+# Release notes
 
 ## Version 1.4.1
 *January 13, 2019*
@@ -10,7 +10,7 @@
 * Fixed OrdinaryKriging readme example. PR[#107](https://github.com/bsmurphy/PyKrige/pull/107) by [Harry Matchette-Downes](https://github.com/harrymd)
 * Fixed kriging matrix not being calculated correctly for geographic coordinates. PR[99](https://github.com/bsmurphy/PyKrige/pull/99) by [Mike Rilee](https://github.com/michaelleerilee)
 
-## Version 1.4
+## Version 1.4.0
 *April 24, 2018*
 
 ### New features  
