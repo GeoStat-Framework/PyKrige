@@ -1,7 +1,7 @@
 # PyKrige Changelog
 
 ## Version 1.4.1
-*??? Date *
+*January 13, 2019*
 
 ### New features
 * Added method to obtain variogram model points. PR[#94](https://github.com/bsmurphy/PyKrige/pull/94) by [Daniel Mejía Raigosa](https://github.com/Daniel-M)
