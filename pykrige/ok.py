@@ -45,13 +45,15 @@ class OrdinaryKriging:
         Y-coordinates of data points.
     z : array-like
         Values at data points.
-    variogram_model : str, optional
+    variogram_model : str or GSTools CovModel, optional
         Specifies which variogram model to use; may be one of the following:
         linear, power, gaussian, spherical, exponential, hole-effect.
         Default is linear variogram model. To utilize a custom variogram model,
         specify 'custom'; you must also provide variogram_parameters and
         variogram_function. Note that the hole-effect model is only technically
         correct for one-dimensional problems.
+        You can also use a GSTools
+        CovModel, see https://github.com/GeoStat-Framework/GSTools
     variogram_parameters : list or dict, optional
         Parameters that define the specified variogram model. If not provided,
         parameters will be automatically calculated using a "soft" L1 norm
@@ -162,6 +164,33 @@ class OrdinaryKriging:
                  verbose=False, enable_plotting=False, enable_statistics=False,
                  coordinates_type='euclidean'):
 
+        # set up variogram model and parameters...
+        self.variogram_model = variogram_model
+        self.model = None
+        # check if a GSTools covariance model is given
+        # See: https://github.com/GeoStat-Framework/GSTools
+        if hasattr(self.variogram_model, "pykrige_kwargs"):
+            # save the model in the class
+            self.model = self.variogram_model
+            assert self.model.dim < 3, "GSTools: model dim is not 1 or 2"
+            self.variogram_model = "custom"
+            variogram_function = self.model.pykrige_vario
+            variogram_parameters = []
+            anisotropy_scaling = self.model.pykrige_anis
+            anisotropy_angle = self.model.pykrige_angle
+        if self.variogram_model not in self.variogram_dict.keys() and \
+                        self.variogram_model != 'custom':
+            raise ValueError("Specified variogram model '%s' "
+                             "is not supported." % variogram_model)
+        elif self.variogram_model == 'custom':
+            if variogram_function is None or not callable(variogram_function):
+                raise ValueError("Must specify callable function for "
+                                 "custom variogram model.")
+            else:
+                self.variogram_function = variogram_function
+        else:
+            self.variogram_function = self.variogram_dict[self.variogram_model]
+
         # Code assumes 1D input arrays of floats. Ensures that any extraneous
         # dimensions don't get in the way. Copies are created to avoid any
         # problems with referencing the original passed arguments.
@@ -210,21 +239,6 @@ class OrdinaryKriging:
             raise ValueError("Only 'euclidean' and 'geographic' are valid "
                              "values for coordinates-keyword.")
         self.coordinates_type = coordinates_type
-
-        # set up variogram model and parameters...
-        self.variogram_model = variogram_model
-        if self.variogram_model not in self.variogram_dict.keys() and \
-                        self.variogram_model != 'custom':
-            raise ValueError("Specified variogram model '%s' "
-                             "is not supported." % variogram_model)
-        elif self.variogram_model == 'custom':
-            if variogram_function is None or not callable(variogram_function):
-                raise ValueError("Must specify callable function for "
-                                 "custom variogram model.")
-            else:
-                self.variogram_function = variogram_function
-        else:
-            self.variogram_function = self.variogram_dict[self.variogram_model]
 
         if self.verbose:
             print("Initializing variogram model...")
@@ -288,28 +302,64 @@ class OrdinaryKriging:
 
         Parameters
         __________
-        variogram_model (string): May be any of the variogram models listed
+        variogram_model : str or GSTools CovModel
+            May be any of the variogram models listed
             above. May also be 'custom', in which case variogram_parameters
             and variogram_function must be specified.
-        variogram_parameters (list or dict, optional): List or dict of
+            You can also use a GSTools
+            CovModel, see https://github.com/GeoStat-Framework/GSTools
+        variogram_parameters : list or dict, optional
+            List or dict of
             variogram model parameters, as explained above. If not provided,
             a best fit model will be calculated as described above.
-        variogram_function (callable, optional): A callable function that must
+        variogram_function : callable, optional
+            A callable function that must
             be provided if variogram_model is specified as 'custom'.
             See above for more information.
-        nlags (int, optional): Number of averaging bins for the semivariogram.
+        nlags : int, optional
+            Number of averaging bins for the semivariogram.
             Default is 6.
-        weight (boolean, optional): Flag that specifies if semivariance at
+        weight : boolean, optional
+            Flag that specifies if semivariance at
             smaller lags should be weighted more heavily when automatically
             calculating the variogram model. See above for more information.
             True indicates that weights will be applied. Default is False.
-        anisotropy_scaling (float, optional): Scalar stretching value to
+        anisotropy_scaling : float, optional
+            Scalar stretching value to
             take into account anisotropy. Default is 1 (effectively no
             stretching). Scaling is applied in the y-direction.
-        anisotropy_angle (float, optional): CCW angle (in degrees) by
+        anisotropy_angle : float, optional
+            CCW angle (in degrees) by
             which to rotate coordinate system in order to take into
             account anisotropy. Default is 0 (no rotation).
         """
+
+        # set up variogram model and parameters...
+        self.variogram_model = variogram_model
+        self.model = None
+        # check if a GSTools covariance model is given
+        # See: https://github.com/GeoStat-Framework/GSTools
+        if hasattr(self.variogram_model, "pykrige_kwargs"):
+            # save the model in the class
+            self.model = self.variogram_model
+            assert self.model.dim < 3, "GSTools: model dim is not 1 or 2"
+            self.variogram_model = "custom"
+            variogram_function = self.model.pykrige_vario
+            variogram_parameters = []
+            anisotropy_scaling = self.model.pykrige_anis
+            anisotropy_angle = self.model.pykrige_angle
+        if self.variogram_model not in self.variogram_dict.keys() and \
+                        self.variogram_model != 'custom':
+            raise ValueError("Specified variogram model '%s' "
+                             "is not supported." % variogram_model)
+        elif self.variogram_model == 'custom':
+            if variogram_function is None or not callable(variogram_function):
+                raise ValueError("Must specify callable function for "
+                                 "custom variogram model.")
+            else:
+                self.variogram_function = variogram_function
+        else:
+            self.variogram_function = self.variogram_dict[self.variogram_model]
 
         if anisotropy_scaling != self.anisotropy_scaling or \
            anisotropy_angle != self.anisotropy_angle:
@@ -332,17 +382,6 @@ class OrdinaryKriging:
                 self.anisotropy_angle = 0.0
                 self.X_ADJUSTED = self.X_ORIG
                 self.Y_ADJUSTED = self.Y_ORIG
-
-        self.variogram_model = variogram_model
-        if self.variogram_model not in self.variogram_dict.keys() and self.variogram_model != 'custom':
-            raise ValueError("Specified variogram model '%s' is not supported." % variogram_model)
-        elif self.variogram_model == 'custom':
-            if variogram_function is None or not callable(variogram_function):
-                raise ValueError("Must specify callable function for custom variogram model.")
-            else:
-                self.variogram_function = variogram_function
-        else:
-            self.variogram_function = self.variogram_dict[self.variogram_model]
         if self.verbose:
             print("Updating variogram mode...")
 
