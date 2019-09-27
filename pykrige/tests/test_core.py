@@ -406,7 +406,7 @@ def test_ok_get_variogram_points(validation_ref):
     _variogram_parameters = [500.0, 3000.0, 0.0]
 
     data, _, (ok_test_answer, gridx, gridy) = validation_ref
-    
+
     ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2],
                           variogram_model='exponential',
                           variogram_parameters=_variogram_parameters)
@@ -415,7 +415,7 @@ def test_ok_get_variogram_points(validation_ref):
     lags, calculated_variogram = ok.get_variogram_points()
 
     # Generate the expected variogram points according to the
-    # exponential variogram model 
+    # exponential variogram model
     expected_variogram = variogram_models.exponential_variogram_model(
                          _variogram_parameters, lags)
 
@@ -572,7 +572,7 @@ def test_uk_update_variogram_model(sample_data_2d):
 
 
 def test_uk_get_variogram_points(validation_ref):
-    # Test to compare the variogram of UK with linear drift to results from 
+    # Test to compare the variogram of UK with linear drift to results from
     # KT3D_H2O.
     # (M. Karanovic, M. Tonkin, and D. Wilson, 2009, Groundwater,
     # vol. 47, no. 4, 580-586.)
@@ -581,7 +581,7 @@ def test_uk_get_variogram_points(validation_ref):
     _variogram_parameters = [500.0, 3000.0, 0.0]
 
     data, _, (uk_test_answer, gridx, gridy) = validation_ref
-    
+
     uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2],
                           variogram_model='exponential',
                           variogram_parameters=_variogram_parameters,
@@ -591,7 +591,7 @@ def test_uk_get_variogram_points(validation_ref):
     lags, calculated_variogram = uk.get_variogram_points()
 
     # Generate the expected variogram points according to the
-    # exponential variogram model 
+    # exponential variogram model
     expected_variogram = variogram_models.exponential_variogram_model(
                          _variogram_parameters, lags)
 
@@ -2098,3 +2098,25 @@ def test_ok_geometric_closest_points():
                            backend='C')
     z, ss = OK.execute('grid', grid_lon, grid_lat, n_closest_points=5,
                        backend='C')
+
+@pytest.mark.parametrize("model", [OrdinaryKriging, UniversalKriging])
+def test_gstools_variogram(model):
+    gstools = pytest.importorskip("gstools")
+    # test data
+    data = np.array([[0.3, 1.2, 0.47],
+                     [1.9, 0.6, 0.56],
+                     [1.1, 3.2, 0.74],
+                     [3.3, 4.4, 1.47],
+                     [4.7, 3.8, 1.74]])
+    gridx = np.arange(0.0, 5.5, 0.1)
+    gridy = np.arange(0.0, 6.5, 0.1)
+    # a GSTools based covariance model
+    cov_model = gstools.Gaussian(dim=2, len_scale=1, anis=.2, angles=-.5, var=.5, nugget=.1)
+    # create the krige field
+    krige = model(data[:, 0], data[:, 1], data[:, 2], cov_model)
+    z1, ss1 = krige.execute('grid', gridx, gridy)
+    # check if the field coincides with the data
+    for i in range(5):
+        y_id = int(data[i, 1] * 10)
+        x_id = int(data[i, 0] * 10)
+        assert np.isclose(z1[y_id, x_id], data[i, 2])
