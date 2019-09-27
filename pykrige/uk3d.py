@@ -206,11 +206,11 @@ class UniversalKriging3D:
         self.variogram_model = variogram_model
         self.model = None
         # check if a GSTools covariance model is given
-        # See: https://github.com/GeoStat-Framework/GSTools
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
             self.model = self.variogram_model
-            assert self.model.dim == 3, "GSTools: model dim is not 3"
+            if self.model.dim < 3:
+                raise ValueError("GSTools: model dim is not 3")
             self.variogram_model = "custom"
             variogram_function = self.model.pykrige_vario
             variogram_parameters = []
@@ -419,11 +419,11 @@ class UniversalKriging3D:
         self.variogram_model = variogram_model
         self.model = None
         # check if a GSTools covariance model is given
-        # See: https://github.com/GeoStat-Framework/GSTools
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
             self.model = self.variogram_model
-            assert self.model.dim == 3, "GSTools: model dim is not 3"
+            if self.model.dim < 3:
+                raise ValueError("GSTools: model dim is not 3")
             self.variogram_model = "custom"
             variogram_function = self.model.pykrige_vario
             variogram_parameters = []
