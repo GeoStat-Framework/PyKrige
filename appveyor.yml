@@ -22,9 +22,11 @@ install:
   - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PYTHON%\\Library\\bin;%PATH%"
   - conda config --set always_yes yes --set changeps1 no
   - conda config --add channels conda-forge
+  - conda update -q conda
   - conda info -a
-  - conda install numpy scipy nose matplotlib cython scikit-learn pytest pytest-cov
-  - pip install coverage
+  - conda create --name pykrige numpy scipy matplotlib cython scikit-learn
+  - activate pykrige
+  - pip install coverage pytest-cov
   - pip install -e .
 
 
