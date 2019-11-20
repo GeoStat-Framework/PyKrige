@@ -22,9 +22,14 @@ try:
         from sklearn.cross_validation import train_test_split
 
     SKLEARN_INSTALLED = True
-    # https://stackoverflow.com/a/56618067/6696397
-    if "return_train_score" in inspect.getfullargspec(GridSearchCV)[0]:
-        GridSearchCV = partial(GridSearchCV, return_train_score=True)
+    if SKLEARN_INSTALLED:
+        if PY3:
+            arg_spec = inspect.getfullargspec(GridSearchCV)[0]
+        else:
+            arg_spec = inspect.getargspec(GridSearchCV)[0]
+        # https://stackoverflow.com/a/56618067/6696397
+        if "return_train_score" in arg_spec:
+            GridSearchCV = partial(GridSearchCV, return_train_score=True)
 
 except ImportError:
     SKLEARN_INSTALLED = False
