@@ -7,7 +7,7 @@ import numpy as np
 
 from pykrige.rk import Krige
 from pykrige.rk import threed_krige
-from pykrige.compat import GridSearchCV
+from pykrige.compat import GridSearchCV, TRAIN_SCORE_ON
 
 
 def _method_and_vergiogram():
@@ -23,6 +23,9 @@ def test_krige():
     X = np.random.randint(0, 400, size=(20, 3)).astype(float)
     y = 5 * np.random.rand(20)
 
+    # https://stackoverflow.com/a/56618067/6696397
+    train_kw = {} if TRAIN_SCORE_ON else {"return_train_score": True}
+
     for m, v in _method_and_vergiogram():
         param_dict = {'method': [m], 'variogram_model': [v]}
 
@@ -33,6 +36,7 @@ def test_krige():
                                  pre_dispatch='2*n_jobs',
                                  verbose=False,
                                  cv=5,
+                                 **train_kw
                                  )
         # run the gridsearch
         if m in ['ordinary', 'universal']:
