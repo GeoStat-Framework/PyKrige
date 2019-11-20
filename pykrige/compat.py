@@ -4,7 +4,7 @@
 
 from __future__ import absolute_import
 import sys
-from packaging import version
+import inspect
 from functools import partial
 
 
@@ -22,15 +22,12 @@ try:
         from sklearn.cross_validation import train_test_split
 
     SKLEARN_INSTALLED = True
-    # state if train_score is returned (false from v0.21 on)
-    TRAIN_SCORE_ON = version.parse(skl_ver) < version.parse("0.21")
     # https://stackoverflow.com/a/56618067/6696397
-    if not TRAIN_SCORE_ON:
+    if "return_train_score" in inspect.getfullargspec(GridSearchCV)[0]:
         GridSearchCV = partial(GridSearchCV, return_train_score=True)
 
 except ImportError:
     SKLEARN_INSTALLED = False
-    TRAIN_SCORE_ON = False
 
 
 class SklearnException(Exception):
