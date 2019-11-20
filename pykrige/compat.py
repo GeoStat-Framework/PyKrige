@@ -24,11 +24,9 @@ try:
     if SKLEARN_INSTALLED:
         if PY3:
             arg_spec = inspect.getfullargspec(GridSearchCV)[0]
-        else:
-            arg_spec = inspect.getargspec(GridSearchCV)[0]
-        # https://stackoverflow.com/a/56618067/6696397
-        if "return_train_score" in arg_spec:
-            GridSearchCV = partial(GridSearchCV, return_train_score=True)
+            # https://stackoverflow.com/a/56618067/6696397
+            if "return_train_score" in arg_spec:
+                GridSearchCV = partial(GridSearchCV, return_train_score=True)
 
 except ImportError:
     SKLEARN_INSTALLED = False
