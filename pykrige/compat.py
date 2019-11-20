@@ -5,6 +5,7 @@
 from __future__ import absolute_import
 import sys
 from packaging import version
+from functools import partial
 
 
 PY3 = (sys.version_info[0] == 3)
@@ -23,6 +24,9 @@ try:
     SKLEARN_INSTALLED = True
     # state if train_score is returned (false from v0.21 on)
     TRAIN_SCORE_ON = version.parse(skl_ver) < version.parse("0.21")
+    # https://stackoverflow.com/a/56618067/6696397
+    if not TRAIN_SCORE_ON:
+        GridSearchCV = partial(GridSearchCV, return_train_score=True)
 
 except ImportError:
     SKLEARN_INSTALLED = False
