@@ -13,7 +13,6 @@ PY3 = (sys.version_info[0] == 3)
 
 # sklearn
 try:
-    from sklearn import __version__ as skl_ver
     try:  # scikit-learn 1.18.+
         from sklearn.model_selection import GridSearchCV
         from sklearn.model_selection import train_test_split
