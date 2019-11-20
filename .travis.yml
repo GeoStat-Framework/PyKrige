@@ -19,6 +19,7 @@ before_install:
     - export PATH=/home/travis/miniconda3/bin:$PATH
     - conda update --yes conda
     - conda info -a
+    - conda config --add channels conda-forge
 
 install:
     - conda create -q -n krige-env -y $DEPS pip pytest-cov pytest python=${TRAVIS_PYTHON_VERSION}
