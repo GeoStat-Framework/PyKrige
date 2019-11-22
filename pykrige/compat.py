@@ -4,6 +4,8 @@
 
 from __future__ import absolute_import
 import sys
+import inspect
+from functools import partial
 
 
 PY3 = (sys.version_info[0] == 3)
@@ -19,6 +21,11 @@ try:
         from sklearn.cross_validation import train_test_split
 
     SKLEARN_INSTALLED = True
+    if PY3:
+        arg_spec = inspect.getfullargspec(GridSearchCV)[0]
+        # https://stackoverflow.com/a/56618067/6696397
+        if "return_train_score" in arg_spec:
+            GridSearchCV = partial(GridSearchCV, return_train_score=True)
 
 except ImportError:
     SKLEARN_INSTALLED = False
