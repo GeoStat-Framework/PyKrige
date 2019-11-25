@@ -14,7 +14,7 @@ from sklearn.datasets import fetch_california_housing
 from pykrige.rk import RegressionKriging
 from pykrige.compat import train_test_split
 
-svr_model = SVR(C=0.1)
+svr_model = SVR(C=0.1, gamma="auto")
 rf_model = RandomForestRegressor(n_estimators=100)
 lr_model = LinearRegression(normalize=True, copy_X=True, fit_intercept=False)
 

@@ -1,5 +1,7 @@
 language: python
-sudo: false
+sudo: required
+services:
+  - xvfb
 matrix:
     include:
     - python: "3.6"
@@ -17,6 +19,7 @@ before_install:
     - export PATH=/home/travis/miniconda3/bin:$PATH
     - conda update --yes conda
     - conda info -a
+    - conda config --add channels conda-forge
 
 install:
     - conda create -q -n krige-env -y $DEPS pip pytest-cov pytest python=${TRAVIS_PYTHON_VERSION}
@@ -27,8 +30,6 @@ install:
 
 before_script:
   - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - sleep 3 # give xvfb some time to start
 
 # command to run tests
 script: 
@@ -39,7 +40,7 @@ script:
         # scikit-learn needed by the regression kriging example
         conda install -y scikit-learn
         set -x
-        for f in examples/*.py; do 
+        for f in examples/*.py; do
            python $f 2>&1 | tee -a ~/log.txt
         done
         if grep -q "Traceback (most recent call last):" ~/log.txt; then false; else true; fi
