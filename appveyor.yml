@@ -24,7 +24,7 @@ install:
   - conda config --add channels conda-forge
   - conda update -q conda
   - conda info -a
-  - conda create --name pykrige numpy scipy matplotlib cython scikit-learn gstools
+  - conda create --name pykrige numpy scipy matplotlib cython scikit-learn
   - activate pykrige
   - pip install coverage pytest-cov
   - pip install -e .

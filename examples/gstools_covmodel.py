@@ -8,9 +8,13 @@ Example how to use the PyKrige routines with a GSTools CovModel.
 import os
 
 import numpy as np
-from gstools import Gaussian
 from pykrige.ok import OrdinaryKriging
 from matplotlib import pyplot as plt
+try:
+    from gstools import Gaussian
+    GS_IMP = True
+except ImportError:
+    GS_IMP = False
 
 # conditioning data
 data = np.array([[0.3, 1.2, 0.47],
@@ -22,7 +26,12 @@ data = np.array([[0.3, 1.2, 0.47],
 gridx = np.arange(0.0, 5.5, 0.1)
 gridy = np.arange(0.0, 6.5, 0.1)
 # a GSTools based covariance model
-cov_model = Gaussian(dim=2, len_scale=1, anis=.2, angles=-.5, var=.5, nugget=.1)
+if GS_IMP:
+    cov_model = Gaussian(
+        dim=2, len_scale=4, anis=.2, angles=-.5, var=.5, nugget=.1
+    )
+else:
+    cov_model = "gaussian"
 # ordinary kriging with pykrige
 OK1 = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2], cov_model)
 z1, ss1 = OK1.execute('grid', gridx, gridy)
