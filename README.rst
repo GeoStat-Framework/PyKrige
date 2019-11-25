@@ -31,10 +31,6 @@ point and all grid points. With the 'functional' drift capability, the user may 
 of the spatial coordinates that define the drift(s). The package includes a module that contains functions
 that should be useful in working with ASCII grid files (`*.asc`).
 
-PyKrige also works smoothly together with the Covariance Model provided by
-`GSTools <https://github.com/GeoStat-Framework/GSTools>`_ v1.1 and higher.
-Have a look at the section: `GSTools covariance models`_.
-
 See the documentation at `http://pykrige.readthedocs.io/ <http://pykrige.readthedocs.io/>`_ for more details.
 
 Installation
