@@ -53,8 +53,8 @@ class UniversalKriging3D:
         specify 'custom'; you must also provide variogram_parameters and
         variogram_function. Note that the hole-effect model is only
         technically correct for one-dimensional problems.
-        You can also use a GSTools
-        CovModel, see https://github.com/GeoStat-Framework/GSTools
+        You can also use a
+        `GSTools <https://github.com/GeoStat-Framework/GSTools>`_ CovModel.
     variogram_parameters : list or dict, optional
         Parameters that define the specified variogram model. If not provided,
         parameters will be automatically calculated using a "soft" L1 norm
@@ -376,8 +376,8 @@ class UniversalKriging3D:
             May be any of the variogram models listed above.
             May also be 'custom', in which case variogram_parameters and
             variogram_function must be specified.
-            You can also use a GSTools
-            CovModel, see https://github.com/GeoStat-Framework/GSTools
+            You can also use a
+            `GSTools <https://github.com/GeoStat-Framework/GSTools>`_ CovModel.
         variogram_parameters : list or dict, optional
             List or dict of variogram model parameters, as explained above.
             If not provided, a best fit model will be calculated as
