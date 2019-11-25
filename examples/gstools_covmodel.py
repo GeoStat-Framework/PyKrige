@@ -20,4 +20,6 @@ cov_model = Gaussian(dim=2, len_scale=1, anis=.2, angles=-.5, var=.5, nugget=.1)
 OK1 = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2], cov_model)
 z1, ss1 = OK1.execute('grid', gridx, gridy)
 plt.imshow(z1, origin="lower")
-plt.show()
+if 'CI' not in os.environ:
+    # skip in continous integration
+    plt.show()
