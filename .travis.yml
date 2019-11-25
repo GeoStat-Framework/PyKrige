@@ -38,7 +38,7 @@ script:
     - |
         # run examples
         # scikit-learn needed by the regression kriging example
-        conda install -y scikit-learn gstools
+        # conda install -y scikit-learn gstools
         set -x
         for f in examples/*.py; do
            python $f 2>&1 | tee -a ~/log.txt
