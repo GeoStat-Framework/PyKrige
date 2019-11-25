@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Example how to use the PyKrige routines with a GSTools CovModel."""
+"""
+GSTools Interface
+=================
+
+Example how to use the PyKrige routines with a GSTools CovModel.
+"""
+import os
+
 import numpy as np
 from gstools import Gaussian
 from pykrige.ok import OrdinaryKriging
