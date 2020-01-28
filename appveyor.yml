@@ -32,9 +32,9 @@ install:
 
 test_script:
   - pytest -sv --cov=pykrige pykrige/
-  - ps: | 
+  - ps: |
           cd ".\\examples"
-          Get-ChildItem ".\\" -Filter *.py | 
+          Get-ChildItem ".\\" -Filter *.py |
           Foreach-Object {
               python $_.FullName 2>&1 | Tee-Object -Append -FilePath "C:\\log.txt"
           }
