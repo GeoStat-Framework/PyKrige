@@ -25,7 +25,6 @@ Copyright (c) 2015-2018, PyKrige Developers
 import numpy as np
 import scipy.linalg
 from scipy.spatial.distance import cdist
-import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
 from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
@@ -440,6 +439,8 @@ class OrdinaryKriging3D:
 
     def display_variogram_model(self):
         """Displays variogram model with the actual binned data."""
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(self.lags, self.semivariance, 'r*')
@@ -462,6 +463,8 @@ class OrdinaryKriging3D:
 
     def plot_epsilon_residuals(self):
         """Plots the epsilon residuals for the variogram fit."""
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.scatter(range(self.epsilon.size), self.epsilon, c='k', marker='*')
