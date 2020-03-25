@@ -63,10 +63,11 @@ def test_regression_krige():
                     reason="requires scikit-learn")
 def test_krige_housing():
     import ssl
+    import urllib
 
     try:
         housing = fetch_california_housing()
-    except ssl.SSLError:
+    except (ssl.SSLError, urllib.error.URLError):
         ssl._create_default_https_context = ssl._create_unverified_context
         try:
             housing = fetch_california_housing()
