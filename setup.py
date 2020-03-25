@@ -42,7 +42,7 @@ for ext_m in EXT_MODULES:
 
 # setup #######################################################################
 
-with open(os.path.join(HERE, "README.md"), encoding="utf-8") as f:
+with open(os.path.join(HERE, "README.rst"), encoding="utf-8") as f:
     README = f.read()
 with open(os.path.join(HERE, "requirements.txt"), encoding="utf-8") as f:
     REQ = f.read().splitlines()
