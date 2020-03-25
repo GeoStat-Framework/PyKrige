@@ -27,7 +27,7 @@ PACKAGES = ['pykrige']
 PCKG_DAT = {'pykrige': ['README.rst', 'CHANGELOG.md', 'LICENSE.txt',
                         'MANIFEST.in', join('test_data', '*.txt'),
                         join('test_data', '*.asc')]}
-REQ = ['numpy', 'scipy', 'matplotlib']
+REQ = ['numpy', 'scipy']
 
 for req in REQ:
     try:
@@ -35,7 +35,7 @@ for req in REQ:
     except ImportError:
         print("**************************************************")
         print("Error: PyKrige relies on the installation of the SciPy stack "
-              "(Numpy, SciPy, matplotlib) to work. "
+              "(Numpy, SciPy) to work. "
               "For instructions for installation, please view "
               "https://www.scipy.org/install.html."
               "\n {} missing".format(req)
