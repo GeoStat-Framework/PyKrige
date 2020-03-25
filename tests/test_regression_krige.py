@@ -62,6 +62,13 @@ def test_regression_krige():
 @pytest.mark.skipif(not SKLEARN_INSTALLED,
                     reason="requires scikit-learn")
 def test_krige_housing():
+    import os, ssl
+
+    if (
+        not os.environ.get('PYTHONHTTPSVERIFY', '')
+        and getattr(ssl, '_create_unverified_context', None)
+    ):
+        ssl._create_default_https_context = ssl._create_unverified_context
     try:
         housing = fetch_california_housing()
     except PermissionError:
