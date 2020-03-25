@@ -1,5 +1,5 @@
 __author__ = 'Benjamin S. Murphy'
-__version__ = '1.4.1'
+__version__ = '1.5.0.dev0'
 __doc__ = """
 PyKrige
 =======
