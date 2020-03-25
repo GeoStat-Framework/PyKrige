@@ -852,38 +852,38 @@ def test_kriging_tools(sample_data_2d):
     os.remove(os.path.join(BASE_DIR, 'test_data/temp.asc'))
 
 
-def test_uk_three_primary_drifts(sample_data_2d):
+# def test_uk_three_primary_drifts(sample_data_2d):
 
-    data, (gridx, gridy, gridx_2), mask_ref = sample_data_2d
+#     data, (gridx, gridy, gridx_2), mask_ref = sample_data_2d
 
-    well = np.array([[1.1, 1.1, -1.0]])
-    dem = np.arange(0.0, 5.1, 0.1)
-    dem = np.repeat(dem[np.newaxis, :], 6, axis=0)
-    dem_x = np.arange(0.0, 5.1, 0.1)
-    dem_y = np.arange(0.0, 6.0, 1.0)
+#     well = np.array([[1.1, 1.1, -1.0]])
+#     dem = np.arange(0.0, 5.1, 0.1)
+#     dem = np.repeat(dem[np.newaxis, :], 6, axis=0)
+#     dem_x = np.arange(0.0, 5.1, 0.1)
+#     dem_y = np.arange(0.0, 6.0, 1.0)
 
-    uk = UniversalKriging(
-            data[:, 0], data[:, 1], data[:, 2],
-            variogram_model='linear',
-            drift_terms=['regional_linear', 'external_Z', 'point_log'],
-            point_drift=well, external_drift=dem,
-            external_drift_x=dem_x, external_drift_y=dem_y)
+#     uk = UniversalKriging(
+#             data[:, 0], data[:, 1], data[:, 2],
+#             variogram_model='linear',
+#             drift_terms=['regional_linear', 'external_Z', 'point_log'],
+#             point_drift=well, external_drift=dem,
+#             external_drift_x=dem_x, external_drift_y=dem_y)
 
-    z, ss = uk.execute('grid', gridx, gridy, backend='vectorized')
-    assert z.shape == (gridy.shape[0], gridx.shape[0])
-    assert ss.shape == (gridy.shape[0], gridx.shape[0])
-    assert np.all(np.isfinite(z))
-    assert not np.all(np.isnan(z))
-    assert np.all(np.isfinite(ss))
-    assert not np.all(np.isnan(ss))
+#     z, ss = uk.execute('grid', gridx, gridy, backend='vectorized')
+#     assert z.shape == (gridy.shape[0], gridx.shape[0])
+#     assert ss.shape == (gridy.shape[0], gridx.shape[0])
+#     assert np.all(np.isfinite(z))
+#     assert not np.all(np.isnan(z))
+#     assert np.all(np.isfinite(ss))
+#     assert not np.all(np.isnan(ss))
 
-    z, ss = uk.execute('grid', gridx, gridy, backend='loop')
-    assert z.shape == (gridy.shape[0], gridx.shape[0])
-    assert ss.shape == (gridy.shape[0], gridx.shape[0])
-    assert np.all(np.isfinite(z))
-    assert not np.all(np.isnan(z))
-    assert np.all(np.isfinite(ss))
-    assert not np.all(np.isnan(ss))
+#     z, ss = uk.execute('grid', gridx, gridy, backend='loop')
+#     assert z.shape == (gridy.shape[0], gridx.shape[0])
+#     assert ss.shape == (gridy.shape[0], gridx.shape[0])
+#     assert np.all(np.isfinite(z))
+#     assert not np.all(np.isnan(z))
+#     assert np.all(np.isfinite(ss))
+#     assert not np.all(np.isnan(ss))
 
 
 def test_uk_specified_drift(sample_data_2d):
