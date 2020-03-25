@@ -3,22 +3,18 @@ PyKrige
 
 Kriging Toolkit for Python
 
-.. image:: https://img.shields.io/pypi/v/pykrige.svg
-    :target: https://pypi.python.org/pypi/pykrige
+.. image:: https://badge.fury.io/py/PyKrige.svg
+   :target: https://badge.fury.io/py/PyKrige
 
 .. image:: https://anaconda.org/conda-forge/pykrige/badges/version.svg
-  :target: https://github.com/conda-forge/pykrige-feedstock
+   :target: https://github.com/conda-forge/pykrige-feedstock
 
 .. image:: https://readthedocs.org/projects/pykrige/badge/?version=latest
-    :target: http://pykrige.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
+   :target: http://pykrige.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 
-.. image:: https://travis-ci.org/bsmurphy/PyKrige.svg?branch=master
-    :target: https://travis-ci.org/bsmurphy/PyKrige
-
-.. image:: https://ci.appveyor.com/api/projects/status/github/bsmurphy/PyKrige?branch=master&svg=true
-    :target: https://ci.appveyor.com/project/bsmurphy/pykrige
-
+.. image:: https://travis-ci.com/GeoStat-Framework/PyKrige.svg?branch=master
+   :target: https://travis-ci.com/GeoStat-Framework/PyKrige
 
 
 The code supports 2D and 3D ordinary and universal kriging. Standard variogram models
