@@ -51,7 +51,7 @@ with open(os.path.join(HERE, "requirements_setup.txt"), encoding="utf-8") as f:
 with open(os.path.join(HERE, "requirements_test.txt"), encoding="utf-8") as f:
     REQ_TEST = f.read().splitlines()
 with open(
-    os.path.join(HERE, "docs", "requirements_doc.txt"), encoding="utf-8"
+    os.path.join(HERE, "doc", "requirements_doc.txt"), encoding="utf-8"
 ) as f:
     REQ_DOC = f.read().splitlines()
 
@@ -109,7 +109,7 @@ setup(
     install_requires=REQ,
     extras_require={
         "plot": ["matplotlib"],
-        "sklearn": ["scikit-learn>=0.18"],
+        "sklearn": ["scikit-learn>=0.19"],
         "doc": REQ_DOC,
         "test": REQ_TEST,
         "dev": REQ_DEV,
