@@ -1,49 +1,99 @@
 language: python
-sudo: required
-services:
-  - xvfb
-matrix:
-    include:
-    - python: "3.6"
-      env: DEPS="numpy scipy cython nose matplotlib scikit-learn gstools"
-    - python: "3.5"
-      env: DEPS="numpy scipy=0.18 cython nose matplotlib scikit-learn=0.18.1"
-    - python: "2.7"
-      env: DEPS="numpy=1.10.4 scipy=0.17 cython nose matplotlib scikit-learn=0.17.1"
+python: 3.8
 
-# setup adapted from https://github.com/soft-matter/trackpy/blob/master/.travis.yml
+# setuptools-scm needs all tags in order to obtain a proper version
+# git:
+#   depth: false
+
+env:
+  global:
+    - TWINE_USERNAME=geostatframework
+    - CIBW_BEFORE_BUILD="pip install numpy==1.17.3 cython==0.29.14 setuptools"
+    - CIBW_TEST_REQUIRES="pytest"
+    - CIBW_TEST_COMMAND="pytest -v {project}/tests"
+
 before_install:
-    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    - chmod +x miniconda.sh
-    - ./miniconda.sh -b
-    - export PATH=/home/travis/miniconda3/bin:$PATH
-    - conda update --yes conda
-    - conda info -a
-    - conda config --add channels conda-forge
+  - |
+    if [[ "$TRAVIS_OS_NAME" = windows ]]; then
+        choco install python --version 3.8.0
+        export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
+        # make sure it's on PATH as 'python3'
+        ln -s /c/Python38/python.exe /c/Python38/python3.exe
+    fi
 
-install:
-    - conda create -q -n krige-env -y $DEPS pip pytest-cov pytest python=${TRAVIS_PYTHON_VERSION}
-    - source activate krige-env
-    - which pip
-    - pip install coveralls
-    - pip install -e .
-
-before_script:
-  - "export DISPLAY=:99.0"
-
-# command to run tests
 script:
-    - source activate krige-env
-    - pytest -sv ./pykrige/ --cov=pykrige
-    - |
-        # run examples
-        # scikit-learn needed by the regression kriging example
-        # conda install -y scikit-learn gstools
-        set -x
-        for f in examples/*.py; do
-           python $f 2>&1 | tee -a ~/log.txt
-        done
-        if grep -q "Traceback (most recent call last):" ~/log.txt; then false; else true; fi
+  - python3 -m pip install cibuildwheel==1.3.0
+  - python3 -m cibuildwheel --output-dir dist
 
-#after_success:
-#    coveralls
+after_success:
+  - |
+    if [[ $TRAVIS_PULL_REQUEST == 'false' ]]; then
+      python3 -m pip install twine
+      python3 -m twine upload --verbose --skip-existing --repository-url https://test.pypi.org/legacy/ dist/*
+      if [[ $TRAVIS_TAG ]]; then python3 -m twine upload --verbose --skip-existing dist/*; fi
+    fi
+
+notifications:
+  email:
+    recipients:
+      - info@geostat-framework.org
+
+jobs:
+  include:
+    - name: "sdist and coverage"
+      services: docker
+      script:
+        - python3 -m pip install -U setuptools pytest-cov coveralls
+        - python3 -m pip install -U numpy==1.17.3 cython==0.29.14
+        - python3 -m pip install -r requirements.txt
+        - python3 setup.py sdist -d dist
+        - python3 setup.py build_ext --inplace
+        - python3 -m pytest --cov pykrige --cov-report term-missing -v tests/
+        - python3 -m coveralls
+
+    - name: "Linux py35"
+      services: docker
+      env: CIBW_BUILD="cp35-*"
+    - name: "Linux py36"
+      services: docker
+      env: CIBW_BUILD="cp36-*"
+    - name: "Linux py37"
+      services: docker
+      env: CIBW_BUILD="cp37-*"
+    - name: "Linux py38"
+      services: docker
+      env: CIBW_BUILD="cp38-*"
+
+    - name: "MacOS py35"
+      os: osx
+      language: shell
+      env: CIBW_BUILD="cp35-*"
+    - name: "MacOS py36"
+      os: osx
+      language: shell
+      env: CIBW_BUILD="cp36-*"
+    - name: "MacOS py37"
+      os: osx
+      language: shell
+      env: CIBW_BUILD="cp37-*"
+    - name: "MacOS py38"
+      os: osx
+      language: shell
+      env: CIBW_BUILD="cp38-*"
+
+    - name: "Win py35"
+      os: windows
+      language: shell
+      env: CIBW_BUILD="cp35-*"
+    - name: "Win py36"
+      os: windows
+      language: shell
+      env: CIBW_BUILD="cp36-*"
+    - name: "Win py37"
+      os: windows
+      language: shell
+      env: CIBW_BUILD="cp37-*"
+    - name: "Win py38"
+      os: windows
+      language: shell
+      env: CIBW_BUILD="cp38-*"
