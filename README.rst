@@ -14,7 +14,7 @@ PyKrige
 
 .. raw:: html
 
-   <p align="center"><img src="https://github.com/GeoStat-Framework/GeoStat-Framework.github.io/raw/master/docs/source/pics/PyKrige.png" width="150px"></p>
+   <p align="center"><img src="https://github.com/GeoStat-Framework/GeoStat-Framework.github.io/raw/master/docs/source/pics/PyKrige.png" width="251px"></p>
 
 
 Kriging Toolkit for Python.
