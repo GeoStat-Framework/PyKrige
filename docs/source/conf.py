@@ -240,6 +240,8 @@ html_show_sourcelink = True
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = "PyKrigedoc"
+html_logo = "pics/PyKrige_150.png"
+html_favicon = "pics/PyKrige.ico"
 
 # -- Options for LaTeX output ---------------------------------------------
 

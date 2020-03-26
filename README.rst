@@ -1,21 +1,26 @@
 PyKrige
 =======
 
-Kriging Toolkit for Python
-
 .. image:: https://badge.fury.io/py/PyKrige.svg
    :target: https://badge.fury.io/py/PyKrige
-
-.. image:: https://anaconda.org/conda-forge/pykrige/badges/version.svg
-   :target: https://github.com/conda-forge/pykrige-feedstock
-
+.. image:: https://img.shields.io/conda/vn/conda-forge/pykrige.svg
+   :target: https://anaconda.org/conda-forge/pykrige
 .. image:: https://readthedocs.org/projects/pykrige/badge/?version=latest
    :target: http://pykrige.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
-
 .. image:: https://travis-ci.com/GeoStat-Framework/PyKrige.svg?branch=master
    :target: https://travis-ci.com/GeoStat-Framework/PyKrige
 
+
+.. image:: https://github.com/GeoStat-Framework/GeoStat-Framework.github.io/raw/master/docs/source/pics/PyKrige.png
+   :width: 150px
+   :align: center
+
+
+Kriging Toolkit for Python.
+
+Purpose
+^^^^^^^
 
 The code supports 2D and 3D ordinary and universal kriging. Standard variogram models
 (linear, power, spherical, gaussian, exponential) are built in, but custom variogram models can also be used.
