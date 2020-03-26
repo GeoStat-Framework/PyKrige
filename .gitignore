@@ -108,6 +108,7 @@ tags
 
 # own stuff
 info/
+pykrige/_version.py
 
 # Cython generated C code
 *.c
