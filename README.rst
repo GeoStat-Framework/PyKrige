@@ -37,14 +37,14 @@ See the documentation at `http://pykrige.readthedocs.io/ <http://pykrige.readthe
 Installation
 ^^^^^^^^^^^^
 
-PyKrige requires Python 2.7 or 3.5+ as well as numpy, scipy and matplotlib. It can be installed from PyPi with,
+PyKrige requires Python 3.5+ as well as numpy, scipy. It can be installed from PyPi with,
 
 .. code:: bash
 
     pip install pykrige
 
 scikit-learn is an optional dependency needed for parameter tuning and regression kriging.
-
+matplotlib is an optional dependency needed for plotting.
 
 If you use conda, PyKrige can be installed from the `conda-forge` channel with,
 
