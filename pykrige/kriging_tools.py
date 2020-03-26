@@ -18,8 +18,9 @@ import io
 
 
 def write_asc_grid(x, y, z, filename='output.asc', style=1):
-    """Writes gridded data to ASCII grid file (*.asc). This is useful for
-    exporting data to a GIS program.
+    r"""Writes gridded data to ASCII grid file (\*.asc).
+
+    This is useful for exporting data to a GIS program.
 
     Parameters
     ----------
@@ -30,9 +31,9 @@ def write_asc_grid(x, y, z, filename='output.asc', style=1):
     z : array_like, shape (M, N)
         Gridded data values. May be a masked array.
     filename : string, optional
-        Name of output *.asc file. Default name is 'output.asc'.
+        Name of output \*.asc file. Default name is 'output.asc'.
     style : int, optional
-        Determines how to write the *.asc file header.
+        Determines how to write the \*.asc file header.
         Specifying 1 writes out DX, DY, XLLCENTER, YLLCENTER.
         Specifying 2 writes out CELLSIZE (note DX must be the same as DY),
         XLLCORNER, YLLCORNER. Default is 1.
@@ -115,14 +116,14 @@ def write_asc_grid(x, y, z, filename='output.asc', style=1):
 
 
 def read_asc_grid(filename, footer=0):
-    """Reads ASCII grid file (*.asc).
+    r"""Reads ASCII grid file (\*.asc).
 
     Parameters
     ----------
     filename : str
-        Name of *.asc file.
+        Name of \*.asc file.
     footer : int, optional
-        Number of lines at bottom of *.asc file to skip.
+        Number of lines at bottom of \*.asc file to skip.
 
     Returns
     -------

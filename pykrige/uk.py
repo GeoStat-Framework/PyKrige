@@ -48,36 +48,34 @@ class UniversalKriging:
         technically correct for one-dimensional problems.
         You can also use a
         `GSTools <https://github.com/GeoStat-Framework/GSTools>`_ CovModel.
-    variogram_parameters: list or dict, optional
+    variogram_parameters : list or dict, optional
         Parameters that define the specified variogram model. If not provided,
         parameters will be automatically calculated using a "soft" L1 norm
         minimization scheme. For variogram model parameters provided in a dict,
         the required dict keys vary according to the specified variogram
         model: ::
-            linear - {'slope': slope, 'nugget': nugget}
-            power - {'scale': scale, 'exponent': exponent, 'nugget': nugget}
-            gaussian - {'sill': s, 'range': r, 'nugget': n}
-                        OR
-                       {'psill': p, 'range': r, 'nugget':n}
-            spherical - {'sill': s, 'range': r, 'nugget': n}
-                         OR
-                        {'psill': p, 'range': r, 'nugget':n}
-            exponential - {'sill': s, 'range': r, 'nugget': n}
-                           OR
-                          {'psill': p, 'range': r, 'nugget':n}
-            hole-effect - {'sill': s, 'range': r, 'nugget': n}
-                           OR
-                          {'psill': p, 'range': r, 'nugget':n}
+
+           # linear
+               {'slope': slope, 'nugget': nugget}
+           # power
+               {'scale': scale, 'exponent': exponent, 'nugget': nugget}
+           # gaussian, spherical, exponential and hole-effect:
+               {'sill': s, 'range': r, 'nugget': n}
+               # OR
+               {'psill': p, 'range': r, 'nugget': n}
+
         Note that either the full sill or the partial sill
         (psill = sill - nugget) can be specified in the dict.
         For variogram model parameters provided in a list, the entries
         must be as follows: ::
-            linear - [slope, nugget]
-            power - [scale, exponent, nugget]
-            gaussian - [sill, range, nugget]
-            spherical - [sill, range, nugget]
-            exponential - [sill, range, nugget]
-            hole-effect - [sill, range, nugget]
+
+           # linear
+               [slope, nugget]
+           # power
+               [scale, exponent, nugget]
+           # gaussian, spherical, exponential and hole-effect:
+               [sill, range, nugget]
+
         Note that the full sill (NOT the partial sill) must be specified
         in the list format.
         For a custom variogram model, the parameters are required, as custom
@@ -174,7 +172,7 @@ class UniversalKriging:
     References
     ----------
     .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
-        Hydrogeology, (Cambridge University Press, 1997) 272 p.
+       Hydrogeology, (Cambridge University Press, 1997) 272 p.
     """
 
     UNBIAS = True   # This can be changed to remove the unbiasedness condition
