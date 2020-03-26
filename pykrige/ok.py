@@ -771,7 +771,7 @@ class OrdinaryKriging:
                 from .lib.cok import _c_exec_loop, _c_exec_loop_moving_window
             except ImportError:
                 print('Warning: failed to load Cython extensions.\n'
-                      '   See https://github.com/bsmurphy/PyKrige/issues/8 \n'
+                      '   See https://github.com/GeoStat-Framework/PyKrige/issues/8 \n'
                       '   Falling back to a pure python backend...')
                 backend = 'loop'
             except:
