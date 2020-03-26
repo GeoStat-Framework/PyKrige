@@ -14,4 +14,4 @@ Contents
    variogram_models
    api
    examples/index
-   ../../CHANGELOG.md
+   changelog
