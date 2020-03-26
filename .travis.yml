@@ -8,7 +8,7 @@ python: 3.8
 env:
   global:
     - TWINE_USERNAME=geostatframework
-    - CIBW_BEFORE_BUILD="pip install numpy==1.17.3 scipy==1.3.2 cython==0.29.14 setuptools"
+    - CIBW_BEFORE_BUILD="pip install numpy==1.17.3 scipy==1.3.2 cython==0.29.14 setuptools wheel"
     - CIBW_TEST_REQUIRES="pytest scikit-learn"
     - CIBW_TEST_COMMAND="pytest -v {project}/tests"
 
