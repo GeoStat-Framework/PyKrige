@@ -1,7 +1,5 @@
-# cython: profile=False
-# cython: boundscheck=False
-# cython: wraparound=False
-# cython: cdivision=True
+#cython: language_level=3, boundscheck=False, wraparound=False, cdivision=True
+# -*- coding: utf-8 -*-
 import numpy as np
 cimport numpy as np
 import scipy.linalg.blas
@@ -25,7 +23,7 @@ cdef void* Capsule_AsVoidPtr(object obj):
     return ret
 
 
-# interface to BLAS matrix-vector multipilcation though scipy.linalg 
+# interface to BLAS matrix-vector multipilcation though scipy.linalg
 # adapted from
 # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/tsa/kalmanf/kalman_loglike.pyx
 

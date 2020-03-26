@@ -1,7 +1,5 @@
-# cython: profile=False
-# cython: boundscheck=False
-# cython: wraparound=False
-# cython: cdivision=True
+#cython: language_level=3, boundscheck=False, wraparound=False, cdivision=True
+# -*- coding: utf-8 -*-
 import numpy as np
 cimport numpy as np
 from libc.math cimport exp

@@ -1,18 +1,5 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import numpy as np
-import scipy.linalg
-from scipy.spatial.distance import cdist
-from . import variogram_models
-from . import core
-from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
-    _make_variogram_parameter_list, _find_statistics
-import warnings
-
-__doc__ = """
+# coding: utf-8
+"""
 PyKrige
 =======
 
@@ -31,6 +18,14 @@ References
 
 Copyright (c) 2015-2018, PyKrige Developers
 """
+import numpy as np
+import scipy.linalg
+from scipy.spatial.distance import cdist
+from . import variogram_models
+from . import core
+from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
+    _make_variogram_parameter_list, _find_statistics
+import warnings
 
 
 class UniversalKriging:
