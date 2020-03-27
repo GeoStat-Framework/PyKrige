@@ -9,7 +9,7 @@ env:
   global:
     - TWINE_USERNAME=geostatframework
     - CIBW_BEFORE_BUILD="pip install numpy==1.17.3 scipy==1.3.2 cython==0.29.14 setuptools"
-    - CIBW_TEST_REQUIRES="pytest scikit-learn"
+    - CIBW_TEST_REQUIRES="pytest scikit-learn gstools"
     - CIBW_TEST_COMMAND="pytest -v {project}/tests"
 
 before_install:
@@ -21,9 +21,9 @@ before_install:
         ln -s /c/Python38/python.exe /c/Python38/python3.exe
     fi
 
-script:
-  - python3 -m pip install cibuildwheel==1.3.0
-  - python3 -m cibuildwheel --output-dir dist
+install: python3 -m pip install cibuildwheel==1.3.0
+
+script: python3 -m cibuildwheel --output-dir dist
 
 after_success:
   - |
@@ -40,12 +40,20 @@ notifications:
 
 jobs:
   include:
+    - name: "black check"
+      services: docker
+      install: python3 -m pip install black
+      script: python3 -m black --check pykrige/ examples/ tests/
+      after_success: echo "all files formatted correctly"
+      after_failure: echo "some files not formatted correctly"
+
     - name: "sdist and coverage"
       services: docker
-      script:
-        - python3 -m pip install -U setuptools pytest-cov coveralls scikit-learn
-        - python3 -m pip install -U numpy==1.17.3 cython==0.29.14
+      install:
+        - python3 -m pip install -r requirements_setup.txt
+        - python3 -m pip install -r requirements_test.txt
         - python3 -m pip install -r requirements.txt
+      script:
         - python3 setup.py sdist -d dist
         - python3 setup.py build_ext --inplace
         - python3 -m pytest --cov pykrige --cov-report term-missing -v tests/

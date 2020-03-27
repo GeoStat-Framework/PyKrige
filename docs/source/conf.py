@@ -18,6 +18,7 @@ import os
 import shlex
 import sphinx_rtd_theme
 import matplotlib
+
 matplotlib.use("Agg")
 
 
@@ -61,9 +62,9 @@ templates_path = ["_templates"]
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.txt': 'restructuredtext',
-    '.md': 'markdown',
+    ".rst": "restructuredtext",
+    ".txt": "restructuredtext",
+    ".md": "markdown",
 }
 
 # The encoding of source files.
@@ -258,13 +259,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (
-        master_doc,
-        "PyKrige.tex",
-        "PyKrige Documentation",
-        "PyKrige developers",
-        "manual",
-    )
+    (master_doc, "PyKrige.tex", "PyKrige Documentation", "PyKrige developers", "manual")
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

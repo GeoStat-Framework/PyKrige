@@ -38,7 +38,7 @@ References
 .. [1] P.K. Kitanidis, Introduction to Geostatistics: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
 
-Copyright (c) 2015-2018, PyKrige Developers
+Copyright (c) 2015-2020, PyKrige Developers
 """
 
 from . import kriging_tools as kt  # noqa
@@ -54,11 +54,11 @@ except ImportError:  # pragma: nocover
     __version__ = "0.0.0.dev0"
 
 
-__author__ = 'Benjamin S. Murphy'
+__author__ = "Benjamin S. Murphy"
 
 
 __all__ = ["__version__"]
-__all__ += ["kt", 'ok', 'uk', 'ok3d', 'uk3d', 'kriging_tools']
+__all__ += ["kt", "ok", "uk", "ok3d", "uk3d", "kriging_tools"]
 __all__ += ["OrdinaryKriging"]
 __all__ += ["UniversalKriging"]
 __all__ += ["OrdinaryKriging3D"]

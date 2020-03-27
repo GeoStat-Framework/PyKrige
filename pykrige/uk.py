@@ -16,15 +16,19 @@ References
 .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
 
-Copyright (c) 2015-2018, PyKrige Developers
+Copyright (c) 2015-2020, PyKrige Developers
 """
 import numpy as np
 import scipy.linalg
 from scipy.spatial.distance import cdist
 from . import variogram_models
 from . import core
-from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
-    _make_variogram_parameter_list, _find_statistics
+from .core import (
+    _adjust_for_anisotropy,
+    _initialize_variogram_model,
+    _make_variogram_parameter_list,
+    _find_statistics,
+)
 import warnings
 
 
@@ -175,23 +179,40 @@ class UniversalKriging:
        Hydrogeology, (Cambridge University Press, 1997) 272 p.
     """
 
-    UNBIAS = True   # This can be changed to remove the unbiasedness condition
-                    # Really for testing purposes only...
-    eps = 1.e-10    # Cutoff for comparison to zero
-    variogram_dict = {'linear': variogram_models.linear_variogram_model,
-                      'power': variogram_models.power_variogram_model,
-                      'gaussian': variogram_models.gaussian_variogram_model,
-                      'spherical': variogram_models.spherical_variogram_model,
-                      'exponential': variogram_models.exponential_variogram_model,
-                      'hole-effect': variogram_models.hole_effect_variogram_model}
+    UNBIAS = True  # This can be changed to remove the unbiasedness condition
+    # Really for testing purposes only...
+    eps = 1.0e-10  # Cutoff for comparison to zero
+    variogram_dict = {
+        "linear": variogram_models.linear_variogram_model,
+        "power": variogram_models.power_variogram_model,
+        "gaussian": variogram_models.gaussian_variogram_model,
+        "spherical": variogram_models.spherical_variogram_model,
+        "exponential": variogram_models.exponential_variogram_model,
+        "hole-effect": variogram_models.hole_effect_variogram_model,
+    }
 
-    def __init__(self, x, y, z, variogram_model='linear',
-                 variogram_parameters=None, variogram_function=None, nlags=6,
-                 weight=False, anisotropy_scaling=1., anisotropy_angle=0.,
-                 drift_terms=None, point_drift=None, external_drift=None,
-                 external_drift_x=None, external_drift_y=None,
-                 specified_drift=None, functional_drift=None,
-                 verbose=False, enable_plotting=False):
+    def __init__(
+        self,
+        x,
+        y,
+        z,
+        variogram_model="linear",
+        variogram_parameters=None,
+        variogram_function=None,
+        nlags=6,
+        weight=False,
+        anisotropy_scaling=1.0,
+        anisotropy_angle=0.0,
+        drift_terms=None,
+        point_drift=None,
+        external_drift=None,
+        external_drift_x=None,
+        external_drift_y=None,
+        specified_drift=None,
+        functional_drift=None,
+        verbose=False,
+        enable_plotting=False,
+    ):
 
         # Deal with mutable default argument
         if drift_terms is None:
@@ -215,14 +236,18 @@ class UniversalKriging:
             variogram_parameters = []
             anisotropy_scaling = self.model.pykrige_anis
             anisotropy_angle = self.model.pykrige_angle
-        if self.variogram_model not in self.variogram_dict.keys() and \
-                        self.variogram_model != 'custom':
-            raise ValueError("Specified variogram model '%s' "
-                             "is not supported." % variogram_model)
-        elif self.variogram_model == 'custom':
+        if (
+            self.variogram_model not in self.variogram_dict.keys()
+            and self.variogram_model != "custom"
+        ):
+            raise ValueError(
+                "Specified variogram model '%s' is not supported." % variogram_model
+            )
+        elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
-                raise ValueError("Must specify callable function for "
-                                 "custom variogram model.")
+                raise ValueError(
+                    "Must specify callable function for custom variogram model."
+                )
             else:
                 self.variogram_function = variogram_function
         else:
@@ -231,12 +256,13 @@ class UniversalKriging:
         # Code assumes 1D input arrays. Ensures that any extraneous dimensions
         # don't get in the way. Copies are created to avoid any problems with
         # referencing the original passed arguments.
-        self.X_ORIG = \
-            np.atleast_1d(np.squeeze(np.array(x, copy=True, dtype=np.float64)))
-        self.Y_ORIG = \
-            np.atleast_1d(np.squeeze(np.array(y, copy=True, dtype=np.float64)))
-        self.Z = \
-            np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float64)))
+        self.X_ORIG = np.atleast_1d(
+            np.squeeze(np.array(x, copy=True, dtype=np.float64))
+        )
+        self.Y_ORIG = np.atleast_1d(
+            np.squeeze(np.array(y, copy=True, dtype=np.float64))
+        )
+        self.Z = np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float64)))
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
@@ -244,68 +270,83 @@ class UniversalKriging:
             print("Plotting Enabled\n")
 
         # adjust for anisotropy...
-        self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG))/2.0
-        self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG))/2.0
+        self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG)) / 2.0
+        self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG)) / 2.0
         self.anisotropy_scaling = anisotropy_scaling
         self.anisotropy_angle = anisotropy_angle
         if self.verbose:
             print("Adjusting data for anisotropy...")
-        self.X_ADJUSTED, self.Y_ADJUSTED = \
-            _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
-                                   [self.XCENTER, self.YCENTER],
-                                   [self.anisotropy_scaling],
-                                   [self.anisotropy_angle]).T
+        self.X_ADJUSTED, self.Y_ADJUSTED = _adjust_for_anisotropy(
+            np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+            [self.XCENTER, self.YCENTER],
+            [self.anisotropy_scaling],
+            [self.anisotropy_angle],
+        ).T
 
         if self.verbose:
             print("Initializing variogram model...")
 
         # see comment in ok.py about 'use_psill' kwarg...
-        vp_temp = _make_variogram_parameter_list(self.variogram_model,
-                                                 variogram_parameters)
-        self.lags, self.semivariance, self.variogram_model_parameters = \
-            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                   self.Y_ADJUSTED)).T,
-                                        self.Z, self.variogram_model, vp_temp,
-                                        self.variogram_function, nlags,
-                                        weight, 'euclidean')
+        vp_temp = _make_variogram_parameter_list(
+            self.variogram_model, variogram_parameters
+        )
+        (
+            self.lags,
+            self.semivariance,
+            self.variogram_model_parameters,
+        ) = _initialize_variogram_model(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+            self.Z,
+            self.variogram_model,
+            vp_temp,
+            self.variogram_function,
+            nlags,
+            weight,
+            "euclidean",
+        )
         # TODO extend geographic capabilities to UK...
 
         if self.verbose:
-            if self.variogram_model == 'linear':
-                print("Using '%s' Variogram Model" % 'linear')
+            if self.variogram_model == "linear":
+                print("Using '%s' Variogram Model" % "linear")
                 print("Slope:", self.variogram_model_parameters[0])
-                print("Nugget:", self.variogram_model_parameters[1], '\n')
-            elif self.variogram_model == 'power':
-                print("Using '%s' Variogram Model" % 'power')
+                print("Nugget:", self.variogram_model_parameters[1], "\n")
+            elif self.variogram_model == "power":
+                print("Using '%s' Variogram Model" % "power")
                 print("Scale:", self.variogram_model_parameters[0])
                 print("Exponent:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
-            elif self.variogram_model == 'custom':
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
+            elif self.variogram_model == "custom":
                 print("Using Custom Variogram Model")
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
                 print("Partial Sill:", self.variogram_model_parameters[0])
-                print("Full Sill:", self.variogram_model_parameters[0] +
-                      self.variogram_model_parameters[2])
+                print(
+                    "Full Sill:",
+                    self.variogram_model_parameters[0]
+                    + self.variogram_model_parameters[2],
+                )
                 print("Range:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
         if self.enable_plotting:
             self.display_variogram_model()
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = \
-            _find_statistics(np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
-                             self.Z, self.variogram_function,
-                             self.variogram_model_parameters,
-                             'euclidean')
+        self.delta, self.sigma, self.epsilon = _find_statistics(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+            self.Z,
+            self.variogram_function,
+            self.variogram_model_parameters,
+            "euclidean",
+        )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
         if self.verbose:
             print("Q1 =", self.Q1)
             print("Q2 =", self.Q2)
-            print("cR =", self.cR, '\n')
+            print("cR =", self.cR, "\n")
 
         if self.verbose:
             print("Initializing drift terms...")
@@ -313,7 +354,7 @@ class UniversalKriging:
         # Note that the regional linear drift values will be based
         # on the adjusted coordinate system, Really, it doesn't actually
         # matter which coordinate system is used here.
-        if 'regional_linear' in drift_terms:
+        if "regional_linear" in drift_terms:
             self.regional_linear_drift = True
             if self.verbose:
                 print("Implementing regional linear drift.")
@@ -322,87 +363,108 @@ class UniversalKriging:
 
         # External Z scalars are extracted using the original
         # (unadjusted) coordinates.
-        if 'external_Z' in drift_terms:
+        if "external_Z" in drift_terms:
             if external_drift is None:
                 raise ValueError("Must specify external Z drift terms.")
             if external_drift_x is None or external_drift_y is None:
-                raise ValueError("Must specify coordinates of "
-                                 "external Z drift terms.")
+                raise ValueError("Must specify coordinates of external Z drift terms.")
             self.external_Z_drift = True
-            if external_drift.shape[0] != external_drift_y.shape[0] or \
-               external_drift.shape[1] != external_drift_x.shape[0]:
-                if external_drift.shape[0] == external_drift_x.shape[0] and \
-                   external_drift.shape[1] == external_drift_y.shape[0]:
+            if (
+                external_drift.shape[0] != external_drift_y.shape[0]
+                or external_drift.shape[1] != external_drift_x.shape[0]
+            ):
+                if (
+                    external_drift.shape[0] == external_drift_x.shape[0]
+                    and external_drift.shape[1] == external_drift_y.shape[0]
+                ):
                     self.external_Z_drift = np.array(external_drift.T)
                 else:
-                    raise ValueError("External drift dimensions do not match "
-                                     "provided x- and y-coordinate dimensions.")
+                    raise ValueError(
+                        "External drift dimensions do not match "
+                        "provided x- and y-coordinate dimensions."
+                    )
             else:
                 self.external_Z_array = np.array(external_drift)
             self.external_Z_array_x = np.array(external_drift_x).flatten()
             self.external_Z_array_y = np.array(external_drift_y).flatten()
-            self.z_scalars = self._calculate_data_point_zscalars(self.X_ORIG,
-                                                                 self.Y_ORIG)
+            self.z_scalars = self._calculate_data_point_zscalars(
+                self.X_ORIG, self.Y_ORIG
+            )
             if self.verbose:
                 print("Implementing external Z drift.")
         else:
             self.external_Z_drift = False
 
         # Well coordinates are rotated into adjusted coordinate frame.
-        if 'point_log' in drift_terms:
+        if "point_log" in drift_terms:
             if point_drift is None:
-                raise ValueError("Must specify location(s) and strength(s) "
-                                 "of point drift terms.")
+                raise ValueError(
+                    "Must specify location(s) and strength(s) of point drift terms."
+                )
             self.point_log_drift = True
             point_log = np.atleast_2d(np.squeeze(np.array(point_drift, copy=True)))
             self.point_log_array = np.zeros(point_log.shape)
             self.point_log_array[:, 2] = point_log[:, 2]
-            self.point_log_array[:, :2] = \
-                _adjust_for_anisotropy(np.vstack((point_log[:, 0],
-                                                  point_log[:, 1])).T,
-                                       [self.XCENTER, self.YCENTER],
-                                       [self.anisotropy_scaling],
-                                       [self.anisotropy_angle])
+            self.point_log_array[:, :2] = _adjust_for_anisotropy(
+                np.vstack((point_log[:, 0], point_log[:, 1])).T,
+                [self.XCENTER, self.YCENTER],
+                [self.anisotropy_scaling],
+                [self.anisotropy_angle],
+            )
             if self.verbose:
-                print("Implementing external point-logarithmic drift; "
-                      "number of points =", self.point_log_array.shape[0], '\n')
+                print(
+                    "Implementing external point-logarithmic drift; "
+                    "number of points =",
+                    self.point_log_array.shape[0],
+                    "\n",
+                )
         else:
             self.point_log_drift = False
 
-        if 'specified' in drift_terms:
+        if "specified" in drift_terms:
             if type(specified_drift) is not list:
-                raise TypeError("Arrays for specified drift terms must be "
-                                "encapsulated in a list.")
+                raise TypeError(
+                    "Arrays for specified drift terms must be "
+                    "encapsulated in a list."
+                )
             if len(specified_drift) == 0:
-                raise ValueError("Must provide at least one drift-value array "
-                                 "when using the 'specified' drift capability.")
+                raise ValueError(
+                    "Must provide at least one drift-value array "
+                    "when using the 'specified' drift capability."
+                )
             self.specified_drift = True
             self.specified_drift_data_arrays = []
             for term in specified_drift:
                 specified = np.squeeze(np.array(term, copy=True))
                 if specified.size != self.X_ORIG.size:
-                    raise ValueError("Must specify the drift values for each "
-                                     "data point when using the 'specified' "
-                                     "drift capability.")
+                    raise ValueError(
+                        "Must specify the drift values for each "
+                        "data point when using the 'specified' "
+                        "drift capability."
+                    )
                 self.specified_drift_data_arrays.append(specified)
         else:
             self.specified_drift = False
 
         # The provided callable functions will be evaluated using
         # the adjusted coordinates.
-        if 'functional' in drift_terms:
+        if "functional" in drift_terms:
             if type(functional_drift) is not list:
-                raise TypeError("Callables for functional drift terms must "
-                                "be encapsulated in a list.")
+                raise TypeError(
+                    "Callables for functional drift terms must "
+                    "be encapsulated in a list."
+                )
             if len(functional_drift) == 0:
-                raise ValueError("Must provide at least one callable object "
-                                 "when using the 'functional' drift capability.")
+                raise ValueError(
+                    "Must provide at least one callable object "
+                    "when using the 'functional' drift capability."
+                )
             self.functional_drift = True
             self.functional_drift_terms = functional_drift
         else:
             self.functional_drift = False
 
-    def _calculate_data_point_zscalars(self, x, y, type_='array'):
+    def _calculate_data_point_zscalars(self, x, y, type_="array"):
         """Determines the Z-scalar values at the specified coordinates
         for use when setting up the kriging matrix. Uses bilinear
         interpolation.
@@ -413,7 +475,7 @@ class UniversalKriging:
         Z value for that cell in the kriged grid. Rather, the exact Z value
         right at the coordinate is used."""
 
-        if type_ == 'scalar':
+        if type_ == "scalar":
             nx = 1
             ny = 1
             z_scalars = None
@@ -429,7 +491,7 @@ class UniversalKriging:
         for m in range(ny):
             for n in range(nx):
 
-                if type_ == 'scalar':
+                if type_ == "scalar":
                     xn = x
                     yn = y
                 else:
@@ -440,61 +502,78 @@ class UniversalKriging:
                         xn = x[m, n]
                         yn = y[m, n]
 
-                if xn > np.amax(self.external_Z_array_x) or \
-                   xn < np.amin(self.external_Z_array_x) or \
-                   yn > np.amax(self.external_Z_array_y) or \
-                   yn < np.amin(self.external_Z_array_y):
-                    raise ValueError("External drift array does not cover "
-                                     "specified kriging domain.")
+                if (
+                    xn > np.amax(self.external_Z_array_x)
+                    or xn < np.amin(self.external_Z_array_x)
+                    or yn > np.amax(self.external_Z_array_y)
+                    or yn < np.amin(self.external_Z_array_y)
+                ):
+                    raise ValueError(
+                        "External drift array does not cover "
+                        "specified kriging domain."
+                    )
 
                 # bilinear interpolation
-                external_x2_index = \
-                    np.amin(np.where(self.external_Z_array_x >= xn)[0])
-                external_x1_index = \
-                    np.amax(np.where(self.external_Z_array_x <= xn)[0])
-                external_y2_index = \
-                    np.amin(np.where(self.external_Z_array_y >= yn)[0])
-                external_y1_index = \
-                    np.amax(np.where(self.external_Z_array_y <= yn)[0])
+                external_x2_index = np.amin(np.where(self.external_Z_array_x >= xn)[0])
+                external_x1_index = np.amax(np.where(self.external_Z_array_x <= xn)[0])
+                external_y2_index = np.amin(np.where(self.external_Z_array_y >= yn)[0])
+                external_y1_index = np.amax(np.where(self.external_Z_array_y <= yn)[0])
                 if external_y1_index == external_y2_index:
                     if external_x1_index == external_x2_index:
                         z = self.external_Z_array[external_y1_index, external_x1_index]
                     else:
-                        z = (self.external_Z_array[external_y1_index, external_x1_index] *
-                             (self.external_Z_array_x[external_x2_index] - xn) +
-                             self.external_Z_array[external_y2_index, external_x2_index] *
-                             (xn - self.external_Z_array_x[external_x1_index])) / \
-                            (self.external_Z_array_x[external_x2_index] -
-                             self.external_Z_array_x[external_x1_index])
+                        z = (
+                            self.external_Z_array[external_y1_index, external_x1_index]
+                            * (self.external_Z_array_x[external_x2_index] - xn)
+                            + self.external_Z_array[
+                                external_y2_index, external_x2_index
+                            ]
+                            * (xn - self.external_Z_array_x[external_x1_index])
+                        ) / (
+                            self.external_Z_array_x[external_x2_index]
+                            - self.external_Z_array_x[external_x1_index]
+                        )
                 elif external_x1_index == external_x2_index:
                     if external_y1_index == external_y2_index:
                         z = self.external_Z_array[external_y1_index, external_x1_index]
                     else:
-                        z = (self.external_Z_array[external_y1_index, external_x1_index] *
-                             (self.external_Z_array_y[external_y2_index] - yn) +
-                             self.external_Z_array[external_y2_index, external_x2_index] *
-                             (yn - self.external_Z_array_y[external_y1_index])) / \
-                            (self.external_Z_array_y[external_y2_index] -
-                             self.external_Z_array_y[external_y1_index])
+                        z = (
+                            self.external_Z_array[external_y1_index, external_x1_index]
+                            * (self.external_Z_array_y[external_y2_index] - yn)
+                            + self.external_Z_array[
+                                external_y2_index, external_x2_index
+                            ]
+                            * (yn - self.external_Z_array_y[external_y1_index])
+                        ) / (
+                            self.external_Z_array_y[external_y2_index]
+                            - self.external_Z_array_y[external_y1_index]
+                        )
                 else:
-                    z = (self.external_Z_array[external_y1_index, external_x1_index] *
-                         (self.external_Z_array_x[external_x2_index] - xn) *
-                         (self.external_Z_array_y[external_y2_index] - yn) +
-                         self.external_Z_array[external_y1_index, external_x2_index] *
-                         (xn - self.external_Z_array_x[external_x1_index]) *
-                         (self.external_Z_array_y[external_y2_index] - yn) +
-                         self.external_Z_array[external_y2_index, external_x1_index] *
-                         (self.external_Z_array_x[external_x2_index] - xn) *
-                         (yn - self.external_Z_array_y[external_y1_index]) +
-                         self.external_Z_array[external_y2_index, external_x2_index] *
-                         (xn - self.external_Z_array_x[external_x1_index]) *
-                         (yn - self.external_Z_array_y[external_y1_index])) / \
-                        ((self.external_Z_array_x[external_x2_index] -
-                          self.external_Z_array_x[external_x1_index]) *
-                         (self.external_Z_array_y[external_y2_index] -
-                          self.external_Z_array_y[external_y1_index]))
+                    z = (
+                        self.external_Z_array[external_y1_index, external_x1_index]
+                        * (self.external_Z_array_x[external_x2_index] - xn)
+                        * (self.external_Z_array_y[external_y2_index] - yn)
+                        + self.external_Z_array[external_y1_index, external_x2_index]
+                        * (xn - self.external_Z_array_x[external_x1_index])
+                        * (self.external_Z_array_y[external_y2_index] - yn)
+                        + self.external_Z_array[external_y2_index, external_x1_index]
+                        * (self.external_Z_array_x[external_x2_index] - xn)
+                        * (yn - self.external_Z_array_y[external_y1_index])
+                        + self.external_Z_array[external_y2_index, external_x2_index]
+                        * (xn - self.external_Z_array_x[external_x1_index])
+                        * (yn - self.external_Z_array_y[external_y1_index])
+                    ) / (
+                        (
+                            self.external_Z_array_x[external_x2_index]
+                            - self.external_Z_array_x[external_x1_index]
+                        )
+                        * (
+                            self.external_Z_array_y[external_y2_index]
+                            - self.external_Z_array_y[external_y1_index]
+                        )
+                    )
 
-                if type_ == 'scalar':
+                if type_ == "scalar":
                     z_scalars = z
                 else:
                     if z_scalars.ndim == 1:
@@ -504,9 +583,16 @@ class UniversalKriging:
 
         return z_scalars
 
-    def update_variogram_model(self, variogram_model, variogram_parameters=None,
-                               variogram_function=None, nlags=6, weight=False,
-                               anisotropy_scaling=1., anisotropy_angle=0.):
+    def update_variogram_model(
+        self,
+        variogram_model,
+        variogram_parameters=None,
+        variogram_function=None,
+        nlags=6,
+        weight=False,
+        anisotropy_scaling=1.0,
+        anisotropy_angle=0.0,
+    ):
         """Allows user to update variogram type and/or
         variogram model parameters.
 
@@ -555,80 +641,101 @@ class UniversalKriging:
             variogram_parameters = []
             anisotropy_scaling = self.model.pykrige_anis
             anisotropy_angle = self.model.pykrige_angle
-        if self.variogram_model not in self.variogram_dict.keys() and \
-                        self.variogram_model != 'custom':
-            raise ValueError("Specified variogram model '%s' "
-                             "is not supported." % variogram_model)
-        elif self.variogram_model == 'custom':
+        if (
+            self.variogram_model not in self.variogram_dict.keys()
+            and self.variogram_model != "custom"
+        ):
+            raise ValueError(
+                "Specified variogram model '%s' is not supported." % variogram_model
+            )
+        elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
-                raise ValueError("Must specify callable function for "
-                                 "custom variogram model.")
+                raise ValueError(
+                    "Must specify callable function for custom variogram model."
+                )
             else:
                 self.variogram_function = variogram_function
         else:
             self.variogram_function = self.variogram_dict[self.variogram_model]
 
-        if anisotropy_scaling != self.anisotropy_scaling or \
-           anisotropy_angle != self.anisotropy_angle:
+        if (
+            anisotropy_scaling != self.anisotropy_scaling
+            or anisotropy_angle != self.anisotropy_angle
+        ):
             if self.verbose:
                 print("Adjusting data for anisotropy...")
             self.anisotropy_scaling = anisotropy_scaling
             self.anisotropy_angle = anisotropy_angle
-            self.X_ADJUSTED, self.Y_ADJUSTED =\
-                _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
-                                       [self.XCENTER, self.YCENTER],
-                                       [self.anisotropy_scaling],
-                                       [self.anisotropy_angle]).T
+            self.X_ADJUSTED, self.Y_ADJUSTED = _adjust_for_anisotropy(
+                np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                [self.XCENTER, self.YCENTER],
+                [self.anisotropy_scaling],
+                [self.anisotropy_angle],
+            ).T
 
         if self.verbose:
             print("Updating variogram mode...")
 
         # See note above about the 'use_psill' kwarg...
-        vp_temp = _make_variogram_parameter_list(self.variogram_model,
-                                                 variogram_parameters)
-        self.lags, self.semivariance, self.variogram_model_parameters = \
-            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                   self.Y_ADJUSTED)).T,
-                                        self.Z, self.variogram_model, vp_temp,
-                                        self.variogram_function, nlags,
-                                        weight, 'euclidean')
+        vp_temp = _make_variogram_parameter_list(
+            self.variogram_model, variogram_parameters
+        )
+        (
+            self.lags,
+            self.semivariance,
+            self.variogram_model_parameters,
+        ) = _initialize_variogram_model(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+            self.Z,
+            self.variogram_model,
+            vp_temp,
+            self.variogram_function,
+            nlags,
+            weight,
+            "euclidean",
+        )
 
         if self.verbose:
-            if self.variogram_model == 'linear':
-                print("Using '%s' Variogram Model" % 'linear')
+            if self.variogram_model == "linear":
+                print("Using '%s' Variogram Model" % "linear")
                 print("Slope:", self.variogram_model_parameters[0])
-                print("Nugget:", self.variogram_model_parameters[1], '\n')
-            elif self.variogram_model == 'power':
-                print("Using '%s' Variogram Model" % 'power')
+                print("Nugget:", self.variogram_model_parameters[1], "\n")
+            elif self.variogram_model == "power":
+                print("Using '%s' Variogram Model" % "power")
                 print("Scale:", self.variogram_model_parameters[0])
                 print("Exponent:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
-            elif self.variogram_model == 'custom':
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
+            elif self.variogram_model == "custom":
                 print("Using Custom Variogram Model")
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
                 print("Partial Sill:", self.variogram_model_parameters[0])
-                print("Full Sill:", self.variogram_model_parameters[0] +
-                      self.variogram_model_parameters[2])
+                print(
+                    "Full Sill:",
+                    self.variogram_model_parameters[0]
+                    + self.variogram_model_parameters[2],
+                )
                 print("Range:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
         if self.enable_plotting:
             self.display_variogram_model()
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = \
-            _find_statistics(np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
-                             self.Z, self.variogram_function,
-                             self.variogram_model_parameters,
-                             'euclidean')
+        self.delta, self.sigma, self.epsilon = _find_statistics(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+            self.Z,
+            self.variogram_function,
+            self.variogram_model_parameters,
+            "euclidean",
+        )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
         if self.verbose:
             print("Q1 =", self.Q1)
             print("Q2 =", self.Q2)
-            print("cR =", self.cR, '\n')
+            print("cR =", self.cR, "\n")
 
     def display_variogram_model(self):
         """Displays variogram model with the actual binned data."""
@@ -636,10 +743,12 @@ class UniversalKriging:
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.plot(self.lags, self.semivariance, 'r*')
-        ax.plot(self.lags,
-                self.variogram_function(self.variogram_model_parameters,
-                                        self.lags), 'k-')
+        ax.plot(self.lags, self.semivariance, "r*")
+        ax.plot(
+            self.lags,
+            self.variogram_function(self.variogram_model_parameters, self.lags),
+            "k-",
+        )
         plt.show()
 
     def get_variogram_points(self):
@@ -657,7 +766,10 @@ class UniversalKriging:
             lags (array) - the lags at which the variogram was evaluated
             variogram (array) - the variogram function evaluated at the lags
         """
-        return self.lags, self.variogram_function(self.variogram_model_parameters, self.lags)
+        return (
+            self.lags,
+            self.variogram_function(self.variogram_model_parameters, self.lags),
+        )
 
     def switch_verbose(self):
         """Allows user to switch code talk-back on/off. Takes no arguments."""
@@ -677,7 +789,7 @@ class UniversalKriging:
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.scatter(range(self.epsilon.size), self.epsilon, c='k', marker='*')
+        ax.scatter(range(self.epsilon.size), self.epsilon, c="k", marker="*")
         ax.axhline(y=0.0)
         plt.show()
 
@@ -699,15 +811,16 @@ class UniversalKriging:
     def _get_kriging_matrix(self, n, n_withdrifts):
         """Assembles the kriging matrix."""
 
-        xy = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
-                             self.Y_ADJUSTED[:, np.newaxis]), axis=1)
-        d = cdist(xy, xy, 'euclidean')
+        xy = np.concatenate(
+            (self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1
+        )
+        d = cdist(xy, xy, "euclidean")
         if self.UNBIAS:
-            a = np.zeros((n_withdrifts+1, n_withdrifts+1))
+            a = np.zeros((n_withdrifts + 1, n_withdrifts + 1))
         else:
             a = np.zeros((n_withdrifts, n_withdrifts))
-        a[:n, :n] = - self.variogram_function(self.variogram_model_parameters, d)
-        np.fill_diagonal(a, 0.)
+        a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
+        np.fill_diagonal(a, 0.0)
 
         i = n
         if self.regional_linear_drift:
@@ -719,12 +832,16 @@ class UniversalKriging:
             i += 1
         if self.point_log_drift:
             for well_no in range(self.point_log_array.shape[0]):
-                log_dist = np.log(np.sqrt((self.X_ADJUSTED - self.point_log_array[well_no, 0])**2 +
-                                          (self.Y_ADJUSTED - self.point_log_array[well_no, 1])**2))
+                log_dist = np.log(
+                    np.sqrt(
+                        (self.X_ADJUSTED - self.point_log_array[well_no, 0]) ** 2
+                        + (self.Y_ADJUSTED - self.point_log_array[well_no, 1]) ** 2
+                    )
+                )
                 if np.any(np.isinf(log_dist)):
                     log_dist[np.isinf(log_dist)] = -100.0
-                a[:n, i] = - self.point_log_array[well_no, 2] * log_dist
-                a[i, :n] = - self.point_log_array[well_no, 2] * log_dist
+                a[:n, i] = -self.point_log_array[well_no, 2] * log_dist
+                a[i, :n] = -self.point_log_array[well_no, 2] * log_dist
                 i += 1
         if self.external_Z_drift:
             a[:n, i] = self.z_scalars
@@ -741,17 +858,17 @@ class UniversalKriging:
                 a[i, :n] = func(self.X_ADJUSTED, self.Y_ADJUSTED)
                 i += 1
         if i != n_withdrifts:
-            warnings.warn("Error in creating kriging matrix. Kriging may fail.",
-                          RuntimeWarning)
+            warnings.warn(
+                "Error in creating kriging matrix. Kriging may fail.", RuntimeWarning
+            )
         if self.UNBIAS:
             a[n_withdrifts, :n] = 1.0
             a[:n, n_withdrifts] = 1.0
-            a[n:n_withdrifts + 1, n:n_withdrifts + 1] = 0.0
+            a[n : n_withdrifts + 1, n : n_withdrifts + 1] = 0.0
 
         return a
 
-    def _exec_vector(self, a, bd, xy, xy_orig, mask,
-                     n_withdrifts, spec_drift_grids):
+    def _exec_vector(self, a, bd, xy, xy_orig, mask, n_withdrifts, spec_drift_grids):
         """Solves the kriging system as a vectorized operation. This method
         can take a lot of memory for large grids and/or large datasets."""
 
@@ -767,10 +884,10 @@ class UniversalKriging:
             zero_index = np.where(np.absolute(bd) <= self.eps)
 
         if self.UNBIAS:
-            b = np.zeros((npt, n_withdrifts+1, 1))
+            b = np.zeros((npt, n_withdrifts + 1, 1))
         else:
             b = np.zeros((npt, n_withdrifts, 1))
-        b[:, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
         if zero_value:
             b[zero_index[0], zero_index[1], 0] = 0.0
 
@@ -782,14 +899,20 @@ class UniversalKriging:
             i += 1
         if self.point_log_drift:
             for well_no in range(self.point_log_array.shape[0]):
-                log_dist = np.log(np.sqrt((xy[:, 0] - self.point_log_array[well_no, 0])**2 +
-                                          (xy[:, 1] - self.point_log_array[well_no, 1])**2))
+                log_dist = np.log(
+                    np.sqrt(
+                        (xy[:, 0] - self.point_log_array[well_no, 0]) ** 2
+                        + (xy[:, 1] - self.point_log_array[well_no, 1]) ** 2
+                    )
+                )
                 if np.any(np.isinf(log_dist)):
                     log_dist[np.isinf(log_dist)] = -100.0
-                b[:, i, 0] = - self.point_log_array[well_no, 2] * log_dist
+                b[:, i, 0] = -self.point_log_array[well_no, 2] * log_dist
                 i += 1
         if self.external_Z_drift:
-            b[:, i, 0] = self._calculate_data_point_zscalars(xy_orig[:, 0], xy_orig[:, 1])
+            b[:, i, 0] = self._calculate_data_point_zscalars(
+                xy_orig[:, 0], xy_orig[:, 1]
+            )
             i += 1
         if self.specified_drift:
             for spec_vals in spec_drift_grids:
@@ -800,27 +923,36 @@ class UniversalKriging:
                 b[:, i, 0] = func(xy[:, 0], xy[:, 1])
                 i += 1
         if i != n_withdrifts:
-            warnings.warn("Error in setting up kriging system. "
-                          "Kriging may fail.", RuntimeWarning)
+            warnings.warn(
+                "Error in setting up kriging system. Kriging may fail.", RuntimeWarning,
+            )
         if self.UNBIAS:
             b[:, n_withdrifts, 0] = 1.0
 
         if (~mask).any():
-            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis],
-                               n_withdrifts+1, axis=1)
+            mask_b = np.repeat(
+                mask[:, np.newaxis, np.newaxis], n_withdrifts + 1, axis=1
+            )
             b = np.ma.array(b, mask=mask_b)
 
         if self.UNBIAS:
-            x = np.dot(a_inv, b.reshape((npt, n_withdrifts+1)).T).reshape((1, n_withdrifts+1, npt)).T
+            x = (
+                np.dot(a_inv, b.reshape((npt, n_withdrifts + 1)).T)
+                .reshape((1, n_withdrifts + 1, npt))
+                .T
+            )
         else:
-            x = np.dot(a_inv, b.reshape((npt, n_withdrifts)).T).reshape((1, n_withdrifts, npt)).T
+            x = (
+                np.dot(a_inv, b.reshape((npt, n_withdrifts)).T)
+                .reshape((1, n_withdrifts, npt))
+                .T
+            )
         zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
         sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
 
         return zvalues, sigmasq
 
-    def _exec_loop(self, a, bd_all, xy, xy_orig, mask,
-                   n_withdrifts, spec_drift_grids):
+    def _exec_loop(self, a, bd_all, xy, xy_orig, mask, n_withdrifts, spec_drift_grids):
         """Solves the kriging system by looping over all specified points.
         Less memory-intensive, but involves a Python-level loop."""
 
@@ -831,8 +963,10 @@ class UniversalKriging:
 
         a_inv = scipy.linalg.inv(a)
 
-        for j in np.nonzero(~mask)[0]:   # Note that this is the same thing as range(npt) if mask is not defined,
-            bd = bd_all[j]               # otherwise it takes the non-masked elements.
+        for j in np.nonzero(~mask)[
+            0
+        ]:  # Note that this is the same thing as range(npt) if mask is not defined,
+            bd = bd_all[j]  # otherwise it takes the non-masked elements.
             if np.any(np.absolute(bd) <= self.eps):
                 zero_value = True
                 zero_index = np.where(np.absolute(bd) <= self.eps)
@@ -841,10 +975,10 @@ class UniversalKriging:
                 zero_value = False
 
             if self.UNBIAS:
-                b = np.zeros((n_withdrifts+1, 1))
+                b = np.zeros((n_withdrifts + 1, 1))
             else:
                 b = np.zeros((n_withdrifts, 1))
-            b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
             if zero_value:
                 b[zero_index[0], 0] = 0.0
 
@@ -856,14 +990,20 @@ class UniversalKriging:
                 i += 1
             if self.point_log_drift:
                 for well_no in range(self.point_log_array.shape[0]):
-                    log_dist = np.log(np.sqrt((xy[j, 0] - self.point_log_array[well_no, 0])**2 +
-                                              (xy[j, 1] - self.point_log_array[well_no, 1])**2))
+                    log_dist = np.log(
+                        np.sqrt(
+                            (xy[j, 0] - self.point_log_array[well_no, 0]) ** 2
+                            + (xy[j, 1] - self.point_log_array[well_no, 1]) ** 2
+                        )
+                    )
                     if np.any(np.isinf(log_dist)):
                         log_dist[np.isinf(log_dist)] = -100.0
-                    b[i, 0] = - self.point_log_array[well_no, 2] * log_dist
+                    b[i, 0] = -self.point_log_array[well_no, 2] * log_dist
                     i += 1
             if self.external_Z_drift:
-                b[i, 0] = self._calculate_data_point_zscalars(xy_orig[j, 0], xy_orig[j, 1], type_='scalar')
+                b[i, 0] = self._calculate_data_point_zscalars(
+                    xy_orig[j, 0], xy_orig[j, 1], type_="scalar"
+                )
                 i += 1
             if self.specified_drift:
                 for spec_vals in spec_drift_grids:
@@ -874,8 +1014,10 @@ class UniversalKriging:
                     b[i, 0] = func(xy[j, 0], xy[j, 1])
                     i += 1
             if i != n_withdrifts:
-                warnings.warn("Error in setting up kriging system. "
-                              "Kriging may fail.", RuntimeWarning)
+                warnings.warn(
+                    "Error in setting up kriging system. Kriging may fail.",
+                    RuntimeWarning,
+                )
             if self.UNBIAS:
                 b[n_withdrifts, 0] = 1.0
 
@@ -885,8 +1027,15 @@ class UniversalKriging:
 
         return zvalues, sigmasq
 
-    def execute(self, style, xpoints, ypoints, mask=None,
-                backend='vectorized', specified_drift_arrays=None):
+    def execute(
+        self,
+        style,
+        xpoints,
+        ypoints,
+        mask=None,
+        backend="vectorized",
+        specified_drift_arrays=None,
+    ):
         """Calculates a kriged grid and the associated variance.
         Includes drift terms.
 
@@ -972,9 +1121,8 @@ class UniversalKriging:
         if self.verbose:
             print("Executing Universal Kriging...\n")
 
-        if style != 'grid' and style != 'masked' and style != 'points':
-            raise ValueError("style argument must be 'grid', 'points', "
-                             "or 'masked'")
+        if style != "grid" and style != "masked" and style != "points":
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         n = self.X_ADJUSTED.shape[0]
         n_withdrifts = n
@@ -994,111 +1142,144 @@ class UniversalKriging:
             n_withdrifts += len(self.functional_drift_terms)
         a = self._get_kriging_matrix(n, n_withdrifts)
 
-        if style in ['grid', 'masked']:
-            if style == 'masked':
+        if style in ["grid", "masked"]:
+            if style == "masked":
                 if mask is None:
-                    raise IOError("Must specify boolean masking array when "
-                                  "style is 'masked'.")
+                    raise IOError(
+                        "Must specify boolean masking array when style is 'masked'."
+                    )
                 if mask.shape[0] != ny or mask.shape[1] != nx:
                     if mask.shape[0] == nx and mask.shape[1] == ny:
                         mask = mask.T
                     else:
-                        raise ValueError("Mask dimensions do not match "
-                                         "specified grid dimensions.")
+                        raise ValueError(
+                            "Mask dimensions do not match specified grid dimensions."
+                        )
                 mask = mask.flatten()
-            npt = ny*nx
+            npt = ny * nx
             grid_x, grid_y = np.meshgrid(xpts, ypts)
             xpts = grid_x.flatten()
             ypts = grid_y.flatten()
 
-        elif style == 'points':
+        elif style == "points":
             if xpts.size != ypts.size:
-                raise ValueError("xpoints and ypoints must have same "
-                                 "dimensions when treated as listing "
-                                 "discrete points.")
+                raise ValueError(
+                    "xpoints and ypoints must have same "
+                    "dimensions when treated as listing "
+                    "discrete points."
+                )
             npt = nx
         else:
-            raise ValueError("style argument must be 'grid', 'points', "
-                             "or 'masked'")
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         if specified_drift_arrays is None:
             specified_drift_arrays = []
         spec_drift_grids = []
         if self.specified_drift:
             if len(specified_drift_arrays) == 0:
-                raise ValueError("Must provide drift values for kriging points "
-                                 "when using 'specified' drift capability.")
+                raise ValueError(
+                    "Must provide drift values for kriging points "
+                    "when using 'specified' drift capability."
+                )
             if type(specified_drift_arrays) is not list:
-                raise TypeError("Arrays for specified drift terms must be "
-                                "encapsulated in a list.")
+                raise TypeError(
+                    "Arrays for specified drift terms must be "
+                    "encapsulated in a list."
+                )
             for spec in specified_drift_arrays:
-                if style in ['grid', 'masked']:
+                if style in ["grid", "masked"]:
                     if spec.ndim < 2:
-                        raise ValueError("Dimensions of drift values array do "
-                                         "not match specified grid dimensions.")
+                        raise ValueError(
+                            "Dimensions of drift values array do "
+                            "not match specified grid dimensions."
+                        )
                     elif spec.shape[0] != ny or spec.shape[1] != nx:
                         if spec.shape[0] == nx and spec.shape[1] == ny:
                             spec_drift_grids.append(np.squeeze(spec.T))
                         else:
-                            raise ValueError("Dimensions of drift values array "
-                                             "do not match specified grid "
-                                             "dimensions.")
+                            raise ValueError(
+                                "Dimensions of drift values array "
+                                "do not match specified grid "
+                                "dimensions."
+                            )
                     else:
                         spec_drift_grids.append(np.squeeze(spec))
-                elif style == 'points':
+                elif style == "points":
                     if spec.ndim != 1:
-                        raise ValueError("Dimensions of drift values array do "
-                                         "not match specified grid dimensions.")
+                        raise ValueError(
+                            "Dimensions of drift values array do "
+                            "not match specified grid dimensions."
+                        )
                     elif spec.shape[0] != xpts.size:
-                        raise ValueError("Number of supplied drift values in "
-                                         "array do not match specified number "
-                                         "of kriging points.")
+                        raise ValueError(
+                            "Number of supplied drift values in "
+                            "array do not match specified number "
+                            "of kriging points."
+                        )
                     else:
                         spec_drift_grids.append(np.squeeze(spec))
             if len(spec_drift_grids) != len(self.specified_drift_data_arrays):
-                raise ValueError("Inconsistent number of specified drift "
-                                 "terms supplied.")
+                raise ValueError(
+                    "Inconsistent number of specified drift terms supplied."
+                )
         else:
             if len(specified_drift_arrays) != 0:
-                warnings.warn("Provided specified drift values, but "
-                              "'specified' drift was not initialized during "
-                              "instantiation of UniversalKriging class.",
-                              RuntimeWarning)
+                warnings.warn(
+                    "Provided specified drift values, but "
+                    "'specified' drift was not initialized during "
+                    "instantiation of UniversalKriging class.",
+                    RuntimeWarning,
+                )
 
-        xy_points_original = \
-            np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
-        xpts, ypts = _adjust_for_anisotropy(np.vstack((xpts, ypts)).T,
-                                            [self.XCENTER, self.YCENTER],
-                                            [self.anisotropy_scaling],
-                                            [self.anisotropy_angle]).T
-        xy_points = \
-            np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
-        xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
-                                  self.Y_ADJUSTED[:, np.newaxis]), axis=1)
+        xy_points_original = np.concatenate(
+            (xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1
+        )
+        xpts, ypts = _adjust_for_anisotropy(
+            np.vstack((xpts, ypts)).T,
+            [self.XCENTER, self.YCENTER],
+            [self.anisotropy_scaling],
+            [self.anisotropy_angle],
+        ).T
+        xy_points = np.concatenate((xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1)
+        xy_data = np.concatenate(
+            (self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1
+        )
 
-        if style != 'masked':
-            mask = np.zeros(npt, dtype='bool')
+        if style != "masked":
+            mask = np.zeros(npt, dtype="bool")
 
-        bd = cdist(xy_points,  xy_data, 'euclidean')
-        if backend == 'vectorized':
-            zvalues, sigmasq = self._exec_vector(a, bd, xy_points,
-                                                 xy_points_original,
-                                                 mask, n_withdrifts,
-                                                 spec_drift_grids)
-        elif backend == 'loop':
-            zvalues, sigmasq = self._exec_loop(a, bd, xy_points,
-                                               xy_points_original,
-                                               mask, n_withdrifts,
-                                               spec_drift_grids)
+        bd = cdist(xy_points, xy_data, "euclidean")
+        if backend == "vectorized":
+            zvalues, sigmasq = self._exec_vector(
+                a,
+                bd,
+                xy_points,
+                xy_points_original,
+                mask,
+                n_withdrifts,
+                spec_drift_grids,
+            )
+        elif backend == "loop":
+            zvalues, sigmasq = self._exec_loop(
+                a,
+                bd,
+                xy_points,
+                xy_points_original,
+                mask,
+                n_withdrifts,
+                spec_drift_grids,
+            )
         else:
-            raise ValueError('Specified backend {} is not supported '
-                             'for 2D universal kriging.'.format(backend))
+            raise ValueError(
+                "Specified backend {} is not supported "
+                "for 2D universal kriging.".format(backend)
+            )
 
-        if style == 'masked':
+        if style == "masked":
             zvalues = np.ma.array(zvalues, mask=mask)
             sigmasq = np.ma.array(sigmasq, mask=mask)
 
-        if style in ['masked', 'grid']:
+        if style in ["masked", "grid"]:
             zvalues = zvalues.reshape((ny, nx))
             sigmasq = sigmasq.reshape((ny, nx))
 

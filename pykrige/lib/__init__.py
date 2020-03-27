@@ -1,1 +1,1 @@
-__all__ = ['cok', 'lapack', 'variogram_models']
+__all__ = ["cok", "lapack", "variogram_models"]
