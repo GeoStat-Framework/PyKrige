@@ -439,7 +439,11 @@ class OrdinaryKriging:
         vp_temp = _make_variogram_parameter_list(
             self.variogram_model, variogram_parameters
         )
-        self.lags, self.semivariance, self.variogram_model_parameters = _initialize_variogram_model(
+        (
+            self.lags,
+            self.semivariance,
+            self.variogram_model_parameters,
+        ) = _initialize_variogram_model(
             np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
             self.Z,
             self.variogram_model,
@@ -863,9 +867,7 @@ class OrdinaryKriging:
                 )
                 backend = "loop"
             except:
-                raise RuntimeError(
-                    "Unknown error in trying to load Cython extension."
-                )
+                raise RuntimeError("Unknown error in trying to load Cython extension.")
 
             c_pars = {
                 key: getattr(self, key)

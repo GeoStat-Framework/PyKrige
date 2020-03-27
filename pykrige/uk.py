@@ -290,7 +290,11 @@ class UniversalKriging:
         vp_temp = _make_variogram_parameter_list(
             self.variogram_model, variogram_parameters
         )
-        self.lags, self.semivariance, self.variogram_model_parameters = _initialize_variogram_model(
+        (
+            self.lags,
+            self.semivariance,
+            self.variogram_model_parameters,
+        ) = _initialize_variogram_model(
             np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
             self.Z,
             self.variogram_model,
@@ -363,9 +367,7 @@ class UniversalKriging:
             if external_drift is None:
                 raise ValueError("Must specify external Z drift terms.")
             if external_drift_x is None or external_drift_y is None:
-                raise ValueError(
-                    "Must specify coordinates of external Z drift terms."
-                )
+                raise ValueError("Must specify coordinates of external Z drift terms.")
             self.external_Z_drift = True
             if (
                 external_drift.shape[0] != external_drift_y.shape[0]
@@ -678,7 +680,11 @@ class UniversalKriging:
         vp_temp = _make_variogram_parameter_list(
             self.variogram_model, variogram_parameters
         )
-        self.lags, self.semivariance, self.variogram_model_parameters = _initialize_variogram_model(
+        (
+            self.lags,
+            self.semivariance,
+            self.variogram_model_parameters,
+        ) = _initialize_variogram_model(
             np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
             self.Z,
             self.variogram_model,
@@ -918,8 +924,7 @@ class UniversalKriging:
                 i += 1
         if i != n_withdrifts:
             warnings.warn(
-                "Error in setting up kriging system. Kriging may fail.",
-                RuntimeWarning,
+                "Error in setting up kriging system. Kriging may fail.", RuntimeWarning,
             )
         if self.UNBIAS:
             b[:, n_withdrifts, 0] = 1.0

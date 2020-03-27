@@ -294,7 +294,11 @@ class UniversalKriging3D:
         vp_temp = _make_variogram_parameter_list(
             self.variogram_model, variogram_parameters
         )
-        self.lags, self.semivariance, self.variogram_model_parameters = _initialize_variogram_model(
+        (
+            self.lags,
+            self.semivariance,
+            self.variogram_model_parameters,
+        ) = _initialize_variogram_model(
             np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED)).T,
             self.VALUES,
             self.variogram_model,
@@ -529,7 +533,11 @@ class UniversalKriging3D:
         vp_temp = _make_variogram_parameter_list(
             self.variogram_model, variogram_parameters
         )
-        self.lags, self.semivariance, self.variogram_model_parameters = _initialize_variogram_model(
+        (
+            self.lags,
+            self.semivariance,
+            self.variogram_model_parameters,
+        ) = _initialize_variogram_model(
             np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED)).T,
             self.VALUES,
             self.variogram_model,
@@ -725,8 +733,7 @@ class UniversalKriging3D:
                 i += 1
         if i != n_withdrifts:
             warnings.warn(
-                "Error in setting up kriging system. Kriging may fail.",
-                RuntimeWarning,
+                "Error in setting up kriging system. Kriging may fail.", RuntimeWarning,
             )
         if self.UNBIAS:
             b[:, n_withdrifts, 0] = 1.0
