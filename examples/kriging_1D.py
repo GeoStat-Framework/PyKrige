@@ -12,6 +12,7 @@ from pykrige import OrdinaryKriging
 
 plt.style.use("ggplot")
 
+# fmt: off
 # Data taken from
 # https://blog.dominodatalab.com/fitting-gaussian-process-models-python/
 X, y = np.array([
@@ -37,6 +38,7 @@ X, y = np.array([
      [4.52 , 1.11], [4.65 , 0.36], [4.74 , 0.79], [4.84 , 0.87], [4.93 , 1.01],
      [5.02 , 0.55]
 ]).T
+# fmt: on
 
 X_pred = np.linspace(-6, 6, 200)
 
