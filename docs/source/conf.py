@@ -16,11 +16,9 @@ import datetime
 import sys
 import os
 import shlex
+import sphinx_rtd_theme
 import matplotlib
 matplotlib.use("Agg")
-
-import sphinx_rtd_theme
-from recommonmark.parser import CommonMarkParser
 
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -32,7 +30,6 @@ sys.path.insert(0, os.path.abspath("sphinxext"))
 import pykrige
 from github_link import make_linkcode_resolve
 
-source_parsers = {".md": CommonMarkParser}
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -50,6 +47,7 @@ extensions = [
     "sphinxcontrib.napoleon",
     "sphinx_gallery.gen_gallery",
     "sphinx.ext.linkcode",
+    "recommonmark",
 ]
 
 
@@ -62,7 +60,11 @@ templates_path = ["_templates"]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
-source_suffix = [".rst", ".md"]
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'restructuredtext',
+    '.md': 'markdown',
+}
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
