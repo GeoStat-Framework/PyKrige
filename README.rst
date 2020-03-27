@@ -12,9 +12,10 @@ PyKrige
    :target: https://travis-ci.com/GeoStat-Framework/PyKrige
 
 
-.. raw:: html
-
-   <p align="center"><img src="https://github.com/GeoStat-Framework/GeoStat-Framework.github.io/raw/master/docs/source/pics/PyKrige.png" width="251px"></p>
+.. figure:: https://github.com/GeoStat-Framework/GeoStat-Framework.github.io/raw/master/docs/source/pics/PyKrige_250.png
+   :align: center
+   :alt: PyKrige
+   :figclass: align-center
 
 
 Kriging Toolkit for Python.
