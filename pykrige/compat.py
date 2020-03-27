@@ -27,5 +27,5 @@ class SklearnException(Exception):
 def validate_sklearn():
     if not SKLEARN_INSTALLED:
         raise SklearnException(
-            "sklearn needs to be installed in order " "to use this module"
+            "sklearn needs to be installed in order to use this module"
         )

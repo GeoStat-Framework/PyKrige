@@ -49,7 +49,7 @@ def write_asc_grid(x, y, z, filename="output.asc", style=1):
     ncols = z.shape[1]
 
     if z.ndim != 2:
-        raise ValueError("Two-dimensional grid is required to " "write *.asc grid.")
+        raise ValueError("Two-dimensional grid is required to write *.asc grid.")
     if x.ndim > 1 or y.ndim > 1:
         raise ValueError(
             "Dimensions of X and/or Y coordinate arrays are not "
@@ -75,7 +75,7 @@ def write_asc_grid(x, y, z, filename="output.asc", style=1):
         or abs((y[-1] - y[0]) / (y.shape[0] - 1)) != dy
     ):
         raise ValueError(
-            "X or Y spacing is not constant; *.asc " "grid cannot be written."
+            "X or Y spacing is not constant; *.asc grid cannot be written."
         )
     cellsize = -1
     if style == 2:

@@ -180,7 +180,7 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
         rot_tot = np.dot(rotate_z, np.dot(rotate_y, rotate_x))
     else:
         raise ValueError(
-            "Adjust for anisotropy function doesn't " "support ND spaces where N>3"
+            "Adjust for anisotropy function doesn't support ND spaces where N>3"
         )
     X_adj = np.dot(stretch, np.dot(rot_tot, X.T)).T
 
@@ -462,7 +462,7 @@ def _initialize_variogram_model(
     elif coordinates_type == "geographic":
         if X.shape[1] != 2:
             raise ValueError(
-                "Geographic coordinate type only " "supported for 2D datasets."
+                "Geographic coordinate type only supported for 2D datasets."
             )
         x1, x2 = np.meshgrid(X[:, 0], X[:, 0], sparse=True)
         y1, y2 = np.meshgrid(X[:, 1], X[:, 1], sparse=True)
@@ -475,7 +475,7 @@ def _initialize_variogram_model(
 
     else:
         raise ValueError(
-            "Specified coordinate type '%s' " "is not supported." % coordinates_type
+            "Specified coordinate type '%s' is not supported." % coordinates_type
         )
 
     # Equal-sized bins are now implemented. The upper limit on the bins
@@ -532,7 +532,7 @@ def _initialize_variogram_model(
     if variogram_model_parameters is not None:
         if variogram_model == "linear" and len(variogram_model_parameters) != 2:
             raise ValueError(
-                "Exactly two parameters required " "for linear variogram model."
+                "Exactly two parameters required for linear variogram model."
             )
         elif (
             variogram_model
@@ -730,7 +730,7 @@ def _krige(
     # this check is done when initializing variogram, but kept here anyways...
     else:
         raise ValueError(
-            "Specified coordinate type '%s' " "is not supported." % coordinates_type
+            "Specified coordinate type '%s' is not supported." % coordinates_type
         )
 
     # check if kriging point overlaps with measurement point

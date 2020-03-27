@@ -210,12 +210,12 @@ class OrdinaryKriging3D:
             and self.variogram_model != "custom"
         ):
             raise ValueError(
-                "Specified variogram model '%s' " "is not supported." % variogram_model
+                "Specified variogram model '%s' is not supported." % variogram_model
             )
         elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
                 raise ValueError(
-                    "Must specify callable function for " "custom variogram model."
+                    "Must specify callable function for custom variogram model."
                 )
             else:
                 self.variogram_function = variogram_function
@@ -401,12 +401,12 @@ class OrdinaryKriging3D:
             and self.variogram_model != "custom"
         ):
             raise ValueError(
-                "Specified variogram model '%s' " "is not supported." % variogram_model
+                "Specified variogram model '%s' is not supported." % variogram_model
             )
         elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
                 raise ValueError(
-                    "Must specify callable function for " "custom variogram model."
+                    "Must specify callable function for custom variogram model."
                 )
             else:
                 self.variogram_function = variogram_function
@@ -768,7 +768,7 @@ class OrdinaryKriging3D:
             print("Executing Ordinary Kriging...\n")
 
         if style != "grid" and style != "masked" and style != "points":
-            raise ValueError("style argument must be 'grid', 'points', " "or 'masked'")
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
         ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
@@ -783,7 +783,7 @@ class OrdinaryKriging3D:
             if style == "masked":
                 if mask is None:
                     raise IOError(
-                        "Must specify boolean masking array when " "style is 'masked'."
+                        "Must specify boolean masking array when style is 'masked'."
                     )
                 if mask.ndim != 3:
                     raise ValueError("Mask is not three-dimensional.")
@@ -796,7 +796,7 @@ class OrdinaryKriging3D:
                         mask = mask.swapaxes(0, 2)
                     else:
                         raise ValueError(
-                            "Mask dimensions do not match " "specified grid dimensions."
+                            "Mask dimensions do not match specified grid dimensions."
                         )
                 mask = mask.flatten()
             npt = nz * ny * nx
@@ -813,7 +813,7 @@ class OrdinaryKriging3D:
                 )
             npt = nx
         else:
-            raise ValueError("style argument must be 'grid', " "'points', or 'masked'")
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         xpts, ypts, zpts = _adjust_for_anisotropy(
             np.vstack((xpts, ypts, zpts)).T,

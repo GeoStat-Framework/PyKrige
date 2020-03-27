@@ -241,12 +241,12 @@ class UniversalKriging:
             and self.variogram_model != "custom"
         ):
             raise ValueError(
-                "Specified variogram model '%s' " "is not supported." % variogram_model
+                "Specified variogram model '%s' is not supported." % variogram_model
             )
         elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
                 raise ValueError(
-                    "Must specify callable function for " "custom variogram model."
+                    "Must specify callable function for custom variogram model."
                 )
             else:
                 self.variogram_function = variogram_function
@@ -364,7 +364,7 @@ class UniversalKriging:
                 raise ValueError("Must specify external Z drift terms.")
             if external_drift_x is None or external_drift_y is None:
                 raise ValueError(
-                    "Must specify coordinates of " "external Z drift terms."
+                    "Must specify coordinates of external Z drift terms."
                 )
             self.external_Z_drift = True
             if (
@@ -397,7 +397,7 @@ class UniversalKriging:
         if "point_log" in drift_terms:
             if point_drift is None:
                 raise ValueError(
-                    "Must specify location(s) and strength(s) " "of point drift terms."
+                    "Must specify location(s) and strength(s) of point drift terms."
                 )
             self.point_log_drift = True
             point_log = np.atleast_2d(np.squeeze(np.array(point_drift, copy=True)))
@@ -644,12 +644,12 @@ class UniversalKriging:
             and self.variogram_model != "custom"
         ):
             raise ValueError(
-                "Specified variogram model '%s' " "is not supported." % variogram_model
+                "Specified variogram model '%s' is not supported." % variogram_model
             )
         elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
                 raise ValueError(
-                    "Must specify callable function for " "custom variogram model."
+                    "Must specify callable function for custom variogram model."
                 )
             else:
                 self.variogram_function = variogram_function
@@ -918,7 +918,7 @@ class UniversalKriging:
                 i += 1
         if i != n_withdrifts:
             warnings.warn(
-                "Error in setting up kriging system. " "Kriging may fail.",
+                "Error in setting up kriging system. Kriging may fail.",
                 RuntimeWarning,
             )
         if self.UNBIAS:
@@ -1010,7 +1010,7 @@ class UniversalKriging:
                     i += 1
             if i != n_withdrifts:
                 warnings.warn(
-                    "Error in setting up kriging system. " "Kriging may fail.",
+                    "Error in setting up kriging system. Kriging may fail.",
                     RuntimeWarning,
                 )
             if self.UNBIAS:
@@ -1117,7 +1117,7 @@ class UniversalKriging:
             print("Executing Universal Kriging...\n")
 
         if style != "grid" and style != "masked" and style != "points":
-            raise ValueError("style argument must be 'grid', 'points', " "or 'masked'")
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         n = self.X_ADJUSTED.shape[0]
         n_withdrifts = n
@@ -1141,14 +1141,14 @@ class UniversalKriging:
             if style == "masked":
                 if mask is None:
                     raise IOError(
-                        "Must specify boolean masking array when " "style is 'masked'."
+                        "Must specify boolean masking array when style is 'masked'."
                     )
                 if mask.shape[0] != ny or mask.shape[1] != nx:
                     if mask.shape[0] == nx and mask.shape[1] == ny:
                         mask = mask.T
                     else:
                         raise ValueError(
-                            "Mask dimensions do not match " "specified grid dimensions."
+                            "Mask dimensions do not match specified grid dimensions."
                         )
                 mask = mask.flatten()
             npt = ny * nx
@@ -1165,7 +1165,7 @@ class UniversalKriging:
                 )
             npt = nx
         else:
-            raise ValueError("style argument must be 'grid', 'points', " "or 'masked'")
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         if specified_drift_arrays is None:
             specified_drift_arrays = []
@@ -1215,7 +1215,7 @@ class UniversalKriging:
                         spec_drift_grids.append(np.squeeze(spec))
             if len(spec_drift_grids) != len(self.specified_drift_data_arrays):
                 raise ValueError(
-                    "Inconsistent number of specified drift " "terms supplied."
+                    "Inconsistent number of specified drift terms supplied."
                 )
         else:
             if len(specified_drift_arrays) != 0:

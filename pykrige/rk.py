@@ -23,7 +23,7 @@ threed_krige = ("ordinary3d", "universal3d")
 def validate_method(method):
     if method not in krige_methods.keys():
         raise ValueError(
-            "Kriging method must be " "one of {}".format(krige_methods.keys())
+            "Kriging method must be one of {}".format(krige_methods.keys())
         )
 
 
@@ -151,7 +151,7 @@ class Krige(RegressorMixin, BaseEstimator):
 def check_sklearn_model(model):
     if not (isinstance(model, BaseEstimator) and isinstance(model, RegressorMixin)):
         raise RuntimeError(
-            "Needs to supply an instance of a scikit-learn " "regression class."
+            "Needs to supply an instance of a scikit-learn regression class."
         )
 
 

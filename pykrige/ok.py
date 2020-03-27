@@ -194,12 +194,12 @@ class OrdinaryKriging:
             and self.variogram_model != "custom"
         ):
             raise ValueError(
-                "Specified variogram model '%s' " "is not supported." % variogram_model
+                "Specified variogram model '%s' is not supported." % variogram_model
             )
         elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
                 raise ValueError(
-                    "Must specify callable function for " "custom variogram model."
+                    "Must specify callable function for custom variogram model."
                 )
             else:
                 self.variogram_function = variogram_function
@@ -394,12 +394,12 @@ class OrdinaryKriging:
             and self.variogram_model != "custom"
         ):
             raise ValueError(
-                "Specified variogram model '%s' " "is not supported." % variogram_model
+                "Specified variogram model '%s' is not supported." % variogram_model
             )
         elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
                 raise ValueError(
-                    "Must specify callable function for " "custom variogram model."
+                    "Must specify callable function for custom variogram model."
                 )
             else:
                 self.variogram_function = variogram_function
@@ -784,7 +784,7 @@ class OrdinaryKriging:
             print("Executing Ordinary Kriging...\n")
 
         if style != "grid" and style != "masked" and style != "points":
-            raise ValueError("style argument must be 'grid', " "'points', or 'masked'")
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         if n_closest_points is not None and n_closest_points <= 1:
             # If this is not checked, nondescriptive errors emerge
@@ -802,14 +802,14 @@ class OrdinaryKriging:
             if style == "masked":
                 if mask is None:
                     raise IOError(
-                        "Must specify boolean masking array " "when style is 'masked'."
+                        "Must specify boolean masking array when style is 'masked'."
                     )
                 if mask.shape[0] != ny or mask.shape[1] != nx:
                     if mask.shape[0] == nx and mask.shape[1] == ny:
                         mask = mask.T
                     else:
                         raise ValueError(
-                            "Mask dimensions do not match " "specified grid dimensions."
+                            "Mask dimensions do not match specified grid dimensions."
                         )
                 mask = mask.flatten()
             npt = ny * nx
@@ -826,7 +826,7 @@ class OrdinaryKriging:
                 )
             npt = nx
         else:
-            raise ValueError("style argument must be 'grid', " "'points', or 'masked'")
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         if self.coordinates_type == "euclidean":
             xpts, ypts = _adjust_for_anisotropy(
@@ -864,7 +864,7 @@ class OrdinaryKriging:
                 backend = "loop"
             except:
                 raise RuntimeError(
-                    "Unknown error in trying to " "load Cython extension."
+                    "Unknown error in trying to load Cython extension."
                 )
 
             c_pars = {
