@@ -477,7 +477,7 @@ def test_ok_update_variogram_model(validation_ref):
 
     # TODO: check that new parameters equal to the set parameters
     assert variogram_model != ok.variogram_model
-    assert variogram_parameters != ok.variogram_model_parameters
+    assert not np.array_equal(variogram_parameters, ok.variogram_model_parameters)
     assert anisotropy_scaling != ok.anisotropy_scaling
     assert anisotropy_angle != ok.anisotropy_angle
 
@@ -663,7 +663,7 @@ def test_uk_update_variogram_model(sample_data_2d):
     uk.update_variogram_model("power", anisotropy_scaling=3.0, anisotropy_angle=45.0)
     # TODO: check that the new parameters are equal to the expected ones
     assert variogram_model != uk.variogram_model
-    assert variogram_parameters != uk.variogram_model_parameters
+    assert not np.array_equal(variogram_parameters, uk.variogram_model_parameters)
     assert anisotropy_scaling != uk.anisotropy_scaling
     assert anisotropy_angle != uk.anisotropy_angle
 
@@ -1920,7 +1920,7 @@ def test_ok3d_update_variogram_model(sample_data_3d):
         anisotropy_angle_z=45.0,
     )
     assert variogram_model != k3d.variogram_model
-    assert variogram_parameters != k3d.variogram_model_parameters
+    assert not np.array_equal(variogram_parameters, k3d.variogram_model_parameters)
     assert anisotropy_scaling_y != k3d.anisotropy_scaling_y
     assert anisotropy_scaling_z != k3d.anisotropy_scaling_z
     assert anisotropy_angle_x != k3d.anisotropy_angle_x
@@ -1957,7 +1957,7 @@ def test_uk3d_update_variogram_model(sample_data_3d):
         anisotropy_angle_z=45.0,
     )
     assert not variogram_model == uk3d.variogram_model
-    assert not variogram_parameters == uk3d.variogram_model_parameters
+    assert not np.array_equal(variogram_parameters, uk3d.variogram_model_parameters)
     assert not anisotropy_scaling_y == uk3d.anisotropy_scaling_y
     assert not anisotropy_scaling_z == uk3d.anisotropy_scaling_z
     assert not anisotropy_angle_x == uk3d.anisotropy_angle_x

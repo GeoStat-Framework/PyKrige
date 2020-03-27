@@ -26,7 +26,6 @@ def test_krige():
             Krige(),
             param_dict,
             n_jobs=-1,
-            iid=False,
             pre_dispatch="2*n_jobs",
             verbose=False,
             cv=5,
