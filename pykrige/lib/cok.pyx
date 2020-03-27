@@ -2,12 +2,10 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 cimport numpy as np
-# import scipy.linalg.blas
 from libc.math cimport sqrt
 import scipy.linalg
 from scipy.linalg.cython_blas cimport dgemv
 from scipy.linalg.cython_lapack cimport dgesv
-# from .lapack cimport dgemv, dgesv
 from .variogram_models cimport get_variogram_model
 
 

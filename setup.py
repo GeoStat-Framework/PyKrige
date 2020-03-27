@@ -24,13 +24,6 @@ CY_MODULES.append(
         include_dirs=[np.get_include()],
     )
 )
-CY_MODULES.append(
-    Extension(
-        "pykrige.lib.lapack",
-        [os.path.join("pykrige", "lib", "lapack.pyx")],
-        include_dirs=[np.get_include()],
-    )
-)
 EXT_MODULES = cythonize(CY_MODULES)  # annotate=True
 
 # This is an important part. By setting this compiler directive, cython will
