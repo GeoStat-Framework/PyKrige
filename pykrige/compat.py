@@ -15,6 +15,8 @@ try:
     # https://stackoverflow.com/a/56618067/6696397
     if "return_train_score" in arg_spec:
         GridSearchCV = partial(GridSearchCV, return_train_score=True)
+    if "iid" in arg_spec:
+        GridSearchCV = partial(GridSearchCV, iid=False)
 
 except ImportError:
     SKLEARN_INSTALLED = False
