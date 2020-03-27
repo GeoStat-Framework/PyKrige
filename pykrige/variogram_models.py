@@ -17,7 +17,7 @@ References
 .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
 
-Copyright (c) 2015-2018, PyKrige Developers
+Copyright (c) 2015-2020, PyKrige Developers
 """
 import numpy as np
 
@@ -34,7 +34,7 @@ def power_variogram_model(m, d):
     scale = float(m[0])
     exponent = float(m[1])
     nugget = float(m[2])
-    return scale * d**exponent + nugget
+    return scale * d ** exponent + nugget
 
 
 def gaussian_variogram_model(m, d):
@@ -42,7 +42,7 @@ def gaussian_variogram_model(m, d):
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
-    return psill * (1. - np.exp(-d**2./(range_*4./7.)**2.)) + nugget
+    return psill * (1.0 - np.exp(-d ** 2.0 / (range_ * 4.0 / 7.0) ** 2.0)) + nugget
 
 
 def exponential_variogram_model(m, d):
@@ -50,7 +50,7 @@ def exponential_variogram_model(m, d):
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
-    return psill * (1. - np.exp(-d/(range_/3.))) + nugget
+    return psill * (1.0 - np.exp(-d / (range_ / 3.0))) + nugget
 
 
 def spherical_variogram_model(m, d):
@@ -58,8 +58,16 @@ def spherical_variogram_model(m, d):
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
-    return np.piecewise(d, [d <= range_, d > range_],
-                        [lambda x: psill * ((3.*x)/(2.*range_) - (x**3.)/(2.*range_**3.)) + nugget, psill + nugget])
+    return np.piecewise(
+        d,
+        [d <= range_, d > range_],
+        [
+            lambda x: psill
+            * ((3.0 * x) / (2.0 * range_) - (x ** 3.0) / (2.0 * range_ ** 3.0))
+            + nugget,
+            psill + nugget,
+        ],
+    )
 
 
 def hole_effect_variogram_model(m, d):
@@ -67,4 +75,7 @@ def hole_effect_variogram_model(m, d):
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
-    return psill * (1. - (1.-d/(range_/3.)) * np.exp(-d/(range_/3.))) + nugget
+    return (
+        psill * (1.0 - (1.0 - d / (range_ / 3.0)) * np.exp(-d / (range_ / 3.0)))
+        + nugget
+    )

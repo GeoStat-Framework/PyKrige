@@ -15,7 +15,7 @@ References
 .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
 
-Copyright (c) 2015-2018, PyKrige Developers
+Copyright (c) 2015-2020, PyKrige Developers
 """
 
 import numpy as np
@@ -23,8 +23,12 @@ import scipy.linalg
 from scipy.spatial.distance import cdist
 from . import variogram_models
 from . import core
-from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
-    _make_variogram_parameter_list, _find_statistics
+from .core import (
+    _adjust_for_anisotropy,
+    _initialize_variogram_model,
+    _make_variogram_parameter_list,
+    _find_statistics,
+)
 import warnings
 
 
@@ -154,19 +158,35 @@ class OrdinaryKriging3D:
        Hydrogeology, (Cambridge University Press, 1997) 272 p.
     """
 
-    eps = 1.e-10   # Cutoff for comparison to zero
-    variogram_dict = {'linear': variogram_models.linear_variogram_model,
-                      'power': variogram_models.power_variogram_model,
-                      'gaussian': variogram_models.gaussian_variogram_model,
-                      'spherical': variogram_models.spherical_variogram_model,
-                      'exponential': variogram_models.exponential_variogram_model,
-                      'hole-effect': variogram_models.hole_effect_variogram_model}
+    eps = 1.0e-10  # Cutoff for comparison to zero
+    variogram_dict = {
+        "linear": variogram_models.linear_variogram_model,
+        "power": variogram_models.power_variogram_model,
+        "gaussian": variogram_models.gaussian_variogram_model,
+        "spherical": variogram_models.spherical_variogram_model,
+        "exponential": variogram_models.exponential_variogram_model,
+        "hole-effect": variogram_models.hole_effect_variogram_model,
+    }
 
-    def __init__(self, x, y, z, val, variogram_model='linear',
-                 variogram_parameters=None, variogram_function=None, nlags=6,
-                 weight=False, anisotropy_scaling_y=1., anisotropy_scaling_z=1.,
-                 anisotropy_angle_x=0., anisotropy_angle_y=0.,
-                 anisotropy_angle_z=0., verbose=False, enable_plotting=False):
+    def __init__(
+        self,
+        x,
+        y,
+        z,
+        val,
+        variogram_model="linear",
+        variogram_parameters=None,
+        variogram_function=None,
+        nlags=6,
+        weight=False,
+        anisotropy_scaling_y=1.0,
+        anisotropy_scaling_z=1.0,
+        anisotropy_angle_x=0.0,
+        anisotropy_angle_y=0.0,
+        anisotropy_angle_z=0.0,
+        verbose=False,
+        enable_plotting=False,
+    ):
 
         # set up variogram model and parameters...
         self.variogram_model = variogram_model
@@ -185,14 +205,18 @@ class OrdinaryKriging3D:
             anisotropy_angle_x = self.model.pykrige_angle_x
             anisotropy_angle_y = self.model.pykrige_angle_y
             anisotropy_angle_z = self.model.pykrige_angle_z
-        if self.variogram_model not in self.variogram_dict.keys() and \
-                        self.variogram_model != 'custom':
-            raise ValueError("Specified variogram model '%s' "
-                             "is not supported." % variogram_model)
-        elif self.variogram_model == 'custom':
+        if (
+            self.variogram_model not in self.variogram_dict.keys()
+            and self.variogram_model != "custom"
+        ):
+            raise ValueError(
+                "Specified variogram model '%s' " "is not supported." % variogram_model
+            )
+        elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
-                raise ValueError("Must specify callable function for "
-                                 "custom variogram model.")
+                raise ValueError(
+                    "Must specify callable function for " "custom variogram model."
+                )
             else:
                 self.variogram_function = variogram_function
         else:
@@ -201,23 +225,27 @@ class OrdinaryKriging3D:
         # Code assumes 1D input arrays. Ensures that any extraneous dimensions
         # don't get in the way. Copies are created to avoid any problems with
         # referencing the original passed arguments.
-        self.X_ORIG = \
-            np.atleast_1d(np.squeeze(np.array(x, copy=True, dtype=np.float64)))
-        self.Y_ORIG = \
-            np.atleast_1d(np.squeeze(np.array(y, copy=True, dtype=np.float64)))
-        self.Z_ORIG = \
-            np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float64)))
-        self.VALUES = \
-            np.atleast_1d(np.squeeze(np.array(val, copy=True, dtype=np.float64)))
+        self.X_ORIG = np.atleast_1d(
+            np.squeeze(np.array(x, copy=True, dtype=np.float64))
+        )
+        self.Y_ORIG = np.atleast_1d(
+            np.squeeze(np.array(y, copy=True, dtype=np.float64))
+        )
+        self.Z_ORIG = np.atleast_1d(
+            np.squeeze(np.array(z, copy=True, dtype=np.float64))
+        )
+        self.VALUES = np.atleast_1d(
+            np.squeeze(np.array(val, copy=True, dtype=np.float64))
+        )
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
         if self.enable_plotting and self.verbose:
             print("Plotting Enabled\n")
 
-        self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG))/2.0
-        self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG))/2.0
-        self.ZCENTER = (np.amax(self.Z_ORIG) + np.amin(self.Z_ORIG))/2.0
+        self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG)) / 2.0
+        self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG)) / 2.0
+        self.ZCENTER = (np.amax(self.Z_ORIG) + np.amin(self.Z_ORIG)) / 2.0
         self.anisotropy_scaling_y = anisotropy_scaling_y
         self.anisotropy_scaling_z = anisotropy_scaling_z
         self.anisotropy_angle_x = anisotropy_angle_x
@@ -225,68 +253,85 @@ class OrdinaryKriging3D:
         self.anisotropy_angle_z = anisotropy_angle_z
         if self.verbose:
             print("Adjusting data for anisotropy...")
-        self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = \
-            _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
-                                   [self.XCENTER, self.YCENTER, self.ZCENTER],
-                                   [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
-                                   [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z]).T
+        self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = _adjust_for_anisotropy(
+            np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
+            [self.XCENTER, self.YCENTER, self.ZCENTER],
+            [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+            [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z],
+        ).T
 
         if self.verbose:
             print("Initializing variogram model...")
 
-        vp_temp = _make_variogram_parameter_list(self.variogram_model,
-                                                 variogram_parameters)
-        self.lags, self.semivariance, self.variogram_model_parameters = \
-            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                   self.Y_ADJUSTED,
-                                                   self.Z_ADJUSTED)).T,
-                                        self.VALUES, self.variogram_model,
-                                        vp_temp, self.variogram_function,
-                                        nlags, weight, 'euclidean')
+        vp_temp = _make_variogram_parameter_list(
+            self.variogram_model, variogram_parameters
+        )
+        self.lags, self.semivariance, self.variogram_model_parameters = _initialize_variogram_model(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED)).T,
+            self.VALUES,
+            self.variogram_model,
+            vp_temp,
+            self.variogram_function,
+            nlags,
+            weight,
+            "euclidean",
+        )
 
         if self.verbose:
-            if self.variogram_model == 'linear':
-                print("Using '%s' Variogram Model" % 'linear')
+            if self.variogram_model == "linear":
+                print("Using '%s' Variogram Model" % "linear")
                 print("Slope:", self.variogram_model_parameters[0])
-                print("Nugget:", self.variogram_model_parameters[1], '\n')
-            elif self.variogram_model == 'power':
-                print("Using '%s' Variogram Model" % 'power')
+                print("Nugget:", self.variogram_model_parameters[1], "\n")
+            elif self.variogram_model == "power":
+                print("Using '%s' Variogram Model" % "power")
                 print("Scale:", self.variogram_model_parameters[0])
                 print("Exponent:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
-            elif self.variogram_model == 'custom':
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
+            elif self.variogram_model == "custom":
                 print("Using Custom Variogram Model")
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
                 print("Partial Sill:", self.variogram_model_parameters[0])
-                print("Full Sill:", self.variogram_model_parameters[0] +
-                      self.variogram_model_parameters[2])
+                print(
+                    "Full Sill:",
+                    self.variogram_model_parameters[0]
+                    + self.variogram_model_parameters[2],
+                )
                 print("Range:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
         if self.enable_plotting:
             self.display_variogram_model()
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = \
-            _find_statistics(np.vstack((self.X_ADJUSTED,
-                                        self.Y_ADJUSTED,
-                                        self.Z_ADJUSTED)).T,
-                             self.VALUES,  self.variogram_function,
-                             self.variogram_model_parameters, 'euclidean')
+        self.delta, self.sigma, self.epsilon = _find_statistics(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED)).T,
+            self.VALUES,
+            self.variogram_function,
+            self.variogram_model_parameters,
+            "euclidean",
+        )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
         if self.verbose:
             print("Q1 =", self.Q1)
             print("Q2 =", self.Q2)
-            print("cR =", self.cR, '\n')
+            print("cR =", self.cR, "\n")
 
-    def update_variogram_model(self, variogram_model, variogram_parameters=None,
-                               variogram_function=None, nlags=6, weight=False,
-                               anisotropy_scaling_y=1., anisotropy_scaling_z=1.,
-                               anisotropy_angle_x=0., anisotropy_angle_y=0.,
-                               anisotropy_angle_z=0.):
+    def update_variogram_model(
+        self,
+        variogram_model,
+        variogram_parameters=None,
+        variogram_function=None,
+        nlags=6,
+        weight=False,
+        anisotropy_scaling_y=1.0,
+        anisotropy_scaling_z=1.0,
+        anisotropy_angle_x=0.0,
+        anisotropy_angle_y=0.0,
+        anisotropy_angle_z=0.0,
+    ):
         """Changes the variogram model and variogram parameters for
         the kriging system.
 
@@ -351,22 +396,30 @@ class OrdinaryKriging3D:
             anisotropy_angle_x = self.model.pykrige_angle_x
             anisotropy_angle_y = self.model.pykrige_angle_y
             anisotropy_angle_z = self.model.pykrige_angle_z
-        if self.variogram_model not in self.variogram_dict.keys() and \
-                        self.variogram_model != 'custom':
-            raise ValueError("Specified variogram model '%s' "
-                             "is not supported." % variogram_model)
-        elif self.variogram_model == 'custom':
+        if (
+            self.variogram_model not in self.variogram_dict.keys()
+            and self.variogram_model != "custom"
+        ):
+            raise ValueError(
+                "Specified variogram model '%s' " "is not supported." % variogram_model
+            )
+        elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
-                raise ValueError("Must specify callable function for "
-                                 "custom variogram model.")
+                raise ValueError(
+                    "Must specify callable function for " "custom variogram model."
+                )
             else:
                 self.variogram_function = variogram_function
         else:
             self.variogram_function = self.variogram_dict[self.variogram_model]
 
-        if anisotropy_scaling_y != self.anisotropy_scaling_y or anisotropy_scaling_z != self.anisotropy_scaling_z or \
-           anisotropy_angle_x != self.anisotropy_angle_x or anisotropy_angle_y != self.anisotropy_angle_y or \
-           anisotropy_angle_z != self.anisotropy_angle_z:
+        if (
+            anisotropy_scaling_y != self.anisotropy_scaling_y
+            or anisotropy_scaling_z != self.anisotropy_scaling_z
+            or anisotropy_angle_x != self.anisotropy_angle_x
+            or anisotropy_angle_y != self.anisotropy_angle_y
+            or anisotropy_angle_z != self.anisotropy_angle_z
+        ):
             if self.verbose:
                 print("Adjusting data for anisotropy...")
             self.anisotropy_scaling_y = anisotropy_scaling_y
@@ -374,62 +427,75 @@ class OrdinaryKriging3D:
             self.anisotropy_angle_x = anisotropy_angle_x
             self.anisotropy_angle_y = anisotropy_angle_y
             self.anisotropy_angle_z = anisotropy_angle_z
-            self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = \
-                _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
-                                       [self.XCENTER, self.YCENTER, self.ZCENTER],
-                                       [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
-                                       [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z]).T
+            self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED = _adjust_for_anisotropy(
+                np.vstack((self.X_ORIG, self.Y_ORIG, self.Z_ORIG)).T,
+                [self.XCENTER, self.YCENTER, self.ZCENTER],
+                [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+                [
+                    self.anisotropy_angle_x,
+                    self.anisotropy_angle_y,
+                    self.anisotropy_angle_z,
+                ],
+            ).T
 
         if self.verbose:
             print("Updating variogram mode...")
 
-        vp_temp = _make_variogram_parameter_list(self.variogram_model,
-                                                 variogram_parameters)
-        self.lags, self.semivariance, self.variogram_model_parameters = \
-            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                   self.Y_ADJUSTED,
-                                                   self.Z_ADJUSTED)).T,
-                                        self.VALUES, self.variogram_model,
-                                        vp_temp, self.variogram_function,
-                                        nlags, weight, 'euclidean')
+        vp_temp = _make_variogram_parameter_list(
+            self.variogram_model, variogram_parameters
+        )
+        self.lags, self.semivariance, self.variogram_model_parameters = _initialize_variogram_model(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED)).T,
+            self.VALUES,
+            self.variogram_model,
+            vp_temp,
+            self.variogram_function,
+            nlags,
+            weight,
+            "euclidean",
+        )
 
         if self.verbose:
-            if self.variogram_model == 'linear':
-                print("Using '%s' Variogram Model" % 'linear')
+            if self.variogram_model == "linear":
+                print("Using '%s' Variogram Model" % "linear")
                 print("Slope:", self.variogram_model_parameters[0])
-                print("Nugget:", self.variogram_model_parameters[1], '\n')
-            elif self.variogram_model == 'power':
-                print("Using '%s' Variogram Model" % 'power')
+                print("Nugget:", self.variogram_model_parameters[1], "\n")
+            elif self.variogram_model == "power":
+                print("Using '%s' Variogram Model" % "power")
                 print("Scale:", self.variogram_model_parameters[0])
                 print("Exponent:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
-            elif self.variogram_model == 'custom':
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
+            elif self.variogram_model == "custom":
                 print("Using Custom Variogram Model")
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
                 print("Partial Sill:", self.variogram_model_parameters[0])
-                print("Full Sill:", self.variogram_model_parameters[0] +
-                      self.variogram_model_parameters[2])
+                print(
+                    "Full Sill:",
+                    self.variogram_model_parameters[0]
+                    + self.variogram_model_parameters[2],
+                )
                 print("Range:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
         if self.enable_plotting:
             self.display_variogram_model()
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = \
-            _find_statistics(np.vstack((self.X_ADJUSTED,
-                                        self.Y_ADJUSTED,
-                                        self.Z_ADJUSTED)).T,
-                             self.VALUES, self.variogram_function,
-                             self.variogram_model_parameters, 'euclidean')
+        self.delta, self.sigma, self.epsilon = _find_statistics(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED, self.Z_ADJUSTED)).T,
+            self.VALUES,
+            self.variogram_function,
+            self.variogram_model_parameters,
+            "euclidean",
+        )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
         if self.verbose:
             print("Q1 =", self.Q1)
             print("Q2 =", self.Q2)
-            print("cR =", self.cR, '\n')
+            print("cR =", self.cR, "\n")
 
     def display_variogram_model(self):
         """Displays variogram model with the actual binned data."""
@@ -437,10 +503,12 @@ class OrdinaryKriging3D:
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.plot(self.lags, self.semivariance, 'r*')
-        ax.plot(self.lags,
-                self.variogram_function(self.variogram_model_parameters,
-                                        self.lags), 'k-')
+        ax.plot(self.lags, self.semivariance, "r*")
+        ax.plot(
+            self.lags,
+            self.variogram_function(self.variogram_model_parameters, self.lags),
+            "k-",
+        )
         plt.show()
 
     def switch_verbose(self):
@@ -461,7 +529,7 @@ class OrdinaryKriging3D:
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.scatter(range(self.epsilon.size), self.epsilon, c='k', marker='*')
+        ax.scatter(range(self.epsilon.size), self.epsilon, c="k", marker="*")
         ax.axhline(y=0.0)
         plt.show()
 
@@ -483,13 +551,18 @@ class OrdinaryKriging3D:
     def _get_kriging_matrix(self, n):
         """Assembles the kriging matrix."""
 
-        xyz = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
-                              self.Y_ADJUSTED[:, np.newaxis],
-                              self.Z_ADJUSTED[:, np.newaxis]), axis=1)
-        d = cdist(xyz, xyz, 'euclidean')
-        a = np.zeros((n+1, n+1))
-        a[:n, :n] = - self.variogram_function(self.variogram_model_parameters, d)
-        np.fill_diagonal(a, 0.)
+        xyz = np.concatenate(
+            (
+                self.X_ADJUSTED[:, np.newaxis],
+                self.Y_ADJUSTED[:, np.newaxis],
+                self.Z_ADJUSTED[:, np.newaxis],
+            ),
+            axis=1,
+        )
+        d = cdist(xyz, xyz, "euclidean")
+        a = np.zeros((n + 1, n + 1))
+        a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
+        np.fill_diagonal(a, 0.0)
         a[n, :] = 1.0
         a[:, n] = 1.0
         a[n, n] = 0.0
@@ -511,17 +584,17 @@ class OrdinaryKriging3D:
             zero_value = True
             zero_index = np.where(np.absolute(bd) <= self.eps)
 
-        b = np.zeros((npt, n+1, 1))
-        b[:, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+        b = np.zeros((npt, n + 1, 1))
+        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
         if zero_value:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
 
         if (~mask).any():
-            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n+1, axis=1)
+            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
             b = np.ma.array(b, mask=mask_b)
 
-        x = np.dot(a_inv, b.reshape((npt, n+1)).T).reshape((1, n+1, npt)).T
+        x = np.dot(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).T
         kvalues = np.sum(x[:, :n, 0] * self.VALUES, axis=1)
         sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
 
@@ -538,8 +611,10 @@ class OrdinaryKriging3D:
 
         a_inv = scipy.linalg.inv(a)
 
-        for j in np.nonzero(~mask)[0]:   # Note that this is the same thing as range(npt) if mask is not defined,
-            bd = bd_all[j]               # otherwise it takes the non-masked elements.
+        for j in np.nonzero(~mask)[
+            0
+        ]:  # Note that this is the same thing as range(npt) if mask is not defined,
+            bd = bd_all[j]  # otherwise it takes the non-masked elements.
             if np.any(np.absolute(bd) <= self.eps):
                 zero_value = True
                 zero_index = np.where(np.absolute(bd) <= self.eps)
@@ -547,8 +622,8 @@ class OrdinaryKriging3D:
                 zero_value = False
                 zero_index = None
 
-            b = np.zeros((n+1, 1))
-            b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            b = np.zeros((n + 1, 1))
+            b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
             if zero_value:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
@@ -584,8 +659,8 @@ class OrdinaryKriging3D:
             else:
                 zero_value = False
                 zero_index = None
-            b = np.zeros((n+1, 1))
-            b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            b = np.zeros((n + 1, 1))
+            b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
             if zero_value:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
@@ -593,12 +668,20 @@ class OrdinaryKriging3D:
             x = scipy.linalg.solve(a, b)
 
             kvalues[i] = x[:n, 0].dot(self.VALUES[b_selector])
-            sigmasq[i] = - x[:, 0].dot(b[:, 0])
+            sigmasq[i] = -x[:, 0].dot(b[:, 0])
 
         return kvalues, sigmasq
 
-    def execute(self, style, xpoints, ypoints, zpoints, mask=None,
-                backend='vectorized', n_closest_points=None):
+    def execute(
+        self,
+        style,
+        xpoints,
+        ypoints,
+        zpoints,
+        mask=None,
+        backend="vectorized",
+        n_closest_points=None,
+    ):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation.
@@ -684,9 +767,8 @@ class OrdinaryKriging3D:
         if self.verbose:
             print("Executing Ordinary Kriging...\n")
 
-        if style != 'grid' and style != 'masked' and style != 'points':
-            raise ValueError("style argument must be 'grid', 'points', "
-                             "or 'masked'")
+        if style != "grid" and style != "masked" and style != "points":
+            raise ValueError("style argument must be 'grid', 'points', " "or 'masked'")
 
         xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
         ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
@@ -697,75 +779,93 @@ class OrdinaryKriging3D:
         nz = zpts.size
         a = self._get_kriging_matrix(n)
 
-        if style in ['grid', 'masked']:
-            if style == 'masked':
+        if style in ["grid", "masked"]:
+            if style == "masked":
                 if mask is None:
-                    raise IOError("Must specify boolean masking array when "
-                                  "style is 'masked'.")
+                    raise IOError(
+                        "Must specify boolean masking array when " "style is 'masked'."
+                    )
                 if mask.ndim != 3:
                     raise ValueError("Mask is not three-dimensional.")
                 if mask.shape[0] != nz or mask.shape[1] != ny or mask.shape[2] != nx:
-                    if mask.shape[0] == nx and mask.shape[2] == nz and mask.shape[1] == ny:
+                    if (
+                        mask.shape[0] == nx
+                        and mask.shape[2] == nz
+                        and mask.shape[1] == ny
+                    ):
                         mask = mask.swapaxes(0, 2)
                     else:
-                        raise ValueError("Mask dimensions do not match "
-                                         "specified grid dimensions.")
+                        raise ValueError(
+                            "Mask dimensions do not match " "specified grid dimensions."
+                        )
                 mask = mask.flatten()
             npt = nz * ny * nx
-            grid_z, grid_y, grid_x = np.meshgrid(zpts, ypts, xpts, indexing='ij')
+            grid_z, grid_y, grid_x = np.meshgrid(zpts, ypts, xpts, indexing="ij")
             xpts = grid_x.flatten()
             ypts = grid_y.flatten()
             zpts = grid_z.flatten()
-        elif style == 'points':
+        elif style == "points":
             if xpts.size != ypts.size and ypts.size != zpts.size:
-                raise ValueError("xpoints, ypoints, and zpoints must have "
-                                 "same dimensions when treated as listing "
-                                 "discrete points.")
+                raise ValueError(
+                    "xpoints, ypoints, and zpoints must have "
+                    "same dimensions when treated as listing "
+                    "discrete points."
+                )
             npt = nx
         else:
-            raise ValueError("style argument must be 'grid', "
-                             "'points', or 'masked'")
+            raise ValueError("style argument must be 'grid', " "'points', or 'masked'")
 
-        xpts, ypts, zpts = \
-            _adjust_for_anisotropy(np.vstack((xpts, ypts, zpts)).T,
-                                   [self.XCENTER, self.YCENTER, self.ZCENTER],
-                                   [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
-                                   [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z]).T
+        xpts, ypts, zpts = _adjust_for_anisotropy(
+            np.vstack((xpts, ypts, zpts)).T,
+            [self.XCENTER, self.YCENTER, self.ZCENTER],
+            [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
+            [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z],
+        ).T
 
-        if style != 'masked':
-            mask = np.zeros(npt, dtype='bool')
+        if style != "masked":
+            mask = np.zeros(npt, dtype="bool")
 
-        xyz_points = np.concatenate((zpts[:, np.newaxis], ypts[:, np.newaxis],
-                                     xpts[:, np.newaxis]), axis=1)
-        xyz_data = np.concatenate((self.Z_ADJUSTED[:, np.newaxis],
-                                   self.Y_ADJUSTED[:, np.newaxis],
-                                   self.X_ADJUSTED[:, np.newaxis]), axis=1)
-        bd = cdist(xyz_points, xyz_data, 'euclidean')
+        xyz_points = np.concatenate(
+            (zpts[:, np.newaxis], ypts[:, np.newaxis], xpts[:, np.newaxis]), axis=1
+        )
+        xyz_data = np.concatenate(
+            (
+                self.Z_ADJUSTED[:, np.newaxis],
+                self.Y_ADJUSTED[:, np.newaxis],
+                self.X_ADJUSTED[:, np.newaxis],
+            ),
+            axis=1,
+        )
+        bd = cdist(xyz_points, xyz_data, "euclidean")
 
         if n_closest_points is not None:
             from scipy.spatial import cKDTree
+
             tree = cKDTree(xyz_data)
             bd, bd_idx = tree.query(xyz_points, k=n_closest_points, eps=0.0)
-            if backend == 'loop':
-                kvalues, sigmasq = \
-                    self._exec_loop_moving_window(a, bd, mask, bd_idx)
+            if backend == "loop":
+                kvalues, sigmasq = self._exec_loop_moving_window(a, bd, mask, bd_idx)
             else:
-                raise ValueError("Specified backend '{}' not supported "
-                                 "for moving window.".format(backend))
+                raise ValueError(
+                    "Specified backend '{}' not supported "
+                    "for moving window.".format(backend)
+                )
         else:
-            if backend == 'vectorized':
+            if backend == "vectorized":
                 kvalues, sigmasq = self._exec_vector(a, bd, mask)
-            elif backend == 'loop':
+            elif backend == "loop":
                 kvalues, sigmasq = self._exec_loop(a, bd, mask)
             else:
-                raise ValueError('Specified backend {} is not supported for '
-                                 '3D ordinary kriging.'.format(backend))
+                raise ValueError(
+                    "Specified backend {} is not supported for "
+                    "3D ordinary kriging.".format(backend)
+                )
 
-        if style == 'masked':
+        if style == "masked":
             kvalues = np.ma.array(kvalues, mask=mask)
             sigmasq = np.ma.array(sigmasq, mask=mask)
 
-        if style in ['masked', 'grid']:
+        if style in ["masked", "grid"]:
             kvalues = kvalues.reshape((nz, ny, nx))
             sigmasq = sigmasq.reshape((nz, ny, nx))
 
