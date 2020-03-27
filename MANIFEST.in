@@ -1,18 +1,7 @@
-include LICENSE.txt
 include README.md
-include CHANGELOG.md
-include setup.cfg
+include MANIFEST.in
 include setup.py
-recursive-include pykrige *.py
-recursive-include pykrige *.pyx
-recursive-include pykrige *.pxd
-include pykrige/tests/test_data/test_data.txt
-include pykrige/tests/test_data/test1_answer.asc
-include pykrige/tests/test_data/test1_settings.txt
-include pykrige/tests/test_data/test2_answer.asc
-include pykrige/tests/test_data/test2_settings.txt
-include pykrige/tests/test_data/test3_answer.asc
-include pykrige/tests/test_data/test3_dem.asc
-include pykrige/tests/test_data/test3_settings.txt
-include pykrige/tests/test_data/test3d_answer.txt
-include pykrige/tests/test_data/test3d_data.txt
+include setup.cfg
+recursive-include pykrige *.py *.pyx *.pxd
+recursive-include tests *.py *.txt *.asc
+include LICENSE

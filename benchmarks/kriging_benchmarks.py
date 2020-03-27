@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
+"""Benchmarks."""
 from time import time
 import numpy as np
 from pykrige.ok import OrdinaryKriging
@@ -12,7 +12,7 @@ N_MOVING_WINDOW = [None, 10, 50, 100]
 
 
 def make_benchark(n_train, n_test, n_dim=2):
-    """ Compute the benchmarks for Ordianry Kriging 
+    """Compute the benchmarks for Ordianry Kriging.
 
     Parameters
     ----------
@@ -58,7 +58,7 @@ def make_benchark(n_train, n_test, n_dim=2):
 
 
 def print_benchmark(n_train, n_test, n_dim, res):
-    """ Print the benchmarks
+    """Print the benchmarks.
 
     Parameters
     ----------

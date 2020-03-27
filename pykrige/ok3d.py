@@ -1,9 +1,5 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-__doc__ = """
+# coding: utf-8
+"""
 PyKrige
 =======
 
@@ -25,7 +21,6 @@ Copyright (c) 2015-2018, PyKrige Developers
 import numpy as np
 import scipy.linalg
 from scipy.spatial.distance import cdist
-import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
 from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
@@ -34,7 +29,7 @@ import warnings
 
 
 class OrdinaryKriging3D:
-    """Three-dimensional ordinary kriging
+    """Three-dimensional ordinary kriging.
 
     Parameters
     ----------
@@ -61,30 +56,28 @@ class OrdinaryKriging3D:
         minimization scheme. For variogram model parameters provided in a dict,
         the required dict keys vary according to the specified variogram
         model: ::
-            linear - {'slope': slope, 'nugget': nugget}
-            power - {'scale': scale, 'exponent': exponent, 'nugget': nugget}
-            gaussian - {'sill': s, 'range': r, 'nugget': n}
-                        OR
-                       {'psill': p, 'range': r, 'nugget':n}
-            spherical - {'sill': s, 'range': r, 'nugget': n}
-                         OR
-                        {'psill': p, 'range': r, 'nugget':n}
-            exponential - {'sill': s, 'range': r, 'nugget': n}
-                           OR
-                          {'psill': p, 'range': r, 'nugget':n}
-            hole-effect - {'sill': s, 'range': r, 'nugget': n}
-                           OR
-                          {'psill': p, 'range': r, 'nugget':n}
+
+           # linear
+               {'slope': slope, 'nugget': nugget}
+           # power
+               {'scale': scale, 'exponent': exponent, 'nugget': nugget}
+           # gaussian, spherical, exponential and hole-effect:
+               {'sill': s, 'range': r, 'nugget': n}
+               # OR
+               {'psill': p, 'range': r, 'nugget': n}
+
         Note that either the full sill or the partial sill
         (psill = sill - nugget) can be specified in the dict.
         For variogram model parameters provided in a list, the entries
         must be as follows: ::
-            linear - [slope, nugget]
-            power - [scale, exponent, nugget]
-            gaussian - [sill, range, nugget]
-            spherical - [sill, range, nugget]
-            exponential - [sill, range, nugget]
-            hole-effect - [sill, range, nugget]
+
+           # linear
+               [slope, nugget]
+           # power
+               [scale, exponent, nugget]
+           # gaussian, spherical, exponential and hole-effect:
+               [sill, range, nugget]
+
         Note that the full sill (NOT the partial sill) must be specified
         in the list format.
         For a custom variogram model, the parameters are required, as custom
@@ -158,7 +151,7 @@ class OrdinaryKriging3D:
     References
     ----------
     .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
-        Hydrogeology, (Cambridge University Press, 1997) 272 p.
+       Hydrogeology, (Cambridge University Press, 1997) 272 p.
     """
 
     eps = 1.e-10   # Cutoff for comparison to zero
@@ -440,6 +433,8 @@ class OrdinaryKriging3D:
 
     def display_variogram_model(self):
         """Displays variogram model with the actual binned data."""
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(self.lags, self.semivariance, 'r*')
@@ -462,6 +457,8 @@ class OrdinaryKriging3D:
 
     def plot_epsilon_residuals(self):
         """Plots the epsilon residuals for the variogram fit."""
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.scatter(range(self.epsilon.size), self.epsilon, c='k', marker='*')

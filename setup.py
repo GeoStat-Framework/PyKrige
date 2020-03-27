@@ -1,151 +1,113 @@
-from __future__ import absolute_import
-from __future__ import print_function
+# -*- coding: utf-8 -*-
+"""Kriging Toolkit for Python."""
+import os
+from setuptools import setup, find_packages, Extension
+from Cython.Build import cythonize
+import numpy as np
 
-"""
-Updated BSM 10/23/2015
-Cython extensions work-around adapted from simplejson setup script:
-https://github.com/simplejson/simplejson/blob/0bcdf20cc525c1343b796cb8f247ea5213c6557e/setup.py#L110
-"""
+HERE = os.path.abspath(os.path.dirname(__file__))
 
-import sys
-from os.path import join
-from setuptools import setup, Extension
-from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
-ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
+# cython extensions ###########################################################
 
-NAME = 'PyKrige'
-VERSION = '1.4.1'
-AUTHOR = 'Benjamin S. Murphy'
-EMAIL = 'bscott.murphy@gmail.com'
-URL = 'https://github.com/bsmurphy/PyKrige'
-DESC = 'Kriging Toolkit for Python'
+CY_MODULES = []
+CY_MODULES.append(
+    Extension(
+        "pykrige.lib.cok",
+        [os.path.join("pykrige", "lib", "cok.pyx")],
+        include_dirs=[np.get_include()],
+    )
+)
+CY_MODULES.append(
+    Extension(
+        "pykrige.lib.variogram_models",
+        [os.path.join("pykrige", "lib", "variogram_models.pyx")],
+        include_dirs=[np.get_include()],
+    )
+)
+EXT_MODULES = cythonize(CY_MODULES)  # annotate=True
 
-with open('README.rst', 'r') as fh:
-    LDESC = fh.read()
+# This is an important part. By setting this compiler directive, cython will
+# embed signature information in docstrings. Sphinx then knows how to extract
+# and use those signatures.
+# python setup.py build_ext --inplace --> then sphinx build
+for ext_m in EXT_MODULES:
+    ext_m.cython_directives = {"embedsignature": True}
 
-PACKAGES = ['pykrige']
-PCKG_DAT = {'pykrige': ['README.rst', 'CHANGELOG.md', 'LICENSE.txt',
-                        'MANIFEST.in', join('test_data', '*.txt'),
-                        join('test_data', '*.asc')]}
-REQ = ['numpy', 'scipy', 'matplotlib']
+# setup #######################################################################
 
-for req in REQ:
-    try:
-        __import__(req)
-    except ImportError:
-        print("**************************************************")
-        print("Error: PyKrige relies on the installation of the SciPy stack "
-              "(Numpy, SciPy, matplotlib) to work. "
-              "For instructions for installation, please view "
-              "https://www.scipy.org/install.html."
-              "\n {} missing".format(req) 
-              )
-        print("**************************************************")
-        raise
-        sys.exit(1)
-# python setup.py install goes through REQ in reverse order than pip
+with open(os.path.join(HERE, "README.rst"), encoding="utf-8") as f:
+    README = f.read()
+with open(os.path.join(HERE, "requirements.txt"), encoding="utf-8") as f:
+    REQ = f.read().splitlines()
+with open(os.path.join(HERE, "requirements_setup.txt"), encoding="utf-8") as f:
+    REQ_SETUP = f.read().splitlines()
+with open(os.path.join(HERE, "requirements_test.txt"), encoding="utf-8") as f:
+    REQ_TEST = f.read().splitlines()
+with open(
+    os.path.join(HERE, "docs", "requirements_doc.txt"), encoding="utf-8"
+) as f:
+    REQ_DOC = f.read().splitlines()
 
+REQ_DEV = REQ_SETUP + REQ_TEST + REQ_DOC
 
-CLSF = ['Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Scientific/Engineering :: GIS']
+DOCLINE = __doc__.split("\n")[0]
+CLASSIFIERS = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Utilities",
+]
 
-# Removed python 3 switch from here
-try:
-    from Cython.Distutils import build_ext
-    import Cython.Compiler.Options
-    Cython.Compiler.Options.annotate = False
-    try_cython = True
-except ImportError:
-    print("**************************************************")
-    print("WARNING: Cython is not currently installed. "
-          "Falling back to pure Python implementation.")
-    print("**************************************************")
-    try_cython = False
-
-
-class BuildFailed(Exception):
-    pass
-
-
-# This is how I was originally trying to get around the
-# Cython extension troubles... Keeping it here for reference...
-#
-# class BuildExtCompilerCheck(build_ext):
-#     def build_extensions(self):
-#         if sys.platform == 'win32' and ('MSC' in sys.version or 'MSVC' in sys.version):
-#             print("-> COMPILER IS", self.compiler.compiler_type)
-#             from distutils.msvccompiler import MSVCCompiler
-#             if isinstance(self.compiler, MSVCCompiler):
-#                 build_ext.build_extensions(self)
-#             else:
-#                 print("WARNING: The C extensions will not be built since the necessary compiler could not be found.\n"
-#                       "See https://github.com/bsmurphy/PyKrige/issues/8")
-#         else:
-#             build_ext.build_extensions(self)
-
-
-def run_setup(with_cython):
-    if with_cython:
-        import numpy as np
-        if sys.platform != 'win32':
-            compile_args = dict(extra_compile_args=['-O2', '-march=core2',
-                                                    '-mtune=corei7'],
-                                extra_link_args=['-O2', '-march=core2',
-                                                 '-mtune=corei7'])
-        else:
-            compile_args = {}
-
-        ext_modules = [Extension("pykrige.lib.cok",
-                                 ["pykrige/lib/cok.pyx"],
-                                 **compile_args),
-                       Extension("pykrige.lib.variogram_models",
-                                 ["pykrige/lib/variogram_models.pyx"],
-                                 **compile_args)]
-
-        # Transfered python 3 switch here.
-        # On python 3 machines, will use lapack_py3.pyx
-        # instead of lapack.pyx to build .lib.lapack
-        if sys.version_info[0] == 3:
-            ext_modules += [Extension("pykrige.lib.lapack",
-                                      ["pykrige/lib/lapack_py3.pyx"],
-                                      **compile_args)]
-        else:
-            ext_modules += [Extension("pykrige.lib.lapack",
-                                      ["pykrige/lib/lapack.pyx"],
-                                      **compile_args)]
-
-        class TryBuildExt(build_ext):
-            def build_extensions(self):
-                try:
-                    build_ext.build_extensions(self)
-                except ext_errors:
-                    print("**************************************************")
-                    print("WARNING: Cython extensions failed to build. "
-                          "Falling back to pure Python implementation.\n"
-                          "See https://github.com/bsmurphy/PyKrige/issues/8 "
-                          "for more information.")
-                    print("**************************************************")
-                    raise BuildFailed()
-
-        cmd = {'build_ext': TryBuildExt}
-
-        setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL,
-              url=URL, description=DESC, long_description=LDESC,
-              packages=PACKAGES, package_data=PCKG_DAT, classifiers=CLSF,
-              ext_modules=ext_modules, include_dirs=[np.get_include()],
-              cmdclass=cmd)
-
-    else:
-        setup(name=NAME, version=VERSION, author=AUTHOR, author_email=EMAIL,
-              url=URL, description=DESC, long_description=LDESC,
-              packages=PACKAGES, package_data=PCKG_DAT, classifiers=CLSF)
-
-
-try:
-    run_setup(try_cython)
-except BuildFailed:
-    run_setup(False)
+setup(
+    name="PyKrige",
+    description=DOCLINE,
+    long_description=README,
+    long_description_content_type="text/x-rst",
+    author="Benjamin S. Murphy",
+    author_email="bscott.murphy@gmail.com",
+    maintainer="Sebastian Mueller, Roman Yurchak",
+    maintainer_email="info@geostat-framework.org",
+    url="https://github.com/GeoStat-Framework/PyKrige",
+    license="BSD (3 clause)",
+    classifiers=CLASSIFIERS,
+    platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
+    include_package_data=True,
+    python_requires=">=3.5",
+    use_scm_version={
+        "relative_to": __file__,
+        "write_to": "pykrige/_version.py",
+        "write_to_template": "__version__ = '{version}'",
+        "local_scheme": "no-local-version",
+        "fallback_version": "0.0.0.dev0",
+    },
+    setup_requires=REQ_SETUP,
+    install_requires=REQ,
+    extras_require={
+        "plot": ["matplotlib"],
+        "sklearn": ["scikit-learn>=0.19"],
+        "doc": REQ_DOC,
+        "test": REQ_TEST,
+        "dev": REQ_DEV,
+    },
+    packages=find_packages(exclude=["tests*", "docs*"]),
+    ext_modules=EXT_MODULES,
+    include_dirs=[np.get_include()],
+)

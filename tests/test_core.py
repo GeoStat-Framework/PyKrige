@@ -1,13 +1,8 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 """
 Testing code.
 Updated BSM February 2017
 """
-
+import sys
 import os
 
 import numpy as np
@@ -852,6 +847,8 @@ def test_kriging_tools(sample_data_2d):
     os.remove(os.path.join(BASE_DIR, 'test_data/temp.asc'))
 
 
+# http://doc.pytest.org/en/latest/skipping.html#id1
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_uk_three_primary_drifts(sample_data_2d):
 
     data, (gridx, gridy, gridx_2), mask_ref = sample_data_2d
