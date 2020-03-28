@@ -2,8 +2,8 @@ language: python
 python: 3.8
 
 # setuptools-scm needs all tags in order to obtain a proper version
-# git:
-#   depth: false
+git:
+  depth: false
 
 env:
   global:
