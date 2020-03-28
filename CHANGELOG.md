@@ -2,6 +2,26 @@ Changelog
 =========
 
 
+Version 1.5.0
+-------------
+*April, 2020*
+
+**New features**
+
+* support for GSTools covariance models (#125)
+* pre-build wheels for py35-py38 on Linux, Windows and MacOS (#142)
+* GridSerachCV from the compat module sets iid=False by default (if present in sklearn)
+  to be future prove (iid will be deprecated) (#144)
+
+**Changes**
+
+* dropped py2* and py<3.5 support (#142)
+* installation now requires cython (#142)
+* codebase was formatted with black (#144)
+* internally use of scipys lapack/blas bindings (#142)
+* PyKrige is now part of the GeoStat-Framework
+
+
 Version 1.4.1
 -------------
 *January 13, 2019*
@@ -25,7 +45,7 @@ Version 1.4.0
 * Regression kriging algotithm. PR [#27](https://github.com/GeoStat-Framework/PyKrige/pull/27) by [Sudipta Basaks](https://github.com/basaks).
 * Support for spherical coordinates. PR [#23](https://github.com/GeoStat-Framework/PyKrige/pull/23) by [Malte Ziebarth](https://github.com/mjziebarth)
 * Kriging parameter tuning with scikit-learn. PR [#24](https://github.com/GeoStat-Framework/PyKrige/pull/24) by [Sudipta Basaks](https://github.com/basaks).
-* Variogram model parameters can be specified using a list or a dict. Allows for directly feeding in the partial sill rather than the full sill. PR [#47](https://github.com/GeoStat-Framework/PyKrige/pull/47) by [Benjamin Murphy](https://github.com/GeoStat-Framework).
+* Variogram model parameters can be specified using a list or a dict. Allows for directly feeding in the partial sill rather than the full sill. PR [#47](https://github.com/GeoStat-Framework/PyKrige/pull/47) by [Benjamin Murphy](https://github.com/bsmurphy).
 
 **Enhancements**
 
@@ -36,7 +56,7 @@ Version 1.4.0
 **Bug fixes**
 
 * Statistics calculations in 3D kriging. PR [#45](https://github.com/GeoStat-Framework/PyKrige/pull/45) by [Will Chang](https://github.com/whdc).
-* Automatic variogram estimation robustified. PR [#47](https://github.com/GeoStat-Framework/PyKrige/pull/47) by [Benjamin Murphy](https://github.com/GeoStat-Framework).
+* Automatic variogram estimation robustified. PR [#47](https://github.com/GeoStat-Framework/PyKrige/pull/47) by [Benjamin Murphy](https://github.com/bsmurphy).
 
 
 Version 1.3.1
