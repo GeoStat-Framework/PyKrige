@@ -21,7 +21,7 @@ except ImportError:
 def _methods():
     krige_methods = ["ordinary", "universal"]
     ml_methods = [
-        SVR(C=0.01),
+        SVR(C=0.01, gamma="auto"),
         RandomForestRegressor(min_samples_split=5, n_estimators=50),
         LinearRegression(),
         Lasso(),
