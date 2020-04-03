@@ -7,13 +7,13 @@ PyKrige
    :target: https://badge.fury.io/py/PyKrige
 .. image:: https://img.shields.io/conda/vn/conda-forge/pykrige.svg
    :target: https://anaconda.org/conda-forge/pykrige
+.. image:: https://travis-ci.com/GeoStat-Framework/PyKrige.svg?branch=master
+   :target: https://travis-ci.com/GeoStat-Framework/PyKrige
 .. image:: https://coveralls.io/repos/github/GeoStat-Framework/PyKrige/badge.svg?branch=master
    :target: https://coveralls.io/github/GeoStat-Framework/PyKrige?branch=master
 .. image:: https://readthedocs.org/projects/pykrige/badge/?version=stable
    :target: http://pykrige.readthedocs.io/en/latest/?badge=stable
    :alt: Documentation Status
-.. image:: https://travis-ci.com/GeoStat-Framework/PyKrige.svg?branch=master
-   :target: https://travis-ci.com/GeoStat-Framework/PyKrige
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
 
