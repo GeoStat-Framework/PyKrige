@@ -12,7 +12,7 @@ PyKrige
 .. image:: https://coveralls.io/repos/github/GeoStat-Framework/PyKrige/badge.svg?branch=master
    :target: https://coveralls.io/github/GeoStat-Framework/PyKrige?branch=master
 .. image:: https://readthedocs.org/projects/pykrige/badge/?version=stable
-   :target: http://pykrige.readthedocs.io/en/latest/?badge=stable
+   :target: http://pykrige.readthedocs.io/en/stable/?badge=stable
    :alt: Documentation Status
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
