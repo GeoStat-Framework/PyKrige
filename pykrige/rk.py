@@ -1,5 +1,6 @@
 # coding: utf-8
 from pykrige.compat import validate_sklearn
+
 validate_sklearn()
 from pykrige.ok import OrdinaryKriging
 from pykrige.uk import UniversalKriging
@@ -9,19 +10,21 @@ from sklearn.base import RegressorMixin, BaseEstimator
 from sklearn.svm import SVR
 from sklearn.metrics import r2_score
 
-krige_methods = {'ordinary': OrdinaryKriging,
-                 'universal': UniversalKriging,
-                 'ordinary3d': OrdinaryKriging3D,
-                 'universal3d': UniversalKriging3D
-                 }
+krige_methods = {
+    "ordinary": OrdinaryKriging,
+    "universal": UniversalKriging,
+    "ordinary3d": OrdinaryKriging3D,
+    "universal3d": UniversalKriging3D,
+}
 
-threed_krige = ('ordinary3d', 'universal3d')
+threed_krige = ("ordinary3d", "universal3d")
 
 
 def validate_method(method):
     if method not in krige_methods.keys():
-        raise ValueError('Kriging method must be '
-                         'one of {}'.format(krige_methods.keys()))
+        raise ValueError(
+            "Kriging method must be one of {}".format(krige_methods.keys())
+        )
 
 
 class Krige(RegressorMixin, BaseEstimator):
@@ -32,13 +35,15 @@ class Krige(RegressorMixin, BaseEstimator):
 
     """
 
-    def __init__(self,
-                 method='ordinary',
-                 variogram_model='linear',
-                 nlags=6,
-                 weight=False,
-                 n_closest_points=10,
-                 verbose=False):
+    def __init__(
+        self,
+        method="ordinary",
+        variogram_model="linear",
+        nlags=6,
+        weight=False,
+        n_closest_points=10,
+        verbose=False,
+    ):
 
         validate_method(method)
         self.variogram_model = variogram_model
@@ -82,19 +87,17 @@ class Krige(RegressorMixin, BaseEstimator):
                 **points
             )
 
-    def _dimensionality_check(self, x, ext=''):
-        if self.method in ('ordinary', 'universal'):
+    def _dimensionality_check(self, x, ext=""):
+        if self.method in ("ordinary", "universal"):
             if x.shape[1] != 2:
-                raise ValueError('2d krige can use only 2d points')
+                raise ValueError("2d krige can use only 2d points")
             else:
-                return {'x' + ext: x[:, 0], 'y' + ext: x[:, 1]}
-        if self.method in ('ordinary3d', 'universal3d'):
+                return {"x" + ext: x[:, 0], "y" + ext: x[:, 1]}
+        if self.method in ("ordinary3d", "universal3d"):
             if x.shape[1] != 3:
-                raise ValueError('3d krige can use only 3d points')
+                raise ValueError("3d krige can use only 3d points")
             else:
-                return {'x' + ext: x[:, 0],
-                        'y' + ext: x[:, 1],
-                        'z' + ext: x[:, 2]}
+                return {"x" + ext: x[:, 0], "y" + ext: x[:, 1], "z" + ext: x[:, 2]}
 
     def predict(self, x, *args, **kwargs):
         """
@@ -109,9 +112,9 @@ class Krige(RegressorMixin, BaseEstimator):
         Prediction array
         """
         if not self.model:
-            raise Exception('Not trained. Train first')
+            raise Exception("Not trained. Train first")
 
-        points = self._dimensionality_check(x, ext='points')
+        points = self._dimensionality_check(x, ext="points")
 
         return self.execute(points, *args, **kwargs)[0]
 
@@ -127,26 +130,29 @@ class Krige(RegressorMixin, BaseEstimator):
         Prediction array
         Variance array
         """
-        if isinstance(self.model, OrdinaryKriging) or \
-                isinstance(self.model, OrdinaryKriging3D):
-            prediction, variance = \
-                self.model.execute('points',
-                                   n_closest_points=self.n_closest_points,
-                                   backend='loop',
-                                   **points)
+        if isinstance(self.model, OrdinaryKriging) or isinstance(
+            self.model, OrdinaryKriging3D
+        ):
+            prediction, variance = self.model.execute(
+                "points",
+                n_closest_points=self.n_closest_points,
+                backend="loop",
+                **points
+            )
         else:
-            print('n_closest_points will be ignored for UniversalKriging')
-            prediction, variance = \
-                self.model.execute('points', backend='loop', **points)
+            print("n_closest_points will be ignored for UniversalKriging")
+            prediction, variance = self.model.execute(
+                "points", backend="loop", **points
+            )
 
         return prediction, variance
 
 
 def check_sklearn_model(model):
-    if not (isinstance(model, BaseEstimator) and
-            isinstance(model, RegressorMixin)):
-        raise RuntimeError('Needs to supply an instance of a scikit-learn '
-                           'regression class.')
+    if not (isinstance(model, BaseEstimator) and isinstance(model, RegressorMixin)):
+        raise RuntimeError(
+            "Needs to supply an instance of a scikit-learn regression class."
+        )
 
 
 class RegressionKriging:
@@ -155,14 +161,16 @@ class RegressionKriging:
     https://en.wikipedia.org/wiki/Regression-Kriging
     """
 
-    def __init__(self,
-                 regression_model=SVR(),
-                 method='ordinary',
-                 variogram_model='linear',
-                 n_closest_points=10,
-                 nlags=6,
-                 weight=False,
-                 verbose=False):
+    def __init__(
+        self,
+        regression_model=SVR(),
+        method="ordinary",
+        variogram_model="linear",
+        n_closest_points=10,
+        nlags=6,
+        weight=False,
+        verbose=False,
+    ):
         """
         Parameters
         ----------
@@ -190,7 +198,7 @@ class RegressionKriging:
             weight=weight,
             n_closest_points=n_closest_points,
             verbose=verbose,
-            )
+        )
 
     def fit(self, p, x, y):
         """
@@ -210,10 +218,10 @@ class RegressionKriging:
         """
         self.regression_model.fit(p, y)
         ml_pred = self.regression_model.predict(p)
-        print('Finished learning regression model')
+        print("Finished learning regression model")
         # residual=y-ml_pred
         self.krige.fit(x=x, y=y - ml_pred)
-        print('Finished kriging residuals')
+        print("Finished kriging residuals")
 
     def predict(self, p, x):
         """
@@ -268,8 +276,6 @@ class RegressionKriging:
             array of targets (Ns, )
         """
 
-        return r2_score(y_pred=self.predict(p, x),
-                        y_true=y,
-                        sample_weight=sample_weight)
-
-
+        return r2_score(
+            y_pred=self.predict(p, x), y_true=y, sample_weight=sample_weight
+        )

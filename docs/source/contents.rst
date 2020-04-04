@@ -8,10 +8,10 @@ Contents
 ^^^^^^^^
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
-   overview
+   index
    variogram_models
    api
    examples/index
-   release_notes
+   changelog

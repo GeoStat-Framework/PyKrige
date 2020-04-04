@@ -4,16 +4,17 @@
 
 An example of 1D kriging with PyKrige
 """
-import os
-
 import numpy as np
 import matplotlib.pyplot as plt
+from pykrige import OrdinaryKriging
 
-plt.style.use('ggplot')
+plt.style.use("ggplot")
 
-# Data taken from https://blog.dominodatalab.com/fitting-gaussian-process-models-python/
-
-X, y = np.array([[-5.01, 1.06], [-4.90, 0.92], [-4.82, 0.35], [-4.69, 0.49], [-4.56, 0.52], 
+# fmt: off
+# Data taken from
+# https://blog.dominodatalab.com/fitting-gaussian-process-models-python/
+X, y = np.array([
+     [-5.01, 1.06], [-4.90, 0.92], [-4.82, 0.35], [-4.69, 0.49], [-4.56, 0.52],
      [-4.52, 0.12], [-4.39, 0.47], [-4.32,-0.19], [-4.19, 0.08], [-4.11,-0.19],
      [-4.00,-0.03], [-3.89,-0.03], [-3.78,-0.05], [-3.67, 0.10], [-3.59, 0.44],
      [-3.50, 0.66], [-3.39,-0.12], [-3.28, 0.45], [-3.20, 0.14], [-3.07,-0.28],
@@ -33,33 +34,36 @@ X, y = np.array([[-5.01, 1.06], [-4.90, 0.92], [-4.82, 0.35], [-4.69, 0.49], [-4
      [3.52 ,-0.55], [3.63 ,-0.92], [3.72 ,-0.76], [3.80 ,-0.41], [3.91 , 0.12],
      [4.04 , 0.25], [4.13 , 0.16], [4.24 , 0.26], [4.32 , 0.62], [4.44 , 1.69],
      [4.52 , 1.11], [4.65 , 0.36], [4.74 , 0.79], [4.84 , 0.87], [4.93 , 1.01],
-     [5.02 , 0.55]]).T
-
-
-from pykrige import OrdinaryKriging
+     [5.02 , 0.55]
+]).T
+# fmt: on
 
 X_pred = np.linspace(-6, 6, 200)
 
 # pykrige doesn't support 1D data for now, only 2D or 3D
 # adapting the 1D input to 2D
-uk = OrdinaryKriging(X, np.zeros(X.shape), y, variogram_model='gaussian',)
+uk = OrdinaryKriging(X, np.zeros(X.shape), y, variogram_model="gaussian")
 
-y_pred, y_std = uk.execute('grid', X_pred, np.array([0.]))
+y_pred, y_std = uk.execute("grid", X_pred, np.array([0.0]))
 
 y_pred = np.squeeze(y_pred)
 y_std = np.squeeze(y_std)
 
 fig, ax = plt.subplots(1, 1, figsize=(10, 4))
-ax.scatter(X, y, s=40, label='Input data')
+ax.scatter(X, y, s=40, label="Input data")
 
 
-ax.plot(X_pred, y_pred, label='Predicted values')
-ax.fill_between(X_pred, y_pred - 3*y_std, y_pred + 3*y_std, alpha=0.3, label='Confidence interval')
+ax.plot(X_pred, y_pred, label="Predicted values")
+ax.fill_between(
+    X_pred,
+    y_pred - 3 * y_std,
+    y_pred + 3 * y_std,
+    alpha=0.3,
+    label="Confidence interval",
+)
 ax.legend(loc=9)
-ax.set_xlabel('x')
-ax.set_ylabel('y')
+ax.set_xlabel("x")
+ax.set_ylabel("y")
 ax.set_xlim(-6, 6)
 ax.set_ylim(-2.8, 3.5)
-if 'CI' not in os.environ:
-    # skip in continous integration
-    plt.show()
+plt.show()

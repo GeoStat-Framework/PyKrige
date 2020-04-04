@@ -1,0 +1,4 @@
+setuptools>=41.0.1
+setuptools_scm>=3.5.0
+cython>=0.28.3
+numpy>=1.14.5

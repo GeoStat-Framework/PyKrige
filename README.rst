@@ -1,25 +1,33 @@
 PyKrige
 =======
 
-Kriging Toolkit for Python
-
-.. image:: https://img.shields.io/pypi/v/pykrige.svg
-    :target: https://pypi.python.org/pypi/pykrige
-
-.. image:: https://anaconda.org/conda-forge/pykrige/badges/version.svg
-  :target: https://github.com/conda-forge/pykrige-feedstock
-
-.. image:: https://readthedocs.org/projects/pykrige/badge/?version=latest
-    :target: http://pykrige.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
-
-.. image:: https://travis-ci.org/bsmurphy/PyKrige.svg?branch=master
-    :target: https://travis-ci.org/bsmurphy/PyKrige
-
-.. image:: https://ci.appveyor.com/api/projects/status/github/bsmurphy/PyKrige?branch=master&svg=true
-    :target: https://ci.appveyor.com/project/bsmurphy/pykrige
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3738604.svg
+   :target: https://doi.org/10.5281/zenodo.3738604
+.. image:: https://badge.fury.io/py/PyKrige.svg
+   :target: https://badge.fury.io/py/PyKrige
+.. image:: https://img.shields.io/conda/vn/conda-forge/pykrige.svg
+   :target: https://anaconda.org/conda-forge/pykrige
+.. image:: https://travis-ci.com/GeoStat-Framework/PyKrige.svg?branch=master
+   :target: https://travis-ci.com/GeoStat-Framework/PyKrige
+.. image:: https://coveralls.io/repos/github/GeoStat-Framework/PyKrige/badge.svg?branch=master
+   :target: https://coveralls.io/github/GeoStat-Framework/PyKrige?branch=master
+.. image:: https://readthedocs.org/projects/pykrige/badge/?version=stable
+   :target: http://pykrige.readthedocs.io/en/latest/?badge=stable
+   :alt: Documentation Status
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
 
 
+.. figure:: https://github.com/GeoStat-Framework/GeoStat-Framework.github.io/raw/master/docs/source/pics/PyKrige_250.png
+   :align: center
+   :alt: PyKrige
+   :figclass: align-center
+
+
+Kriging Toolkit for Python.
+
+Purpose
+^^^^^^^
 
 The code supports 2D and 3D ordinary and universal kriging. Standard variogram models
 (linear, power, spherical, gaussian, exponential) are built in, but custom variogram models can also be used.
@@ -36,14 +44,14 @@ See the documentation at `http://pykrige.readthedocs.io/ <http://pykrige.readthe
 Installation
 ^^^^^^^^^^^^
 
-PyKrige requires Python 2.7 or 3.5+ as well as numpy, scipy and matplotlib. It can be installed from PyPi with,
+PyKrige requires Python 3.5+ as well as numpy, scipy. It can be installed from PyPi with,
 
 .. code:: bash
 
     pip install pykrige
 
 scikit-learn is an optional dependency needed for parameter tuning and regression kriging.
-
+matplotlib is an optional dependency needed for plotting.
 
 If you use conda, PyKrige can be installed from the `conda-forge` channel with,
 

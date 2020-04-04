@@ -1,0 +1,62 @@
+{
+    "license": "BSD-3-Clause",
+    "contributors": [
+        {
+            "type": "Other",
+            "name": "Malte Ziebarth"
+        },
+        {
+            "type": "Other",
+            "name": "Sudipta Basak"
+        },
+        {
+            "type": "Other",
+            "name": "Matthew Peveler"
+        },
+        {
+            "type": "Other",
+            "name": "kvanlombeek"
+        },
+        {
+            "type": "Other",
+            "name": "Will Chang"
+        },
+        {
+            "type": "Other",
+            "name": "Harry Matchette-Downes"
+        },
+        {
+            "type": "Other",
+            "name": "Daniel Mej\u00eda Raigosa"
+        }
+    ],
+    "language": "eng",
+    "keywords": [
+        "kriging",
+        "ordinary kriging",
+        "universal kriging",
+        "external drift kriging",
+        "regression kriging",
+        "variogram",
+        "geostatistics",
+        "Python",
+        "GeoStat-Framework"
+    ],
+    "creators": [
+        {
+            "orcid": "0000-0001-7636-3711",
+            "affiliation": "United State Geological Survey: Golden, CO, US",
+            "name": "Benjamin Murphy"
+        },
+        {
+            "orcid": "0000-0002-2565-4444",
+            "affiliation": "Symerio",
+            "name": "Roman Yurchak"
+        },
+        {
+            "orcid": "0000-0001-9060-4008",
+            "affiliation": "Helmholtz Centre for Environmental Research - UFZ",
+            "name": "Sebastian M\u00fcller"
+        }
+    ]
+}

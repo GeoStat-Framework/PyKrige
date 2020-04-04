@@ -1,9 +1,5 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-__doc__ = """
+# coding: utf-8
+"""
 PyKrige
 =======
 
@@ -20,22 +16,25 @@ References
 .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
 
-Copyright (c) 2015-2018, PyKrige Developers
+Copyright (c) 2015-2020, PyKrige Developers
 """
 
 import numpy as np
 import scipy.linalg
 from scipy.spatial.distance import cdist
-import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
-from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
-    _make_variogram_parameter_list, _find_statistics
+from .core import (
+    _adjust_for_anisotropy,
+    _initialize_variogram_model,
+    _make_variogram_parameter_list,
+    _find_statistics,
+)
 import warnings
 
 
 class OrdinaryKriging:
-    """Convenience class for easy access to 2D Ordinary Kriging.
+    r"""Convenience class for easy access to 2D Ordinary Kriging.
 
     Parameters
     ----------
@@ -60,30 +59,28 @@ class OrdinaryKriging:
         minimization scheme. For variogram model parameters provided in a dict,
         the required dict keys vary according to the specified variogram
         model: ::
-            linear - {'slope': slope, 'nugget': nugget}
-            power - {'scale': scale, 'exponent': exponent, 'nugget': nugget}
-            gaussian - {'sill': s, 'range': r, 'nugget': n}
-                        OR
-                       {'psill': p, 'range': r, 'nugget':n}
-            spherical - {'sill': s, 'range': r, 'nugget': n}
-                         OR
-                        {'psill': p, 'range': r, 'nugget':n}
-            exponential - {'sill': s, 'range': r, 'nugget': n}
-                           OR
-                          {'psill': p, 'range': r, 'nugget':n}
-            hole-effect - {'sill': s, 'range': r, 'nugget': n}
-                           OR
-                          {'psill': p, 'range': r, 'nugget':n}
+
+           # linear
+               {'slope': slope, 'nugget': nugget}
+           # power
+               {'scale': scale, 'exponent': exponent, 'nugget': nugget}
+           # gaussian, spherical, exponential and hole-effect:
+               {'sill': s, 'range': r, 'nugget': n}
+               # OR
+               {'psill': p, 'range': r, 'nugget': n}
+
         Note that either the full sill or the partial sill
         (psill = sill - nugget) can be specified in the dict.
         For variogram model parameters provided in a list, the entries
         must be as follows: ::
-            linear - [slope, nugget]
-            power - [scale, exponent, nugget]
-            gaussian - [sill, range, nugget]
-            spherical - [sill, range, nugget]
-            exponential - [sill, range, nugget]
-            hole-effect - [sill, range, nugget]
+
+           # linear
+               [slope, nugget]
+           # power
+               [scale, exponent, nugget]
+           # gaussian, spherical, exponential and hole-effect:
+               [sill, range, nugget]
+
         Note that the full sill (NOT the partial sill) must be specified
         in the list format.
         For a custom variogram model, the parameters are required, as custom
@@ -147,22 +144,36 @@ class OrdinaryKriging:
     References
     ----------
     .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
-        Hydrogeology, (Cambridge University Press, 1997) 272 p.
+       Hydrogeology, (Cambridge University Press, 1997) 272 p.
     """
 
-    eps = 1.e-10   # Cutoff for comparison to zero
-    variogram_dict = {'linear': variogram_models.linear_variogram_model,
-                      'power': variogram_models.power_variogram_model,
-                      'gaussian': variogram_models.gaussian_variogram_model,
-                      'spherical': variogram_models.spherical_variogram_model,
-                      'exponential': variogram_models.exponential_variogram_model,
-                      'hole-effect': variogram_models.hole_effect_variogram_model}
+    eps = 1.0e-10  # Cutoff for comparison to zero
+    variogram_dict = {
+        "linear": variogram_models.linear_variogram_model,
+        "power": variogram_models.power_variogram_model,
+        "gaussian": variogram_models.gaussian_variogram_model,
+        "spherical": variogram_models.spherical_variogram_model,
+        "exponential": variogram_models.exponential_variogram_model,
+        "hole-effect": variogram_models.hole_effect_variogram_model,
+    }
 
-    def __init__(self, x, y, z, variogram_model='linear',
-                 variogram_parameters=None, variogram_function=None, nlags=6,
-                 weight=False, anisotropy_scaling=1.0, anisotropy_angle=0.0,
-                 verbose=False, enable_plotting=False, enable_statistics=False,
-                 coordinates_type='euclidean'):
+    def __init__(
+        self,
+        x,
+        y,
+        z,
+        variogram_model="linear",
+        variogram_parameters=None,
+        variogram_function=None,
+        nlags=6,
+        weight=False,
+        anisotropy_scaling=1.0,
+        anisotropy_angle=0.0,
+        verbose=False,
+        enable_plotting=False,
+        enable_statistics=False,
+        coordinates_type="euclidean",
+    ):
 
         # set up variogram model and parameters...
         self.variogram_model = variogram_model
@@ -178,14 +189,18 @@ class OrdinaryKriging:
             variogram_parameters = []
             anisotropy_scaling = self.model.pykrige_anis
             anisotropy_angle = self.model.pykrige_angle
-        if self.variogram_model not in self.variogram_dict.keys() and \
-                        self.variogram_model != 'custom':
-            raise ValueError("Specified variogram model '%s' "
-                             "is not supported." % variogram_model)
-        elif self.variogram_model == 'custom':
+        if (
+            self.variogram_model not in self.variogram_dict.keys()
+            and self.variogram_model != "custom"
+        ):
+            raise ValueError(
+                "Specified variogram model '%s' is not supported." % variogram_model
+            )
+        elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
-                raise ValueError("Must specify callable function for "
-                                 "custom variogram model.")
+                raise ValueError(
+                    "Must specify callable function for custom variogram model."
+                )
             else:
                 self.variogram_function = variogram_function
         else:
@@ -196,12 +211,13 @@ class OrdinaryKriging:
         # problems with referencing the original passed arguments.
         # Also, values are forced to be float... in the future, might be worth
         # developing complex-number kriging (useful for vector field kriging)
-        self.X_ORIG = \
-            np.atleast_1d(np.squeeze(np.array(x, copy=True, dtype=np.float64)))
-        self.Y_ORIG = \
-            np.atleast_1d(np.squeeze(np.array(y, copy=True, dtype=np.float64)))
-        self.Z = \
-            np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float64)))
+        self.X_ORIG = np.atleast_1d(
+            np.squeeze(np.array(x, copy=True, dtype=np.float64))
+        )
+        self.Y_ORIG = np.atleast_1d(
+            np.squeeze(np.array(y, copy=True, dtype=np.float64))
+        )
+        self.Z = np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float64)))
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
@@ -210,93 +226,118 @@ class OrdinaryKriging:
 
         # adjust for anisotropy... only implemented for euclidean (rectangular)
         # coordinates, as anisotropy is ambiguous for geographic coordinates...
-        if coordinates_type == 'euclidean':
-            self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG))/2.0
-            self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG))/2.0
+        if coordinates_type == "euclidean":
+            self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG)) / 2.0
+            self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG)) / 2.0
             self.anisotropy_scaling = anisotropy_scaling
             self.anisotropy_angle = anisotropy_angle
             if self.verbose:
                 print("Adjusting data for anisotropy...")
-            self.X_ADJUSTED, self.Y_ADJUSTED = \
-                _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
-                                       [self.XCENTER, self.YCENTER],
-                                       [self.anisotropy_scaling],
-                                       [self.anisotropy_angle]).T
-        elif coordinates_type == 'geographic':
+            self.X_ADJUSTED, self.Y_ADJUSTED = _adjust_for_anisotropy(
+                np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                [self.XCENTER, self.YCENTER],
+                [self.anisotropy_scaling],
+                [self.anisotropy_angle],
+            ).T
+        elif coordinates_type == "geographic":
             # Leave everything as is in geographic case.
             # May be open to discussion?
             if anisotropy_scaling != 1.0:
-                warnings.warn("Anisotropy is not compatible with geographic "
-                              "coordinates. Ignoring user set anisotropy.",
-                              UserWarning)
-            self.XCENTER= 0.0
-            self.YCENTER= 0.0
+                warnings.warn(
+                    "Anisotropy is not compatible with geographic "
+                    "coordinates. Ignoring user set anisotropy.",
+                    UserWarning,
+                )
+            self.XCENTER = 0.0
+            self.YCENTER = 0.0
             self.anisotropy_scaling = 1.0
             self.anisotropy_angle = 0.0
             self.X_ADJUSTED = self.X_ORIG
             self.Y_ADJUSTED = self.Y_ORIG
         else:
-            raise ValueError("Only 'euclidean' and 'geographic' are valid "
-                             "values for coordinates-keyword.")
+            raise ValueError(
+                "Only 'euclidean' and 'geographic' are valid "
+                "values for coordinates-keyword."
+            )
         self.coordinates_type = coordinates_type
 
         if self.verbose:
             print("Initializing variogram model...")
 
-        vp_temp = _make_variogram_parameter_list(self.variogram_model,
-                                                 variogram_parameters)
-        self.lags, self.semivariance, self.variogram_model_parameters = \
-            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                   self.Y_ADJUSTED)).T,
-                                        self.Z, self.variogram_model, vp_temp,
-                                        self.variogram_function, nlags,
-                                        weight, self.coordinates_type)
+        vp_temp = _make_variogram_parameter_list(
+            self.variogram_model, variogram_parameters
+        )
+        (
+            self.lags,
+            self.semivariance,
+            self.variogram_model_parameters,
+        ) = _initialize_variogram_model(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+            self.Z,
+            self.variogram_model,
+            vp_temp,
+            self.variogram_function,
+            nlags,
+            weight,
+            self.coordinates_type,
+        )
 
         if self.verbose:
-            print("Coordinates type: '%s'" % self.coordinates_type, '\n')
-            if self.variogram_model == 'linear':
-                print("Using '%s' Variogram Model" % 'linear')
+            print("Coordinates type: '%s'" % self.coordinates_type, "\n")
+            if self.variogram_model == "linear":
+                print("Using '%s' Variogram Model" % "linear")
                 print("Slope:", self.variogram_model_parameters[0])
-                print("Nugget:", self.variogram_model_parameters[1], '\n')
-            elif self.variogram_model == 'power':
-                print("Using '%s' Variogram Model" % 'power')
+                print("Nugget:", self.variogram_model_parameters[1], "\n")
+            elif self.variogram_model == "power":
+                print("Using '%s' Variogram Model" % "power")
                 print("Scale:", self.variogram_model_parameters[0])
                 print("Exponent:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
-            elif self.variogram_model == 'custom':
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
+            elif self.variogram_model == "custom":
                 print("Using Custom Variogram Model")
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
                 print("Partial Sill:", self.variogram_model_parameters[0])
-                print("Full Sill:", self.variogram_model_parameters[0] +
-                      self.variogram_model_parameters[2])
+                print(
+                    "Full Sill:",
+                    self.variogram_model_parameters[0]
+                    + self.variogram_model_parameters[2],
+                )
                 print("Range:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
         if self.enable_plotting:
             self.display_variogram_model()
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
         if enable_statistics:
-            self.delta, self.sigma, self.epsilon = \
-                _find_statistics(np.vstack((self.X_ADJUSTED,
-                                            self.Y_ADJUSTED)).T,
-                                 self.Z, self.variogram_function,
-                                 self.variogram_model_parameters,
-                                 self.coordinates_type)
+            self.delta, self.sigma, self.epsilon = _find_statistics(
+                np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+                self.Z,
+                self.variogram_function,
+                self.variogram_model_parameters,
+                self.coordinates_type,
+            )
             self.Q1 = core.calcQ1(self.epsilon)
             self.Q2 = core.calcQ2(self.epsilon)
             self.cR = core.calc_cR(self.Q2, self.sigma)
             if self.verbose:
                 print("Q1 =", self.Q1)
                 print("Q2 =", self.Q2)
-                print("cR =", self.cR, '\n')
+                print("cR =", self.cR, "\n")
         else:
-            self.delta, self.sigma, self.epsilon, self.Q1, self.Q2, self.cR = [None]*6
+            self.delta, self.sigma, self.epsilon, self.Q1, self.Q2, self.cR = [None] * 6
 
-    def update_variogram_model(self, variogram_model, variogram_parameters=None,
-                               variogram_function=None, nlags=6, weight=False,
-                               anisotropy_scaling=1., anisotropy_angle=0.):
+    def update_variogram_model(
+        self,
+        variogram_model,
+        variogram_parameters=None,
+        variogram_function=None,
+        nlags=6,
+        weight=False,
+        anisotropy_scaling=1.0,
+        anisotropy_angle=0.0,
+    ):
         """Allows user to update variogram type and/or
         variogram model parameters.
 
@@ -348,36 +389,45 @@ class OrdinaryKriging:
             variogram_parameters = []
             anisotropy_scaling = self.model.pykrige_anis
             anisotropy_angle = self.model.pykrige_angle
-        if self.variogram_model not in self.variogram_dict.keys() and \
-                        self.variogram_model != 'custom':
-            raise ValueError("Specified variogram model '%s' "
-                             "is not supported." % variogram_model)
-        elif self.variogram_model == 'custom':
+        if (
+            self.variogram_model not in self.variogram_dict.keys()
+            and self.variogram_model != "custom"
+        ):
+            raise ValueError(
+                "Specified variogram model '%s' is not supported." % variogram_model
+            )
+        elif self.variogram_model == "custom":
             if variogram_function is None or not callable(variogram_function):
-                raise ValueError("Must specify callable function for "
-                                 "custom variogram model.")
+                raise ValueError(
+                    "Must specify callable function for custom variogram model."
+                )
             else:
                 self.variogram_function = variogram_function
         else:
             self.variogram_function = self.variogram_dict[self.variogram_model]
 
-        if anisotropy_scaling != self.anisotropy_scaling or \
-           anisotropy_angle != self.anisotropy_angle:
-            if self.coordinates_type == 'euclidean':
+        if (
+            anisotropy_scaling != self.anisotropy_scaling
+            or anisotropy_angle != self.anisotropy_angle
+        ):
+            if self.coordinates_type == "euclidean":
                 if self.verbose:
                     print("Adjusting data for anisotropy...")
                 self.anisotropy_scaling = anisotropy_scaling
                 self.anisotropy_angle = anisotropy_angle
-                self.X_ADJUSTED, self.Y_ADJUSTED = \
-                    _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
-                                           [self.XCENTER, self.YCENTER],
-                                           [self.anisotropy_scaling],
-                                           [self.anisotropy_angle]).T
-            elif self.coordinates_type == 'geographic':
+                self.X_ADJUSTED, self.Y_ADJUSTED = _adjust_for_anisotropy(
+                    np.vstack((self.X_ORIG, self.Y_ORIG)).T,
+                    [self.XCENTER, self.YCENTER],
+                    [self.anisotropy_scaling],
+                    [self.anisotropy_angle],
+                ).T
+            elif self.coordinates_type == "geographic":
                 if anisotropy_scaling != 1.0:
-                    warnings.warn("Anisotropy is not compatible with geographic"
-                                  " coordinates. Ignoring user set anisotropy.",
-                                  UserWarning)
+                    warnings.warn(
+                        "Anisotropy is not compatible with geographic"
+                        " coordinates. Ignoring user set anisotropy.",
+                        UserWarning,
+                    )
                 self.anisotropy_scaling = 1.0
                 self.anisotropy_angle = 0.0
                 self.X_ADJUSTED = self.X_ORIG
@@ -386,61 +436,79 @@ class OrdinaryKriging:
             print("Updating variogram mode...")
 
         # See note above about the 'use_psill' kwarg...
-        vp_temp = _make_variogram_parameter_list(self.variogram_model,
-                                                 variogram_parameters)
-        self.lags, self.semivariance, self.variogram_model_parameters = \
-            _initialize_variogram_model(np.vstack((self.X_ADJUSTED,
-                                                   self.Y_ADJUSTED)).T,
-                                        self.Z, self.variogram_model, vp_temp,
-                                        self.variogram_function, nlags,
-                                        weight, self.coordinates_type)
+        vp_temp = _make_variogram_parameter_list(
+            self.variogram_model, variogram_parameters
+        )
+        (
+            self.lags,
+            self.semivariance,
+            self.variogram_model_parameters,
+        ) = _initialize_variogram_model(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+            self.Z,
+            self.variogram_model,
+            vp_temp,
+            self.variogram_function,
+            nlags,
+            weight,
+            self.coordinates_type,
+        )
 
         if self.verbose:
-            print("Coordinates type: '%s'" % self.coordinates_type, '\n')
-            if self.variogram_model == 'linear':
-                print("Using '%s' Variogram Model" % 'linear')
+            print("Coordinates type: '%s'" % self.coordinates_type, "\n")
+            if self.variogram_model == "linear":
+                print("Using '%s' Variogram Model" % "linear")
                 print("Slope:", self.variogram_model_parameters[0])
-                print("Nugget:", self.variogram_model_parameters[1], '\n')
-            elif self.variogram_model == 'power':
-                print("Using '%s' Variogram Model" % 'power')
+                print("Nugget:", self.variogram_model_parameters[1], "\n")
+            elif self.variogram_model == "power":
+                print("Using '%s' Variogram Model" % "power")
                 print("Scale:", self.variogram_model_parameters[0])
                 print("Exponent:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
-            elif self.variogram_model == 'custom':
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
+            elif self.variogram_model == "custom":
                 print("Using Custom Variogram Model")
             else:
                 print("Using '%s' Variogram Model" % self.variogram_model)
                 print("Partial Sill:", self.variogram_model_parameters[0])
-                print("Full Sill:", self.variogram_model_parameters[0] +
-                      self.variogram_model_parameters[2])
+                print(
+                    "Full Sill:",
+                    self.variogram_model_parameters[0]
+                    + self.variogram_model_parameters[2],
+                )
                 print("Range:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
+                print("Nugget:", self.variogram_model_parameters[2], "\n")
         if self.enable_plotting:
             self.display_variogram_model()
 
         if self.verbose:
             print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = \
-            _find_statistics(np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
-                             self.Z, self.variogram_function,
-                             self.variogram_model_parameters,
-                             self.coordinates_type)
+        self.delta, self.sigma, self.epsilon = _find_statistics(
+            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+            self.Z,
+            self.variogram_function,
+            self.variogram_model_parameters,
+            self.coordinates_type,
+        )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
         self.cR = core.calc_cR(self.Q2, self.sigma)
         if self.verbose:
             print("Q1 =", self.Q1)
             print("Q2 =", self.Q2)
-            print("cR =", self.cR, '\n')
+            print("cR =", self.cR, "\n")
 
     def display_variogram_model(self):
         """Displays variogram model with the actual binned data."""
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.plot(self.lags, self.semivariance, 'r*')
-        ax.plot(self.lags,
-                self.variogram_function(self.variogram_model_parameters,
-                                        self.lags), 'k-')
+        ax.plot(self.lags, self.semivariance, "r*")
+        ax.plot(
+            self.lags,
+            self.variogram_function(self.variogram_model_parameters, self.lags),
+            "k-",
+        )
         plt.show()
 
     def get_variogram_points(self):
@@ -458,7 +526,10 @@ class OrdinaryKriging:
             lags (array) - the lags at which the variogram was evaluated
             variogram (array) - the variogram function evaluated at the lags
         """
-        return self.lags, self.variogram_function(self.variogram_model_parameters, self.lags)
+        return (
+            self.lags,
+            self.variogram_function(self.variogram_model_parameters, self.lags),
+        )
 
     def switch_verbose(self):
         """Allows user to switch code talk-back on/off. Takes no arguments."""
@@ -474,9 +545,11 @@ class OrdinaryKriging:
 
     def plot_epsilon_residuals(self):
         """Plots the epsilon residuals for the variogram fit."""
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.scatter(range(self.epsilon.size), self.epsilon, c='k', marker='*')
+        ax.scatter(range(self.epsilon.size), self.epsilon, c="k", marker="*")
         ax.axhline(y=0.0)
         plt.show()
 
@@ -498,18 +571,21 @@ class OrdinaryKriging:
     def _get_kriging_matrix(self, n):
         """Assembles the kriging matrix."""
 
-        if self.coordinates_type == 'euclidean':
-            xy = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
-                                 self.Y_ADJUSTED[:, np.newaxis]), axis=1)
-            d = cdist(xy, xy, 'euclidean')
-        elif self.coordinates_type == 'geographic':
-            d = core.great_circle_distance(self.X_ADJUSTED[:,np.newaxis],
-                                           self.Y_ADJUSTED[:,np.newaxis],
-                                           self.X_ADJUSTED, self.Y_ADJUSTED)
-        a = np.zeros((n+1, n+1))
-        a[:n, :n] = - self.variogram_function(self.variogram_model_parameters,
-                                              d)
-        np.fill_diagonal(a, 0.)
+        if self.coordinates_type == "euclidean":
+            xy = np.concatenate(
+                (self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1
+            )
+            d = cdist(xy, xy, "euclidean")
+        elif self.coordinates_type == "geographic":
+            d = core.great_circle_distance(
+                self.X_ADJUSTED[:, np.newaxis],
+                self.Y_ADJUSTED[:, np.newaxis],
+                self.X_ADJUSTED,
+                self.Y_ADJUSTED,
+            )
+        a = np.zeros((n + 1, n + 1))
+        a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
+        np.fill_diagonal(a, 0.0)
         a[n, :] = 1.0
         a[:, n] = 1.0
         a[n, n] = 0.0
@@ -531,17 +607,17 @@ class OrdinaryKriging:
             zero_value = True
             zero_index = np.where(np.absolute(bd) <= self.eps)
 
-        b = np.zeros((npt, n+1, 1))
-        b[:, :n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+        b = np.zeros((npt, n + 1, 1))
+        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
         if zero_value:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
 
         if (~mask).any():
-            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n+1, axis=1)
+            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
             b = np.ma.array(b, mask=mask_b)
 
-        x = np.dot(a_inv, b.reshape((npt, n+1)).T).reshape((1, n+1, npt)).T
+        x = np.dot(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).T
         zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
         sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
 
@@ -558,8 +634,10 @@ class OrdinaryKriging:
 
         a_inv = scipy.linalg.inv(a)
 
-        for j in np.nonzero(~mask)[0]:   # Note that this is the same thing as range(npt) if mask is not defined,
-            bd = bd_all[j]               # otherwise it takes the non-masked elements.
+        for j in np.nonzero(~mask)[
+            0
+        ]:  # Note that this is the same thing as range(npt) if mask is not defined,
+            bd = bd_all[j]  # otherwise it takes the non-masked elements.
             if np.any(np.absolute(bd) <= self.eps):
                 zero_value = True
                 zero_index = np.where(np.absolute(bd) <= self.eps)
@@ -567,8 +645,8 @@ class OrdinaryKriging:
                 zero_index = None
                 zero_value = False
 
-            b = np.zeros((n+1, 1))
-            b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            b = np.zeros((n + 1, 1))
+            b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
             if zero_value:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
@@ -588,8 +666,10 @@ class OrdinaryKriging:
         zvalues = np.zeros(npt)
         sigmasq = np.zeros(npt)
 
-        for i in np.nonzero(~mask)[0]:   # Note that this is the same thing as range(npt) if mask is not defined,
-            b_selector = bd_idx[i]       # otherwise it takes the non-masked elements.
+        for i in np.nonzero(~mask)[
+            0
+        ]:  # Note that this is the same thing as range(npt) if mask is not defined,
+            b_selector = bd_idx[i]  # otherwise it takes the non-masked elements.
             bd = bd_all[i]
 
             a_selector = np.concatenate((b_selector, np.array([a_all.shape[0] - 1])))
@@ -601,8 +681,8 @@ class OrdinaryKriging:
             else:
                 zero_index = None
                 zero_value = False
-            b = np.zeros((n+1, 1))
-            b[:n, 0] = - self.variogram_function(self.variogram_model_parameters, bd)
+            b = np.zeros((n + 1, 1))
+            b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
             if zero_value:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
@@ -610,12 +690,19 @@ class OrdinaryKriging:
             x = scipy.linalg.solve(a, b)
 
             zvalues[i] = x[:n, 0].dot(self.Z[b_selector])
-            sigmasq[i] = - x[:, 0].dot(b[:, 0])
+            sigmasq[i] = -x[:, 0].dot(b[:, 0])
 
         return zvalues, sigmasq
 
-    def execute(self, style, xpoints, ypoints, mask=None, backend='vectorized',
-                n_closest_points=None):
+    def execute(
+        self,
+        style,
+        xpoints,
+        ypoints,
+        mask=None,
+        backend="vectorized",
+        n_closest_points=None,
+    ):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation.
@@ -700,9 +787,8 @@ class OrdinaryKriging:
         if self.verbose:
             print("Executing Ordinary Kriging...\n")
 
-        if style != 'grid' and style != 'masked' and style != 'points':
-            raise ValueError("style argument must be 'grid', "
-                             "'points', or 'masked'")
+        if style != "grid" and style != "masked" and style != "points":
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         if n_closest_points is not None and n_closest_points <= 1:
             # If this is not checked, nondescriptive errors emerge
@@ -716,69 +802,85 @@ class OrdinaryKriging:
         ny = ypts.size
         a = self._get_kriging_matrix(n)
 
-        if style in ['grid', 'masked']:
-            if style == 'masked':
+        if style in ["grid", "masked"]:
+            if style == "masked":
                 if mask is None:
-                    raise IOError("Must specify boolean masking array "
-                                  "when style is 'masked'.")
+                    raise IOError(
+                        "Must specify boolean masking array when style is 'masked'."
+                    )
                 if mask.shape[0] != ny or mask.shape[1] != nx:
                     if mask.shape[0] == nx and mask.shape[1] == ny:
                         mask = mask.T
                     else:
-                        raise ValueError("Mask dimensions do not match "
-                                         "specified grid dimensions.")
+                        raise ValueError(
+                            "Mask dimensions do not match specified grid dimensions."
+                        )
                 mask = mask.flatten()
-            npt = ny*nx
+            npt = ny * nx
             grid_x, grid_y = np.meshgrid(xpts, ypts)
             xpts = grid_x.flatten()
             ypts = grid_y.flatten()
 
-        elif style == 'points':
+        elif style == "points":
             if xpts.size != ypts.size:
-                raise ValueError("xpoints and ypoints must have "
-                                 "same dimensions when treated as "
-                                 "listing discrete points.")
+                raise ValueError(
+                    "xpoints and ypoints must have "
+                    "same dimensions when treated as "
+                    "listing discrete points."
+                )
             npt = nx
         else:
-            raise ValueError("style argument must be 'grid', "
-                             "'points', or 'masked'")
+            raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
-        if self.coordinates_type == 'euclidean':
-            xpts, ypts = _adjust_for_anisotropy(np.vstack((xpts, ypts)).T,
-                                                [self.XCENTER, self.YCENTER],
-                                                [self.anisotropy_scaling],
-                                                [self.anisotropy_angle]).T
+        if self.coordinates_type == "euclidean":
+            xpts, ypts = _adjust_for_anisotropy(
+                np.vstack((xpts, ypts)).T,
+                [self.XCENTER, self.YCENTER],
+                [self.anisotropy_scaling],
+                [self.anisotropy_angle],
+            ).T
             # Prepare for cdist:
-            xy_data = np.concatenate((self.X_ADJUSTED[:, np.newaxis],
-                                      self.Y_ADJUSTED[:, np.newaxis]), axis=1)
-            xy_points = np.concatenate((xpts[:, np.newaxis],
-                                        ypts[:, np.newaxis]), axis=1)
-        elif self.coordinates_type == 'geographic':
+            xy_data = np.concatenate(
+                (self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1
+            )
+            xy_points = np.concatenate(
+                (xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1
+            )
+        elif self.coordinates_type == "geographic":
             # In spherical coordinates, we do not correct for anisotropy.
             # Also, we don't use scipy.spatial.cdist, so we do not have to
             # format the input data accordingly.
             pass
 
-        if style != 'masked':
-            mask = np.zeros(npt, dtype='bool')
+        if style != "masked":
+            mask = np.zeros(npt, dtype="bool")
 
         c_pars = None
-        if backend == 'C':
+        if backend == "C":
             try:
                 from .lib.cok import _c_exec_loop, _c_exec_loop_moving_window
             except ImportError:
-                print('Warning: failed to load Cython extensions.\n'
-                      '   See https://github.com/bsmurphy/PyKrige/issues/8 \n'
-                      '   Falling back to a pure python backend...')
-                backend = 'loop'
+                print(
+                    "Warning: failed to load Cython extensions.\n"
+                    "   See https://github.com/GeoStat-Framework/PyKrige/issues/8 \n"
+                    "   Falling back to a pure python backend..."
+                )
+                backend = "loop"
             except:
-                raise RuntimeError("Unknown error in trying to "
-                                   "load Cython extension.")
+                raise RuntimeError("Unknown error in trying to load Cython extension.")
 
-            c_pars = {key: getattr(self, key) for key in ['Z', 'eps', 'variogram_model_parameters', 'variogram_function']}
+            c_pars = {
+                key: getattr(self, key)
+                for key in [
+                    "Z",
+                    "eps",
+                    "variogram_model_parameters",
+                    "variogram_function",
+                ]
+            }
 
         if n_closest_points is not None:
-            if self.coordinates_type == 'geographic':
+            if self.coordinates_type == "geographic":
                 # To make use of the KDTree, we have to convert the
                 # spherical coordinates into three dimensional Euclidean
                 # coordinates, since the standard KDTree cannot handle
@@ -786,64 +888,80 @@ class OrdinaryKriging:
                 # Do the conversion just for the step involving the KDTree:
                 lon_d = self.X_ADJUSTED[:, np.newaxis] * np.pi / 180.0
                 lat_d = self.Y_ADJUSTED[:, np.newaxis] * np.pi / 180.0
-                xy_data = np.concatenate((np.cos(lon_d) * np.cos(lat_d),
-                                          np.sin(lon_d) * np.cos(lat_d),
-                                          np.sin(lat_d)), axis=1)
+                xy_data = np.concatenate(
+                    (
+                        np.cos(lon_d) * np.cos(lat_d),
+                        np.sin(lon_d) * np.cos(lat_d),
+                        np.sin(lat_d),
+                    ),
+                    axis=1,
+                )
                 lon_p = xpts[:, np.newaxis] * np.pi / 180.0
                 lat_p = ypts[:, np.newaxis] * np.pi / 180.0
-                xy_points = np.concatenate((np.cos(lon_p) * np.cos(lat_p),
-                                            np.sin(lon_p) * np.cos(lat_p),
-                                            np.sin(lat_p)), axis=1)
+                xy_points = np.concatenate(
+                    (
+                        np.cos(lon_p) * np.cos(lat_p),
+                        np.sin(lon_p) * np.cos(lat_p),
+                        np.sin(lat_p),
+                    ),
+                    axis=1,
+                )
 
             from scipy.spatial import cKDTree
+
             tree = cKDTree(xy_data)
             bd, bd_idx = tree.query(xy_points, k=n_closest_points, eps=0.0)
 
-            if self.coordinates_type == 'geographic':
+            if self.coordinates_type == "geographic":
                 # Between the nearest neighbours from Euclidean search,
                 # calculate the great circle distance using the standard method:
-                x_points = np.tile(xpts[:,np.newaxis],(1,n_closest_points))
-                y_points = np.tile(ypts[:,np.newaxis],(1,n_closest_points))
-                bd = core.great_circle_distance(x_points, y_points,
-                                                self.X_ADJUSTED[bd_idx],
-                                                self.Y_ADJUSTED[bd_idx])
+                x_points = np.tile(xpts[:, np.newaxis], (1, n_closest_points))
+                y_points = np.tile(ypts[:, np.newaxis], (1, n_closest_points))
+                bd = core.great_circle_distance(
+                    x_points, y_points, self.X_ADJUSTED[bd_idx], self.Y_ADJUSTED[bd_idx]
+                )
 
-            if backend == 'loop':
-                zvalues, sigmasq = \
-                    self._exec_loop_moving_window(a, bd, mask, bd_idx)
-            elif backend == 'C':
-                zvalues, sigmasq = \
-                    _c_exec_loop_moving_window(a, bd, mask.astype('int8'),
-                                               bd_idx, self.X_ADJUSTED.shape[0],
-                                               c_pars)
+            if backend == "loop":
+                zvalues, sigmasq = self._exec_loop_moving_window(a, bd, mask, bd_idx)
+            elif backend == "C":
+                zvalues, sigmasq = _c_exec_loop_moving_window(
+                    a, bd, mask.astype("int8"), bd_idx, self.X_ADJUSTED.shape[0], c_pars
+                )
             else:
-                raise ValueError('Specified backend {} for a moving window '
-                                 'is not supported.'.format(backend))
+                raise ValueError(
+                    "Specified backend {} for a moving window "
+                    "is not supported.".format(backend)
+                )
         else:
-            if self.coordinates_type == 'euclidean':
-                bd = cdist(xy_points,  xy_data, 'euclidean')
-            elif self.coordinates_type == 'geographic':
-                bd = core.great_circle_distance(xpts[:,np.newaxis],
-                                                ypts[:,np.newaxis],
-                                                self.X_ADJUSTED, self.Y_ADJUSTED)
+            if self.coordinates_type == "euclidean":
+                bd = cdist(xy_points, xy_data, "euclidean")
+            elif self.coordinates_type == "geographic":
+                bd = core.great_circle_distance(
+                    xpts[:, np.newaxis],
+                    ypts[:, np.newaxis],
+                    self.X_ADJUSTED,
+                    self.Y_ADJUSTED,
+                )
 
-            if backend == 'vectorized':
+            if backend == "vectorized":
                 zvalues, sigmasq = self._exec_vector(a, bd, mask)
-            elif backend == 'loop':
+            elif backend == "loop":
                 zvalues, sigmasq = self._exec_loop(a, bd, mask)
-            elif backend == 'C':
-                zvalues, sigmasq = _c_exec_loop(a, bd, mask.astype('int8'),
-                                                self.X_ADJUSTED.shape[0],
-                                                c_pars)
+            elif backend == "C":
+                zvalues, sigmasq = _c_exec_loop(
+                    a, bd, mask.astype("int8"), self.X_ADJUSTED.shape[0], c_pars
+                )
             else:
-                raise ValueError('Specified backend {} is not supported for '
-                                 '2D ordinary kriging.'.format(backend))
+                raise ValueError(
+                    "Specified backend {} is not supported for "
+                    "2D ordinary kriging.".format(backend)
+                )
 
-        if style == 'masked':
+        if style == "masked":
             zvalues = np.ma.array(zvalues, mask=mask)
             sigmasq = np.ma.array(sigmasq, mask=mask)
 
-        if style in ['masked', 'grid']:
+        if style in ["masked", "grid"]:
             zvalues = zvalues.reshape((ny, nx))
             sigmasq = sigmasq.reshape((ny, nx))
 

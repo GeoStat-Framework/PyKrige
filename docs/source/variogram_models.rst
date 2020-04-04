@@ -73,7 +73,7 @@ anomalously richer than the surrounding area.)
 
 For nonstationary models (linear and power models, with unbounded spatial
 variances), the nugget has the same meaning. The exponent  for the power-law
-model should be between 0 and 2 [1].
+model should be between 0 and 2 [1]_.
 
 **A few important notes:**
 
@@ -87,7 +87,7 @@ The exact definitions of the variogram models here may differ from those used
 elsewhere. Keep that in mind when switching from another kriging code over to
 PyKrige.
 
-According to [1], the hole-effect variogram model is only correct for the
+According to [1]_, the hole-effect variogram model is only correct for the
 1D case. It's implemented here for completeness and should be used cautiously.
 
 References
