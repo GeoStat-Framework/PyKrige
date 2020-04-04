@@ -4,7 +4,7 @@ Changelog
 
 Version 1.5.0
 -------------
-*April, 2020*
+*April 04, 2020*
 
 **New features**
 
