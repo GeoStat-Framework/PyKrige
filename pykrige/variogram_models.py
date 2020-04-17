@@ -79,3 +79,12 @@ def hole_effect_variogram_model(m, d):
         psill * (1.0 - (1.0 - d / (range_ / 3.0)) * np.exp(-d / (range_ / 3.0)))
         + nugget
     )
+
+
+def natural_variogram_model(m, d):
+    """Natural/Stable model, m is [psill, range, nugget, alpha]"""
+    psill = float(m[0])
+    range_ = float(m[1])
+    nugget = float(m[2])
+    alpha = float(m[3])
+    return psill * (1.0 - np.exp(-3.0*(d / range_)**alpha)) + nugget
