@@ -1369,13 +1369,13 @@ def test_force_exact():
     z, ss = ok.execute(
         "grid", np.arange(0.0, 3.1, 0.1), np.arange(2.1, 3.1, 0.1), backend="vectorized"
     )
-    assert np.any(ss <= 1e-15)
-    assert not np.any(ss[:9, :30] <= 1e-15)
+    assert np.any(np.isclose(ss, 0))
+    assert not np.any(np.isclose(ss[:9, :30], 0))
     assert not np.allclose(z[:9, :30], 0.0)
     z, ss = ok.execute(
         "grid", np.arange(0.0, 1.9, 0.1), np.arange(2.1, 3.1, 0.1), backend="vectorized"
     )
-    assert not np.any(ss <= 1e-15)
+    assert not np.any(np.isclose(ss, 0))
     z, ss = ok.execute(
         "masked",
         np.arange(2.5, 3.5, 0.1),
@@ -1385,7 +1385,7 @@ def test_force_exact():
             np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.0
         ),
     )
-    assert ss[2, 5] <= 1e-15
+    assert np.isclose(ss[2, 5], 0)
     assert not np.allclose(ss, 0.0)
 
     z, ss = ok.execute("grid", [1.0, 2.0, 3.0], [1.0, 2.0, 3.0], backend="loop")
@@ -1425,13 +1425,13 @@ def test_force_exact():
     z, ss = ok.execute(
         "grid", np.arange(0.0, 3.1, 0.1), np.arange(2.1, 3.1, 0.1), backend="loop"
     )
-    assert np.any(ss <= 1e-15)
-    assert not np.any(ss[:9, :30] <= 1e-15)
+    assert np.any(np.isclose(ss, 0))
+    assert not np.any(np.isclose(ss[:9, :30], 0))
     assert not np.allclose(z[:9, :30], 0.0)
     z, ss = ok.execute(
         "grid", np.arange(0.0, 1.9, 0.1), np.arange(2.1, 3.1, 0.1), backend="loop"
     )
-    assert not np.any(ss <= 1e-15)
+    assert not np.any(np.isclose(ss, 0))
     z, ss = ok.execute(
         "masked",
         np.arange(2.5, 3.5, 0.1),
@@ -1441,7 +1441,7 @@ def test_force_exact():
             np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.0
         ),
     )
-    assert ss[2, 5] <= 1e-15
+    assert np.isclose(ss[2, 5], 0)
     assert not np.allclose(ss, 0.0)
 
     uk = UniversalKriging(data[:, 0], data[:, 1], data[:, 2])
@@ -1482,13 +1482,13 @@ def test_force_exact():
     z, ss = uk.execute(
         "grid", np.arange(0.0, 3.1, 0.1), np.arange(2.1, 3.1, 0.1), backend="vectorized"
     )
-    assert np.any(ss <= 1e-15)
-    assert not np.any(ss[:9, :30] <= 1e-15)
+    assert np.any(np.isclose(ss, 0))
+    assert not np.any(np.isclose(ss[:9, :30], 0))
     assert not np.allclose(z[:9, :30], 0.0)
     z, ss = uk.execute(
         "grid", np.arange(0.0, 1.9, 0.1), np.arange(2.1, 3.1, 0.1), backend="vectorized"
     )
-    assert not (np.any(ss <= 1e-15))
+    assert not (np.any(np.isclose(ss, 0)))
     z, ss = uk.execute(
         "masked",
         np.arange(2.5, 3.5, 0.1),
@@ -1498,7 +1498,7 @@ def test_force_exact():
             np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.0
         ),
     )
-    assert ss[2, 5] <= 1e-15
+    assert np.isclose(ss[2, 5], 0)
     assert not np.allclose(ss, 0.0)
     z, ss = uk.execute("grid", [1.0, 2.0, 3.0], [1.0, 2.0, 3.0], backend="loop")
     assert z[0, 0] == approx(2.0)
@@ -1537,13 +1537,13 @@ def test_force_exact():
     z, ss = uk.execute(
         "grid", np.arange(0.0, 3.1, 0.1), np.arange(2.1, 3.1, 0.1), backend="loop"
     )
-    assert np.any(ss <= 1e-15)
-    assert not np.any(ss[:9, :30] <= 1e-15)
+    assert np.any(np.isclose(ss, 0))
+    assert not np.any(np.isclose(ss[:9, :30], 0))
     assert not np.allclose(z[:9, :30], 0.0)
     z, ss = uk.execute(
         "grid", np.arange(0.0, 1.9, 0.1), np.arange(2.1, 3.1, 0.1), backend="loop"
     )
-    assert not np.any(ss <= 1e-15)
+    assert not np.any(np.isclose(ss, 0))
     z, ss = uk.execute(
         "masked",
         np.arange(2.5, 3.5, 0.1),
@@ -1553,7 +1553,7 @@ def test_force_exact():
             np.meshgrid(np.arange(2.5, 3.5, 0.1), np.arange(2.5, 3.5, 0.25))[0] == 0.0
         ),
     )
-    assert ss[2, 5] <= 1e-15
+    assert np.isclose(ss[2, 5], 0)
     assert not np.allclose(ss, 0.0)
 
     z, ss = core._krige(
