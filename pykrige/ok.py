@@ -601,7 +601,7 @@ class OrdinaryKriging:
         zero_index = None
         zero_value = False
 
-        a_inv = scipy.linalg.inv(a)
+        a_inv = scipy.linalg.pinvh(a)
 
         if np.any(np.absolute(bd) <= self.eps):
             zero_value = True
@@ -632,7 +632,7 @@ class OrdinaryKriging:
         zvalues = np.zeros(npt)
         sigmasq = np.zeros(npt)
 
-        a_inv = scipy.linalg.inv(a)
+        a_inv = scipy.linalg.pinvh(a)
 
         for j in np.nonzero(~mask)[
             0

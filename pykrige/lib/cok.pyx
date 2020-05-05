@@ -35,7 +35,7 @@ cpdef _c_exec_loop(double [:, ::1] a_all,
 
     cdef double [::1] variogram_model_parameters = np.asarray(pars['variogram_model_parameters'])
 
-    cdef double [::1,:] a_inv = scipy.linalg.inv(a_all)
+    cdef double [::1,:] a_inv = scipy.linalg.pinvh(a_all)
 
     for i in range(npt):   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
         if mask[i]:
