@@ -1047,22 +1047,6 @@ class UniversalKriging:
         Includes drift terms.
 
         This is now the method that performs the main kriging calculation.
-        Note that currently measurements (i.e., z values) are considered
-        'exact'. This means that, when a specified coordinate for interpolation
-        is exactly the same as one of the data points, the variogram evaluated
-        at the point is forced to be zero. Also, the diagonal of the kriging
-        matrix is also always forced to be zero. In forcing the variogram
-        evaluated at data points to be zero, we are effectively saying that
-        there is no variance at that point (no uncertainty,
-        so the value is 'exact').
-
-        In the future, the code may include an extra 'exact_values' boolean
-        flag that can be adjusted to specify whether to treat the measurements
-        as 'exact'. Setting the flag to false would indicate that the variogram
-        should not be forced to be zero at zero distance (i.e., when evaluated
-        at data points). Instead, the uncertainty in the point will be equal to
-        the nugget. This would mean that the diagonal of the kriging matrix
-        would be set to the nugget instead of to zero.
 
         Parameters
         ----------
@@ -1112,6 +1096,17 @@ class UniversalKriging:
             shape (M, N), where M is the number of y grid-points and N is the
             number of x grid-points, or shape (M, ) or (N, 1), where M is the
             number of  points at which to evaluate the kriging system.
+        exact_values : bool, optional
+            When exact_values is true and a specified coordinate for interpolation
+            is exactly the same as one of the data points, the variogram evaluated
+            at the point is forced to be zero. This effectively says that
+            there is no variance at that point (no uncertainty,
+            so the value is 'exact'). Setting exact_values to false indicates that the
+            variogram should not be forced to be zero at zero distance
+            (i.e., when evaluated at data points). Instead, the uncertainty in
+            the point will be equal to the nugget. This means that the
+            diagonal of the kriging matrix would be set to
+            the nugget instead of to zero.
 
         Returns
         -------
