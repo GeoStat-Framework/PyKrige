@@ -821,9 +821,9 @@ class UniversalKriging:
             a = np.zeros((n_withdrifts, n_withdrifts))
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
 
-        if self.variogram_model != 'linear' and not exact_values:
+        if self.variogram_model != "linear" and not exact_values:
             np.fill_diagonal(a, self.variogram_model_parameters[2])
-        elif self.variogram_model == 'linear' and not exact_values:
+        elif self.variogram_model == "linear" and not exact_values:
             np.fill_diagonal(a, self.variogram_model_parameters[1])
         else:
             np.fill_diagonal(a, 0.0)
@@ -1041,7 +1041,7 @@ class UniversalKriging:
         mask=None,
         backend="vectorized",
         specified_drift_arrays=None,
-        exact_values=True
+        exact_values=True,
     ):
         """Calculates a kriged grid and the associated variance.
         Includes drift terms.

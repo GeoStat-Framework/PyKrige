@@ -585,12 +585,13 @@ def test_ok_execute(sample_data_2d):
     assert z[0, 0] is np.ma.masked
     assert ss[0, 0] is np.ma.masked
 
-    z, ss = ok.execute("masked", gridx, gridy, mask=mask_ref.T, backend="loop", exact_values=False)
+    z, ss = ok.execute(
+        "masked", gridx, gridy, mask=mask_ref.T, backend="loop", exact_values=False
+    )
     assert np.ma.is_masked(z)
     assert np.ma.is_masked(ss)
     assert z[0, 0] is np.ma.masked
     assert ss[0, 0] is np.ma.masked
-
 
     with pytest.raises(ValueError):
         ok.execute(
@@ -626,7 +627,6 @@ def test_cython_ok(sample_data_2d):
     assert_allclose(z1, z2)
     assert_allclose(ss1, ss2)
 
-
     closest_points = 4
 
     z1, ss1 = ok.execute(
@@ -639,13 +639,24 @@ def test_cython_ok(sample_data_2d):
     assert_allclose(ss1, ss2)
 
     z1, ss1 = ok.execute(
-        "grid", gridx, gridy, backend="loop", n_closest_points=closest_points, exact_values=False
+        "grid",
+        gridx,
+        gridy,
+        backend="loop",
+        n_closest_points=closest_points,
+        exact_values=False,
     )
     z2, ss2 = ok.execute(
-        "grid", gridx, gridy, backend="C", n_closest_points=closest_points, exact_values=False
+        "grid",
+        gridx,
+        gridy,
+        backend="C",
+        n_closest_points=closest_points,
+        exact_values=False,
     )
     assert_allclose(z1, z2)
     assert_allclose(ss1, ss2)
+
 
 def test_uk(validation_ref):
 
@@ -921,7 +932,9 @@ def test_uk_execute(sample_data_2d):
     assert z[0, 0] is np.ma.masked
     assert ss[0, 0] is np.ma.masked
 
-    z, ss = uk.execute("masked", gridx, gridy, mask=mask_ref.T, backend="loop", exact_values=False)
+    z, ss = uk.execute(
+        "masked", gridx, gridy, mask=mask_ref.T, backend="loop", exact_values=False
+    )
     assert np.ma.is_masked(z)
     assert np.ma.is_masked(ss)
     assert z[0, 0] is np.ma.masked
@@ -974,7 +987,9 @@ def test_ok_uk_produce_same_result(validation_ref):
     assert_allclose(z_ok, z_uk)
     assert_allclose(ss_ok, ss_uk)
 
-    z_uk, ss_uk = uk.execute("grid", gridx, gridy, backend="vectorized", exact_values=False)
+    z_uk, ss_uk = uk.execute(
+        "grid", gridx, gridy, backend="vectorized", exact_values=False
+    )
     assert_allclose(z_ok, z_uk)
     assert_allclose(ss_ok, ss_uk)
 
