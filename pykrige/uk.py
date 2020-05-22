@@ -808,7 +808,7 @@ class UniversalKriging:
         print("Q2 =", self.Q2)
         print("cR =", self.cR)
 
-    def _get_kriging_matrix(self, n, n_withdrifts):
+    def _get_kriging_matrix(self, n, n_withdrifts, exact_values):
         """Assembles the kriging matrix."""
 
         xy = np.concatenate(
@@ -820,7 +820,13 @@ class UniversalKriging:
         else:
             a = np.zeros((n_withdrifts, n_withdrifts))
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
-        np.fill_diagonal(a, 0.0)
+
+        if self.variogram_model != 'linear' and not exact_values:
+            np.fill_diagonal(a, self.variogram_model_parameters[2])
+        elif self.variogram_model == 'linear' and not exact_values:
+            np.fill_diagonal(a, self.variogram_model_parameters[1])
+        else:
+            np.fill_diagonal(a, 0.0)
 
         i = n
         if self.regional_linear_drift:
@@ -1035,6 +1041,7 @@ class UniversalKriging:
         mask=None,
         backend="vectorized",
         specified_drift_arrays=None,
+        exact_values=True
     ):
         """Calculates a kriged grid and the associated variance.
         Includes drift terms.
@@ -1124,6 +1131,9 @@ class UniversalKriging:
         if style != "grid" and style != "masked" and style != "points":
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
+        if not isinstance(exact_values, bool):
+            raise ValueError("exact_values has to be boolean True or False")
+
         n = self.X_ADJUSTED.shape[0]
         n_withdrifts = n
         xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
@@ -1140,7 +1150,7 @@ class UniversalKriging:
             n_withdrifts += len(self.specified_drift_data_arrays)
         if self.functional_drift:
             n_withdrifts += len(self.functional_drift_terms)
-        a = self._get_kriging_matrix(n, n_withdrifts)
+        a = self._get_kriging_matrix(n, n_withdrifts, exact_values)
 
         if style in ["grid", "masked"]:
             if style == "masked":
