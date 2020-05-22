@@ -568,7 +568,7 @@ class OrdinaryKriging:
         print("Q2 =", self.Q2)
         print("cR =", self.cR)
 
-    def _get_kriging_matrix(self, n):
+    def _get_kriging_matrix(self, n, exact_values):
         """Assembles the kriging matrix."""
 
         if self.coordinates_type == "euclidean":
@@ -585,11 +585,16 @@ class OrdinaryKriging:
             )
         a = np.zeros((n + 1, n + 1))
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
-        np.fill_diagonal(a, 0.0)
+
+        if self.variogram_model != 'linear' and not exact_values:
+            np.fill_diagonal(a, self.variogram_model_parameters[2])
+        elif self.variogram_model == 'linear' and not exact_values:
+            np.fill_diagonal(a, self.variogram_model_parameters[1])
+        else:
+            np.fill_diagonal(a, 0.0)
         a[n, :] = 1.0
         a[:, n] = 1.0
         a[n, n] = 0.0
-
         return a
 
     def _exec_vector(self, a, bd, mask):
@@ -702,6 +707,7 @@ class OrdinaryKriging:
         mask=None,
         backend="vectorized",
         n_closest_points=None,
+        exact_values=True
     ):
         """Calculates a kriged grid and the associated variance.
 
@@ -794,13 +800,15 @@ class OrdinaryKriging:
             # If this is not checked, nondescriptive errors emerge
             # later in the code.
             raise ValueError("n_closest_points has to be at least two!")
+        if not isinstance(exact_values, bool):
+            raise ValueError("exact_values has to be boolean True or False")
 
         xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
         ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
         n = self.X_ADJUSTED.shape[0]
         nx = xpts.size
         ny = ypts.size
-        a = self._get_kriging_matrix(n)
+        a = self._get_kriging_matrix(n, exact_values)
 
         if style in ["grid", "masked"]:
             if style == "masked":
