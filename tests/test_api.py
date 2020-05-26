@@ -15,7 +15,7 @@ def _method_and_vergiogram():
 
 def test_krige():
     # dummy data
-    pytest.importorskip('sklearn')
+    pytest.importorskip("sklearn")
     from sklearn.model_selection import GridSearchCV
 
     np.random.seed(1)

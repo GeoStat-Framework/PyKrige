@@ -20,9 +20,7 @@ param_dict = {
     # "weight": [True, False]
 }
 
-estimator = GridSearchCV(
-    Krige(), param_dict, verbose=True, return_train_score=True
-)
+estimator = GridSearchCV(Krige(), param_dict, verbose=True, return_train_score=True)
 
 # dummy data
 X = np.random.randint(0, 400, size=(100, 2)).astype(float)
