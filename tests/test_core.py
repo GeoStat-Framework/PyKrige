@@ -1836,6 +1836,28 @@ def test_ok3d(validation_ref):
         variogram_model="exponential",
         variogram_parameters=[500.0, 3000.0, 0.0],
     )
+
+    with pytest.raises(ValueError):
+        OrdinaryKriging3D(
+            data[:, 0],
+            data[:, 1],
+            np.zeros(data[:, 1].shape),
+            data[:, 2],
+            variogram_model="exponential",
+            variogram_parameters=[500.0, 3000.0, 0.0], 
+            exact_values="blurg"
+        )
+
+    ok3d_non_exact = OrdinaryKriging3D(
+        data[:, 0],
+        data[:, 1],
+        np.zeros(data[:, 1].shape),
+        data[:, 2],
+        variogram_model="exponential",
+        variogram_parameters=[500.0, 3000.0, 0.0], 
+        exact_values=False
+    )
+
     k, ss = k3d.execute(
         "grid", gridx_ref, gridy_ref, np.array([0.0]), backend="vectorized"
     )
@@ -2066,6 +2088,17 @@ def test_ok3d_backends_produce_same_result(sample_data_3d):
     k3d = OrdinaryKriging3D(
         data[:, 0], data[:, 1], data[:, 2], data[:, 3], variogram_model="linear"
     )
+
+    ok3d_non_exact = OrdinaryKriging3D(
+        data[:, 0],
+        data[:, 1],
+        np.zeros(data[:, 1].shape),
+        data[:, 2],
+        variogram_model="exponential",
+        variogram_parameters=[500.0, 3000.0, 0.0], 
+        exact_values=False
+    )
+    
     k_k3d_v, ss_k3d_v = k3d.execute(
         "grid", gridx_ref, gridy_ref, gridz_ref, backend="vectorized"
     )
@@ -2074,6 +2107,11 @@ def test_ok3d_backends_produce_same_result(sample_data_3d):
     )
     assert_allclose(k_k3d_v, k_k3d_l, rtol=1e-05, atol=1e-8)
     assert_allclose(ss_k3d_v, ss_k3d_l, rtol=1e-05, atol=1e-8)
+
+    k, ss = ok3d_non_exact.execute("grid", np.arange(10.0), np.arange(10.0), np.arange(10.0), backend="loop")
+    k1, ss1 = ok3d_non_exact.execute("grid", np.arange(10.0), np.arange(10.0), np.arange(10.0), backend="vectorized")
+    assert_allclose(k1, k)
+    assert_allclose(ss1, ss)
 
 
 def test_ok3d_execute(sample_data_3d):
@@ -2084,6 +2122,7 @@ def test_ok3d_execute(sample_data_3d):
 
     with pytest.raises(ValueError):
         k3d.execute("blurg", gridx_ref, gridy_ref, gridz_ref)
+
 
     k, ss = k3d.execute("grid", gridx_ref, gridy_ref, gridz_ref, backend="vectorized")
     shape = (gridz_ref.size, gridy_ref.size, gridx_ref.size)
