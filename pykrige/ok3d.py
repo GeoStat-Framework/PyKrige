@@ -151,11 +151,17 @@ class OrdinaryKriging3D:
         Default is False (off).
     enable_plotting : bool, optional
         Enables plotting to display variogram. Default is False (off).
+    exact_values : bool, optional
+        If True, interpolation provides input values at input locations. 
+        If False interpolation accounts for variance within input values
+        at input locations and does not behave as an exact-interpolator [2].
 
     References
     ----------
     .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
        Hydrogeology, (Cambridge University Press, 1997) 272 p.
+    .. [2] N. Cressie, Statistics for spatial data, 
+       (Wiley Series in Probability and Statistics, 1993) 137 p.
     """
 
     eps = 1.0e-10  # Cutoff for comparison to zero
@@ -186,11 +192,17 @@ class OrdinaryKriging3D:
         anisotropy_angle_z=0.0,
         verbose=False,
         enable_plotting=False,
+        exact_values=True
     ):
 
         # set up variogram model and parameters...
         self.variogram_model = variogram_model
         self.model = None
+
+        if not isinstance(exact_values, bool):
+            raise ValueError("exact_values has to be boolean True or False")
+        self.exact_values = exact_values
+
         # check if a GSTools covariance model is given
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
@@ -594,7 +606,7 @@ class OrdinaryKriging3D:
 
         b = np.zeros((npt, n + 1, 1))
         b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-        if zero_value:
+        if zero_value and self.exact_values:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
 
@@ -632,7 +644,7 @@ class OrdinaryKriging3D:
 
             b = np.zeros((n + 1, 1))
             b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
+            if zero_value and self.exact_values:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
 
@@ -669,7 +681,7 @@ class OrdinaryKriging3D:
                 zero_index = None
             b = np.zeros((n + 1, 1))
             b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
+            if zero_value and self.exact_values:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
 
