@@ -165,6 +165,7 @@ class OrdinaryKriging:
         variogram_model="linear",
         variogram_parameters=None,
         variogram_function=None,
+        exact_values=True,
         nlags=6,
         weight=False,
         anisotropy_scaling=1.0,
@@ -178,6 +179,9 @@ class OrdinaryKriging:
         # set up variogram model and parameters...
         self.variogram_model = variogram_model
         self.model = None
+        if not isinstance(exact_values, bool):
+            raise ValueError("exact_values has to be boolean True or False")
+        self.exact_values = exact_values
         # check if a GSTools covariance model is given
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
@@ -568,7 +572,7 @@ class OrdinaryKriging:
         print("Q2 =", self.Q2)
         print("cR =", self.cR)
 
-    def _get_kriging_matrix(self, n, exact_values):
+    def _get_kriging_matrix(self, n):
         """Assembles the kriging matrix."""
 
         if self.coordinates_type == "euclidean":
@@ -586,12 +590,7 @@ class OrdinaryKriging:
         a = np.zeros((n + 1, n + 1))
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
 
-        if self.variogram_model != "linear" and not exact_values:
-            np.fill_diagonal(a, self.variogram_model_parameters[2])
-        elif self.variogram_model == "linear" and not exact_values:
-            np.fill_diagonal(a, self.variogram_model_parameters[1])
-        else:
-            np.fill_diagonal(a, 0.0)
+        np.fill_diagonal(a, 0.0)
         a[n, :] = 1.0
         a[:, n] = 1.0
         a[n, n] = 0.0
@@ -614,7 +613,7 @@ class OrdinaryKriging:
 
         b = np.zeros((npt, n + 1, 1))
         b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-        if zero_value:
+        if zero_value and self.exact_values:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
 
@@ -652,7 +651,7 @@ class OrdinaryKriging:
 
             b = np.zeros((n + 1, 1))
             b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
+            if zero_value and self.exact_values:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
             x = np.dot(a_inv, b)
@@ -688,7 +687,7 @@ class OrdinaryKriging:
                 zero_value = False
             b = np.zeros((n + 1, 1))
             b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
+            if zero_value and self.exact_values:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
 
@@ -706,13 +705,29 @@ class OrdinaryKriging:
         ypoints,
         mask=None,
         backend="vectorized",
-        n_closest_points=None,
-        exact_values=True,
+        n_closest_points=None
     ):
         """Calculates a kriged grid and the associated variance.
 
         This is now the method that performs the main kriging calculation.
-        
+        Note that currently measurements (i.e., z values) are considered
+        'exact'. This means that, when a specified coordinate for interpolation
+        is exactly the same as one of the data points, the variogram evaluated
+        at the point is forced to be zero. Also, the diagonal of the kriging
+        matrix is also always forced to be zero. In forcing the variogram
+        evaluated at data points to be zero, we are effectively saying that
+        there is no variance at that point (no uncertainty,
+        so the value is 'exact').
+
+        In the future, the code may include an extra 'exact_values' boolean
+        flag that can be adjusted to specify whether to treat the measurements
+        as 'exact'. Setting the flag to false would indicate that the
+        variogram should not be forced to be zero at zero distance
+        (i.e., when evaluated at data points). Instead, the uncertainty in
+        the point will be equal to the nugget. This would mean that the
+        diagonal of the kriging matrix would be set to
+        the nugget instead of to zero.
+
         Parameters
         ----------
         style : str
@@ -760,17 +775,6 @@ class OrdinaryKriging:
             with caution. As Kitanidis notes, kriging with a moving window
             can produce unexpected oddities if the variogram model
             is not carefully chosen.
-        exact_values : bool, optional
-            When exact_values is true and a specified coordinate for interpolation
-            is exactly the same as one of the data points, the variogram evaluated
-            at the point is forced to be zero. This effectively says that
-            there is no variance at that point (no uncertainty,
-            so the value is 'exact'). Setting exact_values to false indicates that the
-            variogram should not be forced to be zero at zero distance
-            (i.e., when evaluated at data points). Instead, the uncertainty in
-            the point will be equal to the nugget. This means that the
-            diagonal of the kriging matrix would be set to
-            the nugget instead of to zero.
 
         Returns
         -------
@@ -794,15 +798,13 @@ class OrdinaryKriging:
             # If this is not checked, nondescriptive errors emerge
             # later in the code.
             raise ValueError("n_closest_points has to be at least two!")
-        if not isinstance(exact_values, bool):
-            raise ValueError("exact_values has to be boolean True or False")
 
         xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
         ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
         n = self.X_ADJUSTED.shape[0]
         nx = xpts.size
         ny = ypts.size
-        a = self._get_kriging_matrix(n, exact_values)
+        a = self._get_kriging_matrix(n)
 
         if style in ["grid", "masked"]:
             if style == "masked":
@@ -878,6 +880,7 @@ class OrdinaryKriging:
                     "eps",
                     "variogram_model_parameters",
                     "variogram_function",
+                    "exact_values"
                 ]
             }
 
