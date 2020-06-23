@@ -522,7 +522,9 @@ def test_ok_execute(sample_data_2d):
     with pytest.raises(ValueError):
         OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2], exact_values="blurg")
 
-    ok_non_exact = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2], exact_values=False)
+    ok_non_exact = OrdinaryKriging(
+        data[:, 0], data[:, 1], data[:, 2], exact_values=False
+    )
 
     with pytest.raises(ValueError):
         ok.execute("blurg", gridx, gridy)
@@ -587,12 +589,13 @@ def test_ok_execute(sample_data_2d):
     assert z[0, 0] is np.ma.masked
     assert ss[0, 0] is np.ma.masked
 
-    z, ss = ok_non_exact.execute("masked", gridx, gridy, mask=mask_ref.T, backend="loop")
+    z, ss = ok_non_exact.execute(
+        "masked", gridx, gridy, mask=mask_ref.T, backend="loop"
+    )
     assert np.ma.is_masked(z)
     assert np.ma.is_masked(ss)
     assert z[0, 0] is np.ma.masked
     assert ss[0, 0] is np.ma.masked
-
 
     with pytest.raises(ValueError):
         ok.execute(
@@ -618,7 +621,9 @@ def test_cython_ok(sample_data_2d):
     data, (gridx, gridy, _), mask_ref = sample_data_2d
 
     ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2])
-    ok_non_exact = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2], exact_values=False)
+    ok_non_exact = OrdinaryKriging(
+        data[:, 0], data[:, 1], data[:, 2], exact_values=False
+    )
 
     z1, ss1 = ok.execute("grid", gridx, gridy, backend="loop")
     z2, ss2 = ok.execute("grid", gridx, gridy, backend="C")
@@ -629,7 +634,6 @@ def test_cython_ok(sample_data_2d):
     z2, ss2 = ok_non_exact.execute("grid", gridx, gridy, backend="C")
     assert_allclose(z1, z2)
     assert_allclose(ss1, ss2)
-
 
     closest_points = 4
 
@@ -650,6 +654,7 @@ def test_cython_ok(sample_data_2d):
     )
     assert_allclose(z1, z2)
     assert_allclose(ss1, ss2)
+
 
 def test_uk(validation_ref):
 
@@ -865,7 +870,7 @@ def test_uk_execute(sample_data_2d):
             data[:, 2],
             variogram_model="linear",
             drift_terms=["regional_linear"],
-            exact_values="blurg"
+            exact_values="blurg",
         )
 
     uk_non_exact = UniversalKriging(
@@ -873,9 +878,8 @@ def test_uk_execute(sample_data_2d):
         data[:, 1],
         data[:, 2],
         variogram_model="linear",
-        drift_terms=["regional_linear"]
+        drift_terms=["regional_linear"],
     )
-
 
     with pytest.raises(ValueError):
         uk.execute("blurg", gridx, gridy)
@@ -942,7 +946,9 @@ def test_uk_execute(sample_data_2d):
     assert z[0, 0] is np.ma.masked
     assert ss[0, 0] is np.ma.masked
 
-    z, ss = uk_non_exact.execute("masked", gridx, gridy, mask=mask_ref.T, backend="loop")
+    z, ss = uk_non_exact.execute(
+        "masked", gridx, gridy, mask=mask_ref.T, backend="loop"
+    )
     assert np.ma.is_masked(z)
     assert np.ma.is_masked(ss)
     assert z[0, 0] is np.ma.masked
@@ -998,7 +1004,7 @@ def test_ok_uk_produce_same_result(validation_ref):
         variogram_model="linear",
         verbose=False,
         enable_plotting=False,
-        exact_values=False
+        exact_values=False,
     )
     z_uk, ss_uk = uk.execute("grid", gridx, gridy, backend="vectorized")
     assert_allclose(z_ok, z_uk)
@@ -1844,8 +1850,8 @@ def test_ok3d(validation_ref):
             np.zeros(data[:, 1].shape),
             data[:, 2],
             variogram_model="exponential",
-            variogram_parameters=[500.0, 3000.0, 0.0], 
-            exact_values="blurg"
+            variogram_parameters=[500.0, 3000.0, 0.0],
+            exact_values="blurg",
         )
 
     ok3d_non_exact = OrdinaryKriging3D(
@@ -1854,8 +1860,8 @@ def test_ok3d(validation_ref):
         np.zeros(data[:, 1].shape),
         data[:, 2],
         variogram_model="exponential",
-        variogram_parameters=[500.0, 3000.0, 0.0], 
-        exact_values=False
+        variogram_parameters=[500.0, 3000.0, 0.0],
+        exact_values=False,
     )
 
     k, ss = k3d.execute(
@@ -2095,10 +2101,10 @@ def test_ok3d_backends_produce_same_result(sample_data_3d):
         np.zeros(data[:, 1].shape),
         data[:, 2],
         variogram_model="exponential",
-        variogram_parameters=[500.0, 3000.0, 0.0], 
-        exact_values=False
+        variogram_parameters=[500.0, 3000.0, 0.0],
+        exact_values=False,
     )
-    
+
     k_k3d_v, ss_k3d_v = k3d.execute(
         "grid", gridx_ref, gridy_ref, gridz_ref, backend="vectorized"
     )
@@ -2108,8 +2114,12 @@ def test_ok3d_backends_produce_same_result(sample_data_3d):
     assert_allclose(k_k3d_v, k_k3d_l, rtol=1e-05, atol=1e-8)
     assert_allclose(ss_k3d_v, ss_k3d_l, rtol=1e-05, atol=1e-8)
 
-    k, ss = ok3d_non_exact.execute("grid", np.arange(10.0), np.arange(10.0), np.arange(10.0), backend="loop")
-    k1, ss1 = ok3d_non_exact.execute("grid", np.arange(10.0), np.arange(10.0), np.arange(10.0), backend="vectorized")
+    k, ss = ok3d_non_exact.execute(
+        "grid", np.arange(10.0), np.arange(10.0), np.arange(10.0), backend="loop"
+    )
+    k1, ss1 = ok3d_non_exact.execute(
+        "grid", np.arange(10.0), np.arange(10.0), np.arange(10.0), backend="vectorized"
+    )
     assert_allclose(k1, k)
     assert_allclose(ss1, ss)
 
@@ -2122,7 +2132,6 @@ def test_ok3d_execute(sample_data_3d):
 
     with pytest.raises(ValueError):
         k3d.execute("blurg", gridx_ref, gridy_ref, gridz_ref)
-
 
     k, ss = k3d.execute("grid", gridx_ref, gridy_ref, gridz_ref, backend="vectorized")
     shape = (gridz_ref.size, gridy_ref.size, gridx_ref.size)

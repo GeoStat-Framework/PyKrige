@@ -218,7 +218,7 @@ class UniversalKriging:
         functional_drift=None,
         verbose=False,
         enable_plotting=False,
-        exact_values=True
+        exact_values=True,
     ):
 
         # Deal with mutable default argument
@@ -1047,7 +1047,7 @@ class UniversalKriging:
         ypoints,
         mask=None,
         backend="vectorized",
-        specified_drift_arrays=None
+        specified_drift_arrays=None,
     ):
         """Calculates a kriged grid and the associated variance.
         Includes drift terms.

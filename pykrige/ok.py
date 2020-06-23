@@ -179,7 +179,7 @@ class OrdinaryKriging:
         enable_plotting=False,
         enable_statistics=False,
         coordinates_type="euclidean",
-        exact_values=True
+        exact_values=True,
     ):
 
         # set up variogram model and parameters...
@@ -189,7 +189,7 @@ class OrdinaryKriging:
         if not isinstance(exact_values, bool):
             raise ValueError("exact_values has to be boolean True or False")
         self.exact_values = exact_values
-        
+
         # check if a GSTools covariance model is given
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
@@ -713,7 +713,7 @@ class OrdinaryKriging:
         ypoints,
         mask=None,
         backend="vectorized",
-        n_closest_points=None
+        n_closest_points=None,
     ):
         """Calculates a kriged grid and the associated variance.
 
@@ -869,7 +869,7 @@ class OrdinaryKriging:
                     "eps",
                     "variogram_model_parameters",
                     "variogram_function",
-                    "exact_values"
+                    "exact_values",
                 ]
             }
 

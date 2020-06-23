@@ -192,7 +192,7 @@ class OrdinaryKriging3D:
         anisotropy_angle_z=0.0,
         verbose=False,
         enable_plotting=False,
-        exact_values=True
+        exact_values=True,
     ):
 
         # set up variogram model and parameters...

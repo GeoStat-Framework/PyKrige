@@ -212,7 +212,7 @@ class UniversalKriging3D:
         functional_drift=None,
         verbose=False,
         enable_plotting=False,
-        exact_values=True
+        exact_values=True,
     ):
 
         # Deal with mutable default argument
