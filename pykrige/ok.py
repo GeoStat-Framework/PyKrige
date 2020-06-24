@@ -15,6 +15,8 @@ References
 ----------
 .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
+.. [2] N. Cressie, Statistics for spatial data, 
+   (Wiley Series in Probability and Statistics, 1993) 137 p.
 
 Copyright (c) 2015-2020, PyKrige Developers
 """
@@ -142,8 +144,12 @@ class OrdinaryKriging:
         [0, 360] and latitudes in [-90, 90]. Default is 'euclidean'.
     exact_values : bool, optional
         If True, interpolation provides input values at input locations. 
-        If False interpolation accounts for variance within input values
-        at input locations and does not behave as an exact-interpolator [2].
+        If False, interpolation accounts for variance/nugget within input 
+        values at input locations and does not behave as an 
+        exact-interpolator [2]. Note that this only has an effect if
+        there is variance/nugget present within the input data since it is
+        interpreted as measurement error. If the nugget is zero, the kriged
+        field will behave as an exact interpolator.
 
     References
     ----------
