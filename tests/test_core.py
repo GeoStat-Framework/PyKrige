@@ -436,6 +436,61 @@ def test_core_krige_3d():
     assert ss == approx(0.0, rel=1e-3)
 
 
+def test_non_exact():
+    # custom data for this test
+    data = np.array(
+        [[0.0, 0.0, 0.47], [1.5, 1.5, 0.56], [3, 3, 0.74], [4.5, 4.5, 1.47],]
+    )
+
+    # construct grid points so diagonal
+    # is identical to input points
+    gridx = np.arange(0.0, 4.51, 1.5)
+    gridy = np.arange(0.0, 4.51, 1.5)
+
+    ok = OrdinaryKriging(
+        data[:, 0],
+        data[:, 1],
+        data[:, 2],
+        variogram_model="exponential",
+        variogram_parameters=[500.0, 3000.0, 5.0],
+    )
+    z, ss = ok.execute("grid", gridx, gridy, backend="vectorized")
+
+    ok_non_exact = OrdinaryKriging(
+        data[:, 0],
+        data[:, 1],
+        data[:, 2],
+        variogram_model="exponential",
+        variogram_parameters=[500.0, 3000.0, 5.0],
+        exact_values=False,
+    )
+    z_non_exact, ss_non_exact = ok_non_exact.execute(
+        "grid", gridx, gridy, backend="vectorized"
+    )
+
+    in_values = np.diag(z)
+
+    # test that krig field
+    # at input location are identical
+    # to the inputs themselves  with
+    # exact_values == True
+    assert_allclose(in_values, data[:, 2])
+
+    # test that krig field
+    # at input location are different
+    # than the inputs themselves
+    # with exact_values == False
+    assert ~np.allclose(in_values, data[:, 2])
+
+    # test that off diagonal values are the same
+    # by filling with dummy value and comparing
+    # each entry in array
+    np.fill_diagonal(z, 0.0)
+    np.fill_diagonal(z_non_exact, 0.0)
+
+    assert_allclose(z, z_non_exact)
+
+
 def test_ok(validation_ref):
 
     # Test to compare OK results to those obtained using KT3D_H2O.
