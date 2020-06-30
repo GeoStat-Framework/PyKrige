@@ -436,6 +436,61 @@ def test_core_krige_3d():
     assert ss == approx(0.0, rel=1e-3)
 
 
+def test_non_exact():
+    # custom data for this test
+    data = np.array(
+        [[0.0, 0.0, 0.47], [1.5, 1.5, 0.56], [3, 3, 0.74], [4.5, 4.5, 1.47],]
+    )
+
+    # construct grid points so diagonal
+    # is identical to input points
+    gridx = np.arange(0.0, 4.51, 1.5)
+    gridy = np.arange(0.0, 4.51, 1.5)
+
+    ok = OrdinaryKriging(
+        data[:, 0],
+        data[:, 1],
+        data[:, 2],
+        variogram_model="exponential",
+        variogram_parameters=[500.0, 3000.0, 5.0],
+    )
+    z, ss = ok.execute("grid", gridx, gridy, backend="vectorized")
+
+    ok_non_exact = OrdinaryKriging(
+        data[:, 0],
+        data[:, 1],
+        data[:, 2],
+        variogram_model="exponential",
+        variogram_parameters=[500.0, 3000.0, 5.0],
+        exact_values=False,
+    )
+    z_non_exact, ss_non_exact = ok_non_exact.execute(
+        "grid", gridx, gridy, backend="vectorized"
+    )
+
+    in_values = np.diag(z)
+
+    # test that krig field
+    # at input location are identical
+    # to the inputs themselves  with
+    # exact_values == True
+    assert_allclose(in_values, data[:, 2])
+
+    # test that krig field
+    # at input location are different
+    # than the inputs themselves
+    # with exact_values == False
+    assert ~np.allclose(in_values, data[:, 2])
+
+    # test that off diagonal values are the same
+    # by filling with dummy value and comparing
+    # each entry in array
+    np.fill_diagonal(z, 0.0)
+    np.fill_diagonal(z_non_exact, 0.0)
+
+    assert_allclose(z, z_non_exact)
+
+
 def test_ok(validation_ref):
 
     # Test to compare OK results to those obtained using KT3D_H2O.
@@ -520,6 +575,13 @@ def test_ok_execute(sample_data_2d):
     ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2])
 
     with pytest.raises(ValueError):
+        OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2], exact_values="blurg")
+
+    ok_non_exact = OrdinaryKriging(
+        data[:, 0], data[:, 1], data[:, 2], exact_values=False
+    )
+
+    with pytest.raises(ValueError):
         ok.execute("blurg", gridx, gridy)
 
     z, ss = ok.execute("grid", gridx, gridy, backend="vectorized")
@@ -531,6 +593,18 @@ def test_ok_execute(sample_data_2d):
     assert not np.ma.is_masked(z)
 
     z, ss = ok.execute("grid", gridx, gridy, backend="loop")
+    shape = (gridy.size, gridx.size)
+    assert z.shape == shape
+    assert ss.shape == shape
+    assert np.amax(z) != np.amin(z)
+    assert np.amax(ss) != np.amin(ss)
+    assert not np.ma.is_masked(z)
+
+    z1, ss1 = ok_non_exact.execute("grid", gridx, gridy, backend="loop")
+    assert_allclose(z1, z)
+    assert_allclose(ss1, ss)
+
+    z, ss = ok_non_exact.execute("grid", gridx, gridy, backend="loop")
     shape = (gridy.size, gridx.size)
     assert z.shape == shape
     assert ss.shape == shape
@@ -570,6 +644,14 @@ def test_ok_execute(sample_data_2d):
     assert z[0, 0] is np.ma.masked
     assert ss[0, 0] is np.ma.masked
 
+    z, ss = ok_non_exact.execute(
+        "masked", gridx, gridy, mask=mask_ref.T, backend="loop"
+    )
+    assert np.ma.is_masked(z)
+    assert np.ma.is_masked(ss)
+    assert z[0, 0] is np.ma.masked
+    assert ss[0, 0] is np.ma.masked
+
     with pytest.raises(ValueError):
         ok.execute(
             "points",
@@ -594,8 +676,17 @@ def test_cython_ok(sample_data_2d):
     data, (gridx, gridy, _), mask_ref = sample_data_2d
 
     ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2])
+    ok_non_exact = OrdinaryKriging(
+        data[:, 0], data[:, 1], data[:, 2], exact_values=False
+    )
+
     z1, ss1 = ok.execute("grid", gridx, gridy, backend="loop")
     z2, ss2 = ok.execute("grid", gridx, gridy, backend="C")
+    assert_allclose(z1, z2)
+    assert_allclose(ss1, ss2)
+
+    z1, ss1 = ok_non_exact.execute("grid", gridx, gridy, backend="loop")
+    z2, ss2 = ok_non_exact.execute("grid", gridx, gridy, backend="C")
     assert_allclose(z1, z2)
     assert_allclose(ss1, ss2)
 
@@ -605,6 +696,15 @@ def test_cython_ok(sample_data_2d):
         "grid", gridx, gridy, backend="loop", n_closest_points=closest_points
     )
     z2, ss2 = ok.execute(
+        "grid", gridx, gridy, backend="C", n_closest_points=closest_points
+    )
+    assert_allclose(z1, z2)
+    assert_allclose(ss1, ss2)
+
+    z1, ss1 = ok_non_exact.execute(
+        "grid", gridx, gridy, backend="loop", n_closest_points=closest_points
+    )
+    z2, ss2 = ok_non_exact.execute(
         "grid", gridx, gridy, backend="C", n_closest_points=closest_points
     )
     assert_allclose(z1, z2)
@@ -819,11 +919,41 @@ def test_uk_execute(sample_data_2d):
     )
 
     with pytest.raises(ValueError):
+        UniversalKriging(
+            data[:, 0],
+            data[:, 1],
+            data[:, 2],
+            variogram_model="linear",
+            drift_terms=["regional_linear"],
+            exact_values="blurg",
+        )
+
+    uk_non_exact = UniversalKriging(
+        data[:, 0],
+        data[:, 1],
+        data[:, 2],
+        variogram_model="linear",
+        drift_terms=["regional_linear"],
+    )
+
+    with pytest.raises(ValueError):
         uk.execute("blurg", gridx, gridy)
     with pytest.raises(ValueError):
         uk.execute("grid", gridx, gridy, backend="mrow")
 
     z, ss = uk.execute("grid", gridx, gridy, backend="vectorized")
+    shape = (gridy.size, gridx.size)
+    assert z.shape == shape
+    assert ss.shape == shape
+    assert np.amax(z) != np.amin(z)
+    assert np.amax(ss) != np.amin(ss)
+    assert not np.ma.is_masked(z)
+
+    z1, ss1 = uk_non_exact.execute("grid", gridx, gridy, backend="vectorized")
+    assert_allclose(z1, z)
+    assert_allclose(ss1, ss)
+
+    z, ss = uk_non_exact.execute("grid", gridx, gridy, backend="vectorized")
     shape = (gridy.size, gridx.size)
     assert z.shape == shape
     assert ss.shape == shape
@@ -866,6 +996,14 @@ def test_uk_execute(sample_data_2d):
     assert z[0, 0] is np.ma.masked
     assert ss[0, 0] is np.ma.masked
     z, ss = uk.execute("masked", gridx, gridy, mask=mask_ref.T, backend="loop")
+    assert np.ma.is_masked(z)
+    assert np.ma.is_masked(ss)
+    assert z[0, 0] is np.ma.masked
+    assert ss[0, 0] is np.ma.masked
+
+    z, ss = uk_non_exact.execute(
+        "masked", gridx, gridy, mask=mask_ref.T, backend="loop"
+    )
     assert np.ma.is_masked(z)
     assert np.ma.is_masked(ss)
     assert z[0, 0] is np.ma.masked
@@ -914,12 +1052,29 @@ def test_ok_uk_produce_same_result(validation_ref):
         verbose=False,
         enable_plotting=False,
     )
+    uk_non_exact = UniversalKriging(
+        data[:, 0],
+        data[:, 1],
+        data[:, 2],
+        variogram_model="linear",
+        verbose=False,
+        enable_plotting=False,
+        exact_values=False,
+    )
     z_uk, ss_uk = uk.execute("grid", gridx, gridy, backend="vectorized")
+    assert_allclose(z_ok, z_uk)
+    assert_allclose(ss_ok, ss_uk)
+
+    z_uk, ss_uk = uk_non_exact.execute("grid", gridx, gridy, backend="vectorized")
     assert_allclose(z_ok, z_uk)
     assert_allclose(ss_ok, ss_uk)
 
     z_ok, ss_ok = ok.execute("grid", gridx, gridy, backend="loop")
     z_uk, ss_uk = uk.execute("grid", gridx, gridy, backend="loop")
+    assert_allclose(z_ok, z_uk)
+    assert_allclose(ss_ok, ss_uk)
+
+    z_uk, ss_uk = uk_non_exact.execute("grid", gridx, gridy, backend="loop")
     assert_allclose(z_ok, z_uk)
     assert_allclose(ss_ok, ss_uk)
 
@@ -1742,6 +1897,28 @@ def test_ok3d(validation_ref):
         variogram_model="exponential",
         variogram_parameters=[500.0, 3000.0, 0.0],
     )
+
+    with pytest.raises(ValueError):
+        OrdinaryKriging3D(
+            data[:, 0],
+            data[:, 1],
+            np.zeros(data[:, 1].shape),
+            data[:, 2],
+            variogram_model="exponential",
+            variogram_parameters=[500.0, 3000.0, 0.0],
+            exact_values="blurg",
+        )
+
+    ok3d_non_exact = OrdinaryKriging3D(
+        data[:, 0],
+        data[:, 1],
+        np.zeros(data[:, 1].shape),
+        data[:, 2],
+        variogram_model="exponential",
+        variogram_parameters=[500.0, 3000.0, 0.0],
+        exact_values=False,
+    )
+
     k, ss = k3d.execute(
         "grid", gridx_ref, gridy_ref, np.array([0.0]), backend="vectorized"
     )
@@ -1972,6 +2149,17 @@ def test_ok3d_backends_produce_same_result(sample_data_3d):
     k3d = OrdinaryKriging3D(
         data[:, 0], data[:, 1], data[:, 2], data[:, 3], variogram_model="linear"
     )
+
+    ok3d_non_exact = OrdinaryKriging3D(
+        data[:, 0],
+        data[:, 1],
+        np.zeros(data[:, 1].shape),
+        data[:, 2],
+        variogram_model="exponential",
+        variogram_parameters=[500.0, 3000.0, 0.0],
+        exact_values=False,
+    )
+
     k_k3d_v, ss_k3d_v = k3d.execute(
         "grid", gridx_ref, gridy_ref, gridz_ref, backend="vectorized"
     )
@@ -1980,6 +2168,15 @@ def test_ok3d_backends_produce_same_result(sample_data_3d):
     )
     assert_allclose(k_k3d_v, k_k3d_l, rtol=1e-05, atol=1e-8)
     assert_allclose(ss_k3d_v, ss_k3d_l, rtol=1e-05, atol=1e-8)
+
+    k, ss = ok3d_non_exact.execute(
+        "grid", np.arange(10.0), np.arange(10.0), np.arange(10.0), backend="loop"
+    )
+    k1, ss1 = ok3d_non_exact.execute(
+        "grid", np.arange(10.0), np.arange(10.0), np.arange(10.0), backend="vectorized"
+    )
+    assert_allclose(k1, k)
+    assert_allclose(ss1, ss)
 
 
 def test_ok3d_execute(sample_data_3d):
