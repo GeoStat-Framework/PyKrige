@@ -15,7 +15,8 @@ References
 ----------
 .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
-
+.. [2] N. Cressie, Statistics for spatial data, 
+   (Wiley Series in Probability and Statistics, 1993) 137 p.
 Copyright (c) 2015-2020, PyKrige Developers
 """
 import numpy as np
@@ -172,11 +173,21 @@ class UniversalKriging:
         Default is False (off).
     enable_plotting : boolean, optional
         Enables plotting to display variogram. Default is False (off).
+    exact_values : bool, optional
+        If True, interpolation provides input values at input locations. 
+        If False, interpolation accounts for variance/nugget within input 
+        values at input locations and does not behave as an 
+        exact-interpolator [2]. Note that this only has an effect if
+        there is variance/nugget present within the input data since it is
+        interpreted as measurement error. If the nugget is zero, the kriged
+        field will behave as an exact interpolator.
 
     References
     ----------
     .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
        Hydrogeology, (Cambridge University Press, 1997) 272 p.
+    .. [2] N. Cressie, Statistics for spatial data, 
+       (Wiley Series in Probability and Statistics, 1993) 137 p.
     """
 
     UNBIAS = True  # This can be changed to remove the unbiasedness condition
@@ -212,6 +223,7 @@ class UniversalKriging:
         functional_drift=None,
         verbose=False,
         enable_plotting=False,
+        exact_values=True,
     ):
 
         # Deal with mutable default argument
@@ -225,6 +237,11 @@ class UniversalKriging:
         # set up variogram model and parameters...
         self.variogram_model = variogram_model
         self.model = None
+
+        if not isinstance(exact_values, bool):
+            raise ValueError("exact_values has to be boolean True or False")
+        self.exact_values = exact_values
+
         # check if a GSTools covariance model is given
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
@@ -820,6 +837,7 @@ class UniversalKriging:
         else:
             a = np.zeros((n_withdrifts, n_withdrifts))
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
+
         np.fill_diagonal(a, 0.0)
 
         i = n
@@ -888,7 +906,7 @@ class UniversalKriging:
         else:
             b = np.zeros((npt, n_withdrifts, 1))
         b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-        if zero_value:
+        if zero_value and self.exact_values:
             b[zero_index[0], zero_index[1], 0] = 0.0
 
         i = n
@@ -979,7 +997,7 @@ class UniversalKriging:
             else:
                 b = np.zeros((n_withdrifts, 1))
             b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
+            if zero_value and self.exact_values:
                 b[zero_index[0], 0] = 0.0
 
             i = n
@@ -1038,24 +1056,6 @@ class UniversalKriging:
     ):
         """Calculates a kriged grid and the associated variance.
         Includes drift terms.
-
-        This is now the method that performs the main kriging calculation.
-        Note that currently measurements (i.e., z values) are considered
-        'exact'. This means that, when a specified coordinate for interpolation
-        is exactly the same as one of the data points, the variogram evaluated
-        at the point is forced to be zero. Also, the diagonal of the kriging
-        matrix is also always forced to be zero. In forcing the variogram
-        evaluated at data points to be zero, we are effectively saying that
-        there is no variance at that point (no uncertainty,
-        so the value is 'exact').
-
-        In the future, the code may include an extra 'exact_values' boolean
-        flag that can be adjusted to specify whether to treat the measurements
-        as 'exact'. Setting the flag to false would indicate that the variogram
-        should not be forced to be zero at zero distance (i.e., when evaluated
-        at data points). Instead, the uncertainty in the point will be equal to
-        the nugget. This would mean that the diagonal of the kriging matrix
-        would be set to the nugget instead of to zero.
 
         Parameters
         ----------

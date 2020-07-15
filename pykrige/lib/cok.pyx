@@ -48,7 +48,8 @@ cpdef _c_exec_loop(double [:, ::1] a_all,
             b[k] *= -1
         b[n] = 1.0
 
-        check_b_vect(n, bd, b, eps)
+        if not pars['exact_values']:
+            check_b_vect(n, bd, b, eps)
 
 
         # Do the BLAS matrix-vector multiplication call
