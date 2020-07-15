@@ -25,8 +25,13 @@ Copyright (c) 2015-2020, PyKrige Developers
 import numpy as np
 from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.optimize import least_squares
+import scipy.linalg as spl
+
 
 eps = 1.0e-10  # Cutoff for comparison to zero
+
+
+P_INV = {1: spl.pinv, 2: spl.pinv2, 3: spl.pinvh}
 
 
 def great_circle_distance(lon1, lat1, lon2, lat2):
