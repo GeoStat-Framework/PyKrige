@@ -2896,7 +2896,7 @@ def test_gstools_variogram(model):
 @pytest.mark.parametrize("model", [OrdinaryKriging, UniversalKriging])
 def test_pseudo_2d(model):
     # test data
-    data = np.array([[0.0, 0.0, 1.0], [0.0, 0.0, 3.0], [1.0, 0.0, 6.0],])
+    data = np.array([[0.0, 0.0, 1.0], [0.0, 0.0, 3.0], [1.0, 0.0, 6.0]])
     for p_type in [1, 2, 3]:
         # create the krige field
         krige = model(
@@ -2915,7 +2915,7 @@ def test_pseudo_2d(model):
 @pytest.mark.parametrize("model", [OrdinaryKriging3D, UniversalKriging3D])
 def test_pseudo_3d(model):
     # test data
-    data = np.array([[0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0, 3.0], [1.0, 0.0, 0.0, 6.0],])
+    data = np.array([[0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0, 3.0], [1.0, 0.0, 0.0, 6.0]])
     for p_type in [1, 2, 3]:
         # create the krige field
         krige = model(

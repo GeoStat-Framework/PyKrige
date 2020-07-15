@@ -356,6 +356,7 @@ class OrdinaryKriging:
                 self.variogram_function,
                 self.variogram_model_parameters,
                 self.coordinates_type,
+                self.pseudo_inv,
             )
             self.Q1 = core.calcQ1(self.epsilon)
             self.Q2 = core.calcQ2(self.epsilon)
@@ -527,6 +528,7 @@ class OrdinaryKriging:
             self.variogram_function,
             self.variogram_model_parameters,
             self.coordinates_type,
+            self.pseudo_inv,
         )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)

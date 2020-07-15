@@ -381,6 +381,7 @@ class UniversalKriging3D:
             self.variogram_function,
             self.variogram_model_parameters,
             "euclidean",
+            self.pseudo_inv,
         )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
@@ -620,6 +621,7 @@ class UniversalKriging3D:
             self.variogram_function,
             self.variogram_model_parameters,
             "euclidean",
+            self.pseudo_inv,
         )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
