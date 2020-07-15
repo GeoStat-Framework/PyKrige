@@ -35,7 +35,21 @@ cpdef _c_exec_loop(double [:, ::1] a_all,
 
     cdef double [::1] variogram_model_parameters = np.asarray(pars['variogram_model_parameters'])
 
-    cdef double [::1,:] a_inv = np.asfortranarray(scipy.linalg.pinvh(a_all))
+    cdef double [::1,:] a_inv = np.empty_like(a_all)
+
+
+    if pars['pseudo_inv']:
+        if pars['pseudo_inv_type'] == 1:
+            a_inv = np.asfortranarray(scipy.linalg.pinv(a_all))
+        elif pars['pseudo_inv_type'] == 2:
+            a_inv = np.asfortranarray(scipy.linalg.pinv2(a_all))
+        elif pars['pseudo_inv_type'] == 3:
+            a_inv = np.asfortranarray(scipy.linalg.pinvh(a_all))
+        else:
+            raise ValueError('Unknown pseudo inverse method selected.')
+    else:
+        a_inv = scipy.linalg.inv(a_all)
+
 
     for i in range(npt):   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
         if mask[i]:

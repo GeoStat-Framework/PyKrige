@@ -15,7 +15,7 @@ References
 ----------
 .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
-.. [2] N. Cressie, Statistics for spatial data, 
+.. [2] N. Cressie, Statistics for spatial data,
    (Wiley Series in Probability and Statistics, 1993) 137 p.
 Copyright (c) 2015-2020, PyKrige Developers
 """
@@ -29,6 +29,7 @@ from .core import (
     _initialize_variogram_model,
     _make_variogram_parameter_list,
     _find_statistics,
+    P_INV,
 )
 import warnings
 
@@ -174,19 +175,32 @@ class UniversalKriging:
     enable_plotting : boolean, optional
         Enables plotting to display variogram. Default is False (off).
     exact_values : bool, optional
-        If True, interpolation provides input values at input locations. 
-        If False, interpolation accounts for variance/nugget within input 
-        values at input locations and does not behave as an 
+        If True, interpolation provides input values at input locations.
+        If False, interpolation accounts for variance/nugget within input
+        values at input locations and does not behave as an
         exact-interpolator [2]. Note that this only has an effect if
         there is variance/nugget present within the input data since it is
         interpreted as measurement error. If the nugget is zero, the kriged
         field will behave as an exact interpolator.
+    pseudo_inv : :class:`bool`, optional
+        Whether the kriging system is solved with the pseudo inverted
+        kriging matrix. If `True`, this leads to more numerical stability
+        and redundant points are averaged. But it can take more time.
+        Default: False
+    pseudo_inv_type : :class:`int`, optional
+        Here you can select the algorithm to compute the pseudo-inverse matrix:
+
+            * `1`: use `pinv` from `scipy` which uses `lstsq`
+            * `2`: use `pinv2` from `scipy` which uses `SVD`
+            * `3`: use `pinvh` from `scipy` which uses eigen-values
+
+        Default: `1`
 
     References
     ----------
     .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
        Hydrogeology, (Cambridge University Press, 1997) 272 p.
-    .. [2] N. Cressie, Statistics for spatial data, 
+    .. [2] N. Cressie, Statistics for spatial data,
        (Wiley Series in Probability and Statistics, 1993) 137 p.
     """
 
@@ -224,7 +238,14 @@ class UniversalKriging:
         verbose=False,
         enable_plotting=False,
         exact_values=True,
+        pseudo_inv=False,
+        pseudo_inv_type=1,
     ):
+        # config the pseudo inverse
+        self.pseudo_inv = bool(pseudo_inv)
+        self.pseudo_inv_type = int(pseudo_inv_type)
+        if self.pseudo_inv_type not in [1, 2, 3]:
+            raise ValueError("pseudo inv type needs to be in [1,2,3]")
 
         # Deal with mutable default argument
         if drift_terms is None:
@@ -895,7 +916,11 @@ class UniversalKriging:
         zero_index = None
         zero_value = False
 
-        a_inv = scipy.linalg.pinvh(a)
+        # use the desired method to invert the kriging matrix
+        if self.pseudo_inv:
+            a_inv = P_INV[self.pseudo_inv_type](a)
+        else:
+            a_inv = scipy.linalg.inv(a)
 
         if np.any(np.absolute(bd) <= self.eps):
             zero_value = True
@@ -979,7 +1004,11 @@ class UniversalKriging:
         zvalues = np.zeros(npt)
         sigmasq = np.zeros(npt)
 
-        a_inv = scipy.linalg.pinvh(a)
+        # use the desired method to invert the kriging matrix
+        if self.pseudo_inv:
+            a_inv = P_INV[self.pseudo_inv_type](a)
+        else:
+            a_inv = scipy.linalg.inv(a)
 
         for j in np.nonzero(~mask)[
             0
