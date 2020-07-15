@@ -1,10 +1,10 @@
 from itertools import product
 
 import numpy as np
+import pytest
 
 from pykrige.rk import Krige
 from pykrige.rk import threed_krige
-from pykrige.compat import GridSearchCV
 
 
 def _method_and_vergiogram():
@@ -15,6 +15,9 @@ def _method_and_vergiogram():
 
 def test_krige():
     # dummy data
+    pytest.importorskip("sklearn")
+    from sklearn.model_selection import GridSearchCV
+
     np.random.seed(1)
     X = np.random.randint(0, 400, size=(20, 3)).astype(float)
     y = 5 * np.random.rand(20)
@@ -28,6 +31,7 @@ def test_krige():
             n_jobs=-1,
             pre_dispatch="2*n_jobs",
             verbose=False,
+            return_train_score=True,
             cv=5,
         )
         # run the gridsearch
