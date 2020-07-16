@@ -772,7 +772,7 @@ def _krige(
 
     # solve
     if pseudo_inv:
-        res = np.linalg.lstsq(a, b)
+        res = np.linalg.lstsq(a, b, rcond=None)[0]
     else:
         res = np.linalg.solve(a, b)
     zinterp = np.sum(res[:n, 0] * y)
