@@ -122,7 +122,6 @@ class Krige(RegressorMixin, BaseEstimator):
         self.model = None  # not trained
         self.n_closest_points = n_closest_points
         self.method = method
-        self.val_kw = "val" if self.method in threed_krige else "z"
 
     def fit(self, x, y, *args, **kwargs):
         """
@@ -136,6 +135,7 @@ class Krige(RegressorMixin, BaseEstimator):
         y: ndarray
             array of targets (N, )
         """
+        val_kw = "val" if self.method in threed_krige else "z"
         setup = dict(
             variogram_model=self.variogram_model,
             variogram_parameters=self.variogram_parameters,
@@ -165,7 +165,7 @@ class Krige(RegressorMixin, BaseEstimator):
             setup[kw] = add_setup[kw]
         input_kw = self._dimensionality_check(x)
         input_kw.update(setup)
-        input_kw[self.val_kw] = y
+        input_kw[val_kw] = y
         self.model = krige_methods[self.method](**input_kw)
 
     def _dimensionality_check(self, x, ext=""):
