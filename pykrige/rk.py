@@ -79,6 +79,7 @@ class Krige(RegressorMixin, BaseEstimator):
         weight=False,
         n_closest_points=10,
         verbose=False,
+        exact_values=True,
         variogram_parameters=None,
         variogram_function=None,
         anisotropy_scaling=(1.0, 1.0),
@@ -99,6 +100,7 @@ class Krige(RegressorMixin, BaseEstimator):
         self.nlags = nlags
         self.weight = weight
         self.verbose = verbose
+        self.exact_values = exact_values
         self.anisotropy_scaling = anisotropy_scaling
         self.anisotropy_angle = anisotropy_angle
         self.enable_statistics = enable_statistics
@@ -133,6 +135,7 @@ class Krige(RegressorMixin, BaseEstimator):
             nlags=self.nlags,
             weight=self.weight,
             verbose=self.verbose,
+            exact_values=self.exact_values,
         )
         add_setup = dict(
             anisotropy_scaling=self.anisotropy_scaling[0],
@@ -255,6 +258,7 @@ class RegressionKriging:
         nlags=6,
         weight=False,
         verbose=False,
+        exact_values=True,
         anisotropy_scaling=(1.0, 1.0),
         anisotropy_angle=(0.0, 0.0, 0.0),
         enable_statistics=False,
@@ -276,6 +280,7 @@ class RegressionKriging:
             weight=weight,
             n_closest_points=n_closest_points,
             verbose=verbose,
+            exact_values=exact_values,
             anisotropy_scaling=anisotropy_scaling,
             anisotropy_angle=anisotropy_angle,
             enable_statistics=enable_statistics,
