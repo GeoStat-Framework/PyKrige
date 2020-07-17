@@ -53,7 +53,7 @@ param_dict3d = {
     # "weight": [True, False]
 }
 
-estimator = GridSearchCV(Krige(), param_dict3d, verbose=True)
+estimator = GridSearchCV(Krige(), param_dict3d, verbose=True, return_train_score=True)
 
 # dummy data
 X3 = np.random.randint(0, 400, size=(100, 3)).astype(float)
