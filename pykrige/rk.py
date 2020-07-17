@@ -237,12 +237,15 @@ class Krige(RegressorMixin, BaseEstimator):
         Parameters
         ----------
         points: dict
-        Returns:
+
+        Returns
         -------
         Prediction array
         Variance array
         """
-        points.update(dict(style="points", backend="loop"))
+        default_kw = dict(style="points", backend="loop")
+        default_kw.update(kwargs)
+        points.update(default_kw)
         if isinstance(self.model, (OrdinaryKriging, OrdinaryKriging3D)):
             points.update(dict(n_closest_points=self.n_closest_points))
         else:
