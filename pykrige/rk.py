@@ -69,6 +69,44 @@ class Krige(RegressorMixin, BaseEstimator):
 
     This works with both Grid/RandomSearchCv for finding the best
     Krige parameters combination for a problem.
+
+    Parameters
+    ----------
+    method: str, optional
+        type of kriging to be performed
+    variogram_model: str, optional
+        variogram model to be used during Kriging
+    nlags: int
+        see OK/UK class description
+    weight: bool
+        see OK/UK class description
+    n_closest_points: int
+        number of closest points to be used during Ordinary Kriging
+    verbose: bool
+        see OK/UK class description
+    exact_values : bool
+        see OK/UK class description
+    variogram_parameters : list or dict
+        see OK/UK class description
+    variogram_function : callable
+        see OK/UK class description
+    anisotropy_scaling : tuple
+        single value for 2D (UK/OK) and two values in 3D (UK3D/OK3D)
+    anisotropy_angle : tuple
+        single value for 2D (UK/OK) and three values in 3D (UK3D/OK3D)
+    enable_statistics : bool
+        see OK class description
+    coordinates_type : str
+        see OK/UK class description
+    drift_terms : list of strings
+        see UK/UK3D class description
+    point_drift : array_like
+        see UK class description
+    ext_drift_grid : tuple
+        Holding the three values external_drift, external_drift_x and
+        external_drift_z for the UK class
+    functional_drift : list of callable
+        see UK/UK3D class description
     """
 
     def __init__(
@@ -88,9 +126,7 @@ class Krige(RegressorMixin, BaseEstimator):
         coordinates_type="euclidean",
         drift_terms=None,
         point_drift=None,
-        external_drift=None,
-        external_drift_x=None,
-        external_drift_y=None,
+        ext_drift_grid=(None, None, None),
         functional_drift=None,
     ):
         validate_method(method)
@@ -107,9 +143,7 @@ class Krige(RegressorMixin, BaseEstimator):
         self.coordinates_type = coordinates_type
         self.drift_terms = drift_terms
         self.point_drift = point_drift
-        self.external_drift = external_drift
-        self.external_drift_x = external_drift_x
-        self.external_drift_y = external_drift_y
+        self.ext_drift_grid = ext_drift_grid
         self.functional_drift = functional_drift
         self.model = None  # not trained
         self.n_closest_points = n_closest_points
@@ -149,9 +183,9 @@ class Krige(RegressorMixin, BaseEstimator):
             anisotropy_angle_z=self.anisotropy_angle[2],
             drift_terms=self.drift_terms,
             point_drift=self.point_drift,
-            external_drift=self.external_drift,
-            external_drift_x=self.external_drift_x,
-            external_drift_y=self.external_drift_y,
+            external_drift=self.ext_drift_grid[0],
+            external_drift_x=self.ext_drift_grid[1],
+            external_drift_y=self.ext_drift_grid[2],
             functional_drift=self.functional_drift,
         )
         for kw in krige_methods_kws[self.method]:
@@ -247,6 +281,29 @@ class RegressionKriging:
         see OK/UK class description
     verbose: bool
         see OK/UK class description
+    exact_values : bool
+        see OK/UK class description
+    variogram_parameters : list or dict
+        see OK/UK class description
+    variogram_function : callable
+        see OK/UK class description
+    anisotropy_scaling : tuple
+        single value for 2D (UK/OK) and two values in 3D (UK3D/OK3D)
+    anisotropy_angle : tuple
+        single value for 2D (UK/OK) and three values in 3D (UK3D/OK3D)
+    enable_statistics : bool
+        see OK class description
+    coordinates_type : str
+        see OK/UK class description
+    drift_terms : list of strings
+        see UK/UK3D class description
+    point_drift : array_like
+        see UK class description
+    ext_drift_grid : tuple
+        Holding the three values external_drift, external_drift_x and
+        external_drift_z for the UK class
+    functional_drift : list of callable
+        see UK/UK3D class description
     """
 
     def __init__(
@@ -259,15 +316,15 @@ class RegressionKriging:
         weight=False,
         verbose=False,
         exact_values=True,
+        variogram_parameters=None,
+        variogram_function=None,
         anisotropy_scaling=(1.0, 1.0),
         anisotropy_angle=(0.0, 0.0, 0.0),
         enable_statistics=False,
         coordinates_type="euclidean",
         drift_terms=None,
         point_drift=None,
-        external_drift=None,
-        external_drift_x=None,
-        external_drift_y=None,
+        ext_drift_grid=(None, None, None),
         functional_drift=None,
     ):
         check_sklearn_model(regression_model)
@@ -281,15 +338,15 @@ class RegressionKriging:
             n_closest_points=n_closest_points,
             verbose=verbose,
             exact_values=exact_values,
+            variogram_parameters=variogram_parameters,
+            variogram_function=variogram_function,
             anisotropy_scaling=anisotropy_scaling,
             anisotropy_angle=anisotropy_angle,
             enable_statistics=enable_statistics,
             coordinates_type=coordinates_type,
             drift_terms=drift_terms,
             point_drift=point_drift,
-            external_drift=external_drift,
-            external_drift_x=external_drift_x,
-            external_drift_y=external_drift_y,
+            ext_drift_grid=ext_drift_grid,
             functional_drift=functional_drift,
         )
 
