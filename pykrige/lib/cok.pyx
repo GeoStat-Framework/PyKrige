@@ -39,11 +39,11 @@ cpdef _c_exec_loop(double [:, ::1] a_all,
 
 
     if pars['pseudo_inv']:
-        if pars['pseudo_inv_type'] == 1:
+        if pars['pseudo_inv_type'] == "pinv":
             a_inv = np.asfortranarray(scipy.linalg.pinv(a_all))
-        elif pars['pseudo_inv_type'] == 2:
+        elif pars['pseudo_inv_type'] == "pinv2":
             a_inv = np.asfortranarray(scipy.linalg.pinv2(a_all))
-        elif pars['pseudo_inv_type'] == 3:
+        elif pars['pseudo_inv_type'] == "pinvh":
             a_inv = np.asfortranarray(scipy.linalg.pinvh(a_all))
         else:
             raise ValueError('Unknown pseudo inverse method selected.')

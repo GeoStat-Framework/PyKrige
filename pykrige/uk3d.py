@@ -182,14 +182,14 @@ class UniversalKriging3D:
         kriging matrix. If `True`, this leads to more numerical stability
         and redundant points are averaged. But it can take more time.
         Default: False
-    pseudo_inv_type : :class:`int`, optional
+    pseudo_inv_type : :class:`str`, optional
         Here you can select the algorithm to compute the pseudo-inverse matrix:
 
-            * `1`: use `pinv` from `scipy` which uses `lstsq`
-            * `2`: use `pinv2` from `scipy` which uses `SVD`
-            * `3`: use `pinvh` from `scipy` which uses eigen-values
+            * `"pinv"`: use `pinv` from `scipy` which uses `lstsq`
+            * `"pinv2"`: use `pinv2` from `scipy` which uses `SVD`
+            * `"pinvh"`: use `pinvh` from `scipy` which uses eigen-values
 
-        Default: `1`
+        Default: `"pinv"`
 
     References
     ----------
@@ -234,13 +234,13 @@ class UniversalKriging3D:
         enable_plotting=False,
         exact_values=True,
         pseudo_inv=False,
-        pseudo_inv_type=1,
+        pseudo_inv_type="pinv",
     ):
         # config the pseudo inverse
         self.pseudo_inv = bool(pseudo_inv)
-        self.pseudo_inv_type = int(pseudo_inv_type)
-        if self.pseudo_inv_type not in [1, 2, 3]:
-            raise ValueError("pseudo inv type needs to be in [1,2,3]")
+        self.pseudo_inv_type = str(pseudo_inv_type)
+        if self.pseudo_inv_type not in P_INV:
+            raise ValueError("pseudo inv type not valid: " + str(pseudo_inv_type))
 
         # Deal with mutable default argument
         if drift_terms is None:
