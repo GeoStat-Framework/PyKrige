@@ -1,3 +1,6 @@
+# do not build pull request from base repo twice (only build PRs of forks)
+if: type != pull_request OR fork = true
+
 language: python
 python: 3.8
 
