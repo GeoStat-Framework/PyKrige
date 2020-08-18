@@ -2897,7 +2897,7 @@ def test_gstools_variogram(model):
 def test_pseudo_2d(model):
     # test data
     data = np.array([[0.0, 0.0, 1.0], [0.0, 0.0, 3.0], [1.0, 0.0, 6.0]])
-    for p_type in [1, 2, 3]:
+    for p_type in ["pinv", "pinv2", "pinvh"]:
         # create the krige field
         krige = model(
             data[:, 0],
@@ -2916,7 +2916,7 @@ def test_pseudo_2d(model):
 def test_pseudo_3d(model):
     # test data
     data = np.array([[0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0, 3.0], [1.0, 0.0, 0.0, 6.0]])
-    for p_type in [1, 2, 3]:
+    for p_type in ["pinv", "pinv2", "pinvh"]:
         # create the krige field
         krige = model(
             data[:, 0],
