@@ -8,7 +8,7 @@ Searching for optimal kriging parameters with cross validation
 
 import numpy as np
 from pykrige.rk import Krige
-from pykrige.compat import GridSearchCV
+from sklearn.model_selection import GridSearchCV
 
 
 # 2D Kring param opt
@@ -20,7 +20,7 @@ param_dict = {
     # "weight": [True, False]
 }
 
-estimator = GridSearchCV(Krige(), param_dict, verbose=True)
+estimator = GridSearchCV(Krige(), param_dict, verbose=True, return_train_score=True)
 
 # dummy data
 X = np.random.randint(0, 400, size=(100, 2)).astype(float)
@@ -53,7 +53,7 @@ param_dict3d = {
     # "weight": [True, False]
 }
 
-estimator = GridSearchCV(Krige(), param_dict3d, verbose=True)
+estimator = GridSearchCV(Krige(), param_dict3d, verbose=True, return_train_score=True)
 
 # dummy data
 X3 = np.random.randint(0, 400, size=(100, 3)).astype(float)

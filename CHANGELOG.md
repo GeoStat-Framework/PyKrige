@@ -2,6 +2,22 @@ Changelog
 =========
 
 
+Version 1.5.1
+-------------
+*August 20, 2020*
+
+**New features**
+
+* update Regression Kriging class to be compatible with all kriging features (#158)
+* added option to enable/disable "exact values" to all kriging routines (#153)
+* added option to use the pseudo-inverse in all kriging routines (#151)
+
+**Changes**
+
+* removed compat-layer for sklearn (#157)
+* updated examples in documentation
+
+
 Version 1.5.0
 -------------
 *April 04, 2020*

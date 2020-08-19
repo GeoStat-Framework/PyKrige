@@ -25,8 +25,13 @@ Copyright (c) 2015-2020, PyKrige Developers
 import numpy as np
 from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.optimize import least_squares
+import scipy.linalg as spl
+
 
 eps = 1.0e-10  # Cutoff for comparison to zero
+
+
+P_INV = {"pinv": spl.pinv, "pinv2": spl.pinv2, "pinvh": spl.pinvh}
 
 
 def great_circle_distance(lon1, lat1, lon2, lat2):
@@ -674,7 +679,13 @@ def _calculate_variogram_model(
 
 
 def _krige(
-    X, y, coords, variogram_function, variogram_model_parameters, coordinates_type
+    X,
+    y,
+    coords,
+    variogram_function,
+    variogram_model_parameters,
+    coordinates_type,
+    pseudo_inv=False,
 ):
     """Sets up and solves the ordinary kriging system for the given
     coordinate pair. This function is only used for the statistics calculations.
@@ -694,6 +705,11 @@ def _krige(
     coordinates_type: str
         type of coordinates in X array, can be 'euclidean' for standard
         rectangular coordinates or 'geographic' if the coordinates are lat/lon
+    pseudo_inv : :class:`bool`, optional
+        Whether the kriging system is solved with the pseudo inverted
+        kriging matrix. If `True`, this leads to more numerical stability
+        and redundant points are averaged. But it can take more time.
+        Default: False
 
     Returns
     -------
@@ -755,7 +771,10 @@ def _krige(
     b[n, 0] = 1.0
 
     # solve
-    res = np.linalg.solve(a, b)
+    if pseudo_inv:
+        res = np.linalg.lstsq(a, b, rcond=None)[0]
+    else:
+        res = np.linalg.solve(a, b)
     zinterp = np.sum(res[:n, 0] * y)
     sigmasq = np.sum(res[:, 0] * -b[:, 0])
 
@@ -763,7 +782,12 @@ def _krige(
 
 
 def _find_statistics(
-    X, y, variogram_function, variogram_model_parameters, coordinates_type
+    X,
+    y,
+    variogram_function,
+    variogram_model_parameters,
+    coordinates_type,
+    pseudo_inv=False,
 ):
     """Calculates variogram fit statistics.
     Returns the delta, sigma, and epsilon values for the variogram fit.
@@ -782,6 +806,11 @@ def _find_statistics(
     coordinates_type: str
         type of coordinates in X array, can be 'euclidean' for standard
         rectangular coordinates or 'geographic' if the coordinates are lat/lon
+    pseudo_inv : :class:`bool`, optional
+        Whether the kriging system is solved with the pseudo inverted
+        kriging matrix. If `True`, this leads to more numerical stability
+        and redundant points are averaged. But it can take more time.
+        Default: False
 
     Returns
     -------
@@ -810,6 +839,7 @@ def _find_statistics(
                 variogram_function,
                 variogram_model_parameters,
                 coordinates_type,
+                pseudo_inv,
             )
 
             # if the estimation error is zero, it's probably because

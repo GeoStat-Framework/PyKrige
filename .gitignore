@@ -121,3 +121,4 @@ pykrige/_version.py
 *.vtr
 examples/meuse_example_data/*
 *.ipynb_checkpoints/*
+examples/output.asc

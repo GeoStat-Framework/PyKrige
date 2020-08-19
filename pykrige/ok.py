@@ -15,6 +15,8 @@ References
 ----------
 .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
+.. [2] N. Cressie, Statistics for spatial data,
+   (Wiley Series in Probability and Statistics, 1993) 137 p.
 
 Copyright (c) 2015-2020, PyKrige Developers
 """
@@ -29,6 +31,7 @@ from .core import (
     _initialize_variogram_model,
     _make_variogram_parameter_list,
     _find_statistics,
+    P_INV,
 )
 import warnings
 
@@ -140,11 +143,34 @@ class OrdinaryKriging:
         coordinates, x is interpreted as longitude and y as latitude
         coordinates, both given in degree. Longitudes are expected in
         [0, 360] and latitudes in [-90, 90]. Default is 'euclidean'.
+    exact_values : bool, optional
+        If True, interpolation provides input values at input locations.
+        If False, interpolation accounts for variance/nugget within input
+        values at input locations and does not behave as an
+        exact-interpolator [2]. Note that this only has an effect if
+        there is variance/nugget present within the input data since it is
+        interpreted as measurement error. If the nugget is zero, the kriged
+        field will behave as an exact interpolator.
+    pseudo_inv : :class:`bool`, optional
+        Whether the kriging system is solved with the pseudo inverted
+        kriging matrix. If `True`, this leads to more numerical stability
+        and redundant points are averaged. But it can take more time.
+        Default: False
+    pseudo_inv_type : :class:`str`, optional
+        Here you can select the algorithm to compute the pseudo-inverse matrix:
+
+            * `"pinv"`: use `pinv` from `scipy` which uses `lstsq`
+            * `"pinv2"`: use `pinv2` from `scipy` which uses `SVD`
+            * `"pinvh"`: use `pinvh` from `scipy` which uses eigen-values
+
+        Default: `"pinv"`
 
     References
     ----------
     .. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
        Hydrogeology, (Cambridge University Press, 1997) 272 p.
+    .. [2] N. Cressie, Statistics for spatial data,
+       (Wiley Series in Probability and Statistics, 1993) 137 p.
     """
 
     eps = 1.0e-10  # Cutoff for comparison to zero
@@ -173,11 +199,24 @@ class OrdinaryKriging:
         enable_plotting=False,
         enable_statistics=False,
         coordinates_type="euclidean",
+        exact_values=True,
+        pseudo_inv=False,
+        pseudo_inv_type="pinv",
     ):
+        # config the pseudo inverse
+        self.pseudo_inv = bool(pseudo_inv)
+        self.pseudo_inv_type = str(pseudo_inv_type)
+        if self.pseudo_inv_type not in P_INV:
+            raise ValueError("pseudo inv type not valid: " + str(pseudo_inv_type))
 
         # set up variogram model and parameters...
         self.variogram_model = variogram_model
         self.model = None
+
+        if not isinstance(exact_values, bool):
+            raise ValueError("exact_values has to be boolean True or False")
+        self.exact_values = exact_values
+
         # check if a GSTools covariance model is given
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
@@ -317,6 +356,7 @@ class OrdinaryKriging:
                 self.variogram_function,
                 self.variogram_model_parameters,
                 self.coordinates_type,
+                self.pseudo_inv,
             )
             self.Q1 = core.calcQ1(self.epsilon)
             self.Q2 = core.calcQ2(self.epsilon)
@@ -488,6 +528,7 @@ class OrdinaryKriging:
             self.variogram_function,
             self.variogram_model_parameters,
             self.coordinates_type,
+            self.pseudo_inv,
         )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
@@ -585,11 +626,11 @@ class OrdinaryKriging:
             )
         a = np.zeros((n + 1, n + 1))
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
+
         np.fill_diagonal(a, 0.0)
         a[n, :] = 1.0
         a[:, n] = 1.0
         a[n, n] = 0.0
-
         return a
 
     def _exec_vector(self, a, bd, mask):
@@ -601,7 +642,11 @@ class OrdinaryKriging:
         zero_index = None
         zero_value = False
 
-        a_inv = scipy.linalg.inv(a)
+        # use the desired method to invert the kriging matrix
+        if self.pseudo_inv:
+            a_inv = P_INV[self.pseudo_inv_type](a)
+        else:
+            a_inv = scipy.linalg.inv(a)
 
         if np.any(np.absolute(bd) <= self.eps):
             zero_value = True
@@ -609,7 +654,7 @@ class OrdinaryKriging:
 
         b = np.zeros((npt, n + 1, 1))
         b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-        if zero_value:
+        if zero_value and self.exact_values:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
 
@@ -632,7 +677,11 @@ class OrdinaryKriging:
         zvalues = np.zeros(npt)
         sigmasq = np.zeros(npt)
 
-        a_inv = scipy.linalg.inv(a)
+        # use the desired method to invert the kriging matrix
+        if self.pseudo_inv:
+            a_inv = P_INV[self.pseudo_inv_type](a)
+        else:
+            a_inv = scipy.linalg.inv(a)
 
         for j in np.nonzero(~mask)[
             0
@@ -647,7 +696,7 @@ class OrdinaryKriging:
 
             b = np.zeros((n + 1, 1))
             b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
+            if zero_value and self.exact_values:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
             x = np.dot(a_inv, b)
@@ -683,7 +732,7 @@ class OrdinaryKriging:
                 zero_value = False
             b = np.zeros((n + 1, 1))
             b[:n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-            if zero_value:
+            if zero_value and self.exact_values:
                 b[zero_index[0], 0] = 0.0
             b[n, 0] = 1.0
 
@@ -704,25 +753,6 @@ class OrdinaryKriging:
         n_closest_points=None,
     ):
         """Calculates a kriged grid and the associated variance.
-
-        This is now the method that performs the main kriging calculation.
-        Note that currently measurements (i.e., z values) are considered
-        'exact'. This means that, when a specified coordinate for interpolation
-        is exactly the same as one of the data points, the variogram evaluated
-        at the point is forced to be zero. Also, the diagonal of the kriging
-        matrix is also always forced to be zero. In forcing the variogram
-        evaluated at data points to be zero, we are effectively saying that
-        there is no variance at that point (no uncertainty,
-        so the value is 'exact').
-
-        In the future, the code may include an extra 'exact_values' boolean
-        flag that can be adjusted to specify whether to treat the measurements
-        as 'exact'. Setting the flag to false would indicate that the
-        variogram should not be forced to be zero at zero distance
-        (i.e., when evaluated at data points). Instead, the uncertainty in
-        the point will be equal to the nugget. This would mean that the
-        diagonal of the kriging matrix would be set to
-        the nugget instead of to zero.
 
         Parameters
         ----------
@@ -876,6 +906,9 @@ class OrdinaryKriging:
                     "eps",
                     "variogram_model_parameters",
                     "variogram_function",
+                    "exact_values",
+                    "pseudo_inv",
+                    "pseudo_inv_type",
                 ]
             }
 

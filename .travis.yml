@@ -1,3 +1,6 @@
+# do not build pull request from base repo twice (only build PRs of forks)
+if: type != pull_request OR fork = true
+
 language: python
 python: 3.8
 
@@ -11,6 +14,7 @@ env:
     - CIBW_BEFORE_BUILD="pip install numpy==1.17.3 scipy==1.3.2 cython==0.29.14 setuptools"
     - CIBW_TEST_REQUIRES="pytest scikit-learn gstools"
     - CIBW_TEST_COMMAND="pytest -v {project}/tests"
+    - OMP_NUM_THREADS=2
 
 before_install:
   - |
