@@ -66,8 +66,8 @@ If you use conda, PyKrige can be installed from the `conda-forge` channel with,
 Features
 ^^^^^^^^
 
-Krigging algorithms
--------------------
+Kriging algorithms
+------------------
 
 * ``OrdinaryKriging``: 2D ordinary kriging with estimated mean
 * ``UniversalKriging``: 2D universal kriging providing drift terms
