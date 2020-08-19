@@ -94,7 +94,7 @@ Kriging Parameters Tuning
 
 A scikit-learn compatible API for parameter tuning by cross-validation is exposed in
 `sklearn.model_selection.GridSearchCV <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html>`_.
-See the `Krige CV <http://pykrige.readthedocs.io/en/latest/examples/krige_cv.html#sphx-glr-examples-krige-cv-py>`_
+See the `Krige CV <http://pykrige.readthedocs.io/en/latest/examples/08_krige_cv.html#sphx-glr-examples-08-krige-cv-py>`_
 example for a more practical illustration.
 
 
@@ -102,12 +102,12 @@ Regression Kriging
 ------------------
 
 `Regression kriging <https://en.wikipedia.org/wiki/Regression-Kriging>`_ can be performed
-with `pykrige.rk.RegressionKriging <http://pykrige.readthedocs.io/en/latest/examples/regression_kriging2d.html>`_.
+with `pykrige.rk.RegressionKriging <http://pykrige.readthedocs.io/en/latest/examples/07_regression_kriging2d.html>`_.
 This class takes as parameters a scikit-learn regression model, and details of either either
 the ``OrdinaryKriging`` or the ``UniversalKriging`` class, and performs a correction steps on the ML regression prediction.
 
 A demonstration of the regression kriging is provided in the
-`corresponding example <http://pykrige.readthedocs.io/en/latest/examples/regression_kriging2d.html#sphx-glr-examples-regression-kriging2d-py>`_.
+`corresponding example <http://pykrige.readthedocs.io/en/latest/examples/07_regression_kriging2d.html#sphx-glr-examples-07-regression-kriging2d-py>`_.
 
 
 License
