@@ -73,8 +73,8 @@ print("Sigma²:   ", np.array_str(ss2[5, :], precision=2))
 # weighted equally as latitude.
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
-ax1.imshow(z1, extent=[0, 360, -90, 90])
+ax1.imshow(z1, extent=[0, 360, -90, 90], origin="lower")
 ax1.set_title("geo-coordinates")
-ax2.imshow(z2, extent=[0, 360, -90, 90])
+ax2.imshow(z2, extent=[0, 360, -90, 90], origin="lower")
 ax2.set_title("non geo-coordinates")
 plt.show()

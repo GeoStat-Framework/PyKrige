@@ -26,6 +26,7 @@ PyKrige
 
 Kriging Toolkit for Python.
 
+
 Purpose
 ^^^^^^^
 
@@ -39,7 +40,9 @@ point and all grid points. With the 'functional' drift capability, the user may 
 of the spatial coordinates that define the drift(s). The package includes a module that contains functions
 that should be useful in working with ASCII grid files (`*.asc`).
 
-See the documentation at `http://pykrige.readthedocs.io/ <http://pykrige.readthedocs.io/>`_ for more details.
+See the documentation at `http://pykrige.readthedocs.io/ <http://pykrige.readthedocs.io/>`_
+for more details and examples.
+
 
 Installation
 ^^^^^^^^^^^^
@@ -63,38 +66,27 @@ If you use conda, PyKrige can be installed from the `conda-forge` channel with,
 Features
 ^^^^^^^^
 
-
 Krigging algorithms
 -------------------
 
-
-.. autosummary::
-    :toctree: ./generated/
-
-    pykrige.ok.OrdinaryKriging
-    pykrige.uk.UniversalKriging
-    pykrige.ok3d.OrdinaryKriging3D
-    pykrige.uk3d.UniversalKriging3D
-    pykrige.rk.RegressionKriging
+* ``OrdinaryKriging``: 2D ordinary kriging with estimated mean
+* ``UniversalKriging``: 2D universal kriging providing drift terms
+* ``OrdinaryKriging3D``: 3D ordinary kriging
+* ``UniversalKriging3D``: 3D universal kriging
+* ``RegressionKriging``: An implementation of Regression-Kriging
 
 
 Wrappers
 --------
 
-.. autosummary::
-    :toctree: ./generated/
-
-    pykrige.rk.Krige
+* ``rk.Krige``: A scikit-learn wrapper class for Ordinary and Universal Kriging
 
 
 Tools
 -----
 
-.. autosummary::
-    :toctree: ./generated/
-
-    pykrige.kriging_tools.write_asc_grid
-    pykrige.kriging_tools.read_asc_grid
+* ``kriging_tools.write_asc_grid``: Writes gridded data to ASCII grid file (*.asc)
+* ``kriging_tools.read_asc_grid``: Reads ASCII grid file (*.asc)
 
 
 Kriging Parameters Tuning
@@ -116,6 +108,7 @@ the ``OrdinaryKriging`` or the ``UniversalKriging`` class, and performs a correc
 
 A demonstration of the regression kriging is provided in the
 `corresponding example <http://pykrige.readthedocs.io/en/latest/examples/regression_kriging2d.html#sphx-glr-examples-regression-kriging2d-py>`_.
+
 
 License
 ^^^^^^^
