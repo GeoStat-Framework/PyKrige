@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Exact Values
-=================
+============
 
 PyKrige demonstration and usage
 as a non-exact interpolator in 1D. 
