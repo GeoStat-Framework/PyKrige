@@ -4,6 +4,7 @@ Regression kriging
 
 An example of regression kriging
 """
+
 import sys
 
 from sklearn.svm import SVR
@@ -42,24 +43,3 @@ for m in models:
     m_rk.fit(p_train, x_train, target_train)
     print("Regression Score: ", m_rk.regression_model.score(p_test, target_test))
     print("RK score: ", m_rk.score(p_test, x_test, target_test))
-
-# ====================================OUTPUT==================================
-
-# ========================================
-#  regression model: <class 'sklearn.svm.classes.SVR'>
-# Finished learning regression model
-# Finished kriging residuals
-# Regression Score:  -0.034053855457
-# RK score:  0.66195576665
-# ========================================
-#  regression model: <class 'sklearn.ensemble.forest.RandomForestRegressor'>
-# Finished learning regression model
-# Finished kriging residuals
-# Regression Score:  0.699771164651
-# RK score:  0.737574040386
-# ========================================
-#  regression model: <class 'sklearn.linear_model.base.LinearRegression'>
-# Finished learning regression model
-# Finished kriging residuals
-# Regression Score:  0.527796839838
-# RK score:  0.604908933617
