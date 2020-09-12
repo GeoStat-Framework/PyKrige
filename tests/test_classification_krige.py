@@ -3,7 +3,7 @@ import pytest
 
 import numpy as np
 
-from pykrige.rk import ClassificationKriging
+from pykrige.ck import ClassificationKriging
 
 try:
     from sklearn.svm import SVC
@@ -21,7 +21,7 @@ def _methods():
     krige_methods = ["ordinary", "universal"]
     ml_methods = [
         SVC(C=0.01, gamma="auto", probability=True),
-        RandomForestClassifier(n_estimators=50)
+        RandomForestClassifier(n_estimators=50),
     ]
     return product(ml_methods, krige_methods)
 
@@ -47,7 +47,7 @@ def test_classification_krige():
     lat = np.linspace(-90.0, 90.0, 10)
     lon_lat = np.array(list(product(lon, lat)))
 
-    discretizer = KBinsDiscretizer(encode='ordinal')
+    discretizer = KBinsDiscretizer(encode="ordinal")
     y = discretizer.fit_transform(y.reshape(-1, 1))
 
     X_train, X_test, y_train, y_test, lon_lat_train, lon_lat_test = train_test_split(
@@ -55,11 +55,11 @@ def test_classification_krige():
     )
 
     for ml_model, krige_method in _methods():
-        reg_class_model = ClassificationKriging(
+        class_model = ClassificationKriging(
             classification_model=ml_model, method=krige_method, n_closest_points=2
         )
-        reg_class_model.fit(X_train, lon_lat_train, y_train)
-        assert reg_class_model.score(X_test, lon_lat_test, y_test) > 0.25
+        class_model.fit(X_train, lon_lat_train, y_train)
+        assert class_model.score(X_test, lon_lat_test, y_test) > 0.25
 
 
 @pytest.mark.skipif(not SKLEARN_INSTALLED, reason="requires scikit-learn")
@@ -82,7 +82,7 @@ def test_krige_classification_housing():
     p = housing["data"][:1000, :-2]
     x = housing["data"][:1000, -2:]
     target = housing["target"][:1000]
-    discretizer = KBinsDiscretizer(encode='ordinal')
+    discretizer = KBinsDiscretizer(encode="ordinal")
     target = discretizer.fit_transform(target.reshape(-1, 1))
 
     p_train, p_test, y_train, y_test, x_train, x_test = train_test_split(
@@ -91,11 +91,11 @@ def test_krige_classification_housing():
 
     for ml_model, krige_method in _methods():
 
-        reg_class_model = ClassificationKriging(
+        class_model = ClassificationKriging(
             classification_model=ml_model, method=krige_method, n_closest_points=2
         )
-        reg_class_model.fit(p_train, x_train, y_train)
+        class_model.fit(p_train, x_train, y_train)
         if krige_method == "ordinary":
-            assert reg_class_model.score(p_test, x_test, y_test) > 0.5
+            assert class_model.score(p_test, x_test, y_test) > 0.5
         else:
-            assert reg_class_model.score(p_test, x_test, y_test) > 0.0
+            assert class_model.score(p_test, x_test, y_test) > 0.0

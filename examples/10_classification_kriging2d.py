@@ -13,7 +13,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.datasets import fetch_california_housing
 from sklearn.preprocessing import KBinsDiscretizer
 
-from pykrige.rk import ClassificationKriging
+from pykrige.ck import ClassificationKriging
 from pykrige.compat import train_test_split
 
 svc_model = SVC(C=0.1, gamma="auto", probability=True)
@@ -32,7 +32,7 @@ except PermissionError:
 p = housing["data"][:5000, :-2]
 x = housing["data"][:5000, -2:]
 target = housing["target"][:5000]
-discretizer = KBinsDiscretizer(encode='ordinal')
+discretizer = KBinsDiscretizer(encode="ordinal")
 target = discretizer.fit_transform(target.reshape(-1, 1))
 
 p_train, p_test, x_train, x_test, target_train, target_test = train_test_split(
@@ -41,9 +41,10 @@ p_train, p_test, x_train, x_test, target_train, target_test = train_test_split(
 
 for m in models:
     print("=" * 40)
-    print("regression model:", m.__class__.__name__)
+    print("classification model:", m.__class__.__name__)
     m_ck = ClassificationKriging(classification_model=m, n_closest_points=10)
     m_ck.fit(p_train, x_train, target_train)
-    print("Classification Score: ",
-          m_ck.classification_model.score(p_test, target_test))
+    print(
+        "Classification Score: ", m_ck.classification_model.score(p_test, target_test)
+    )
     print("CK score: ", m_ck.score(p_test, x_test, target_test))
