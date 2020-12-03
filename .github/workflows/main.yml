@@ -17,7 +17,7 @@ env:
   # needed by coveralls
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   CIBW_BUILD: "cp35-* cp36-* cp37-* cp38-* cp39-*"
-  CIBW_BEFORE_BUILD: "pip install numpy==1.17.3 cython>=0.29.14 setuptools"
+  CIBW_BEFORE_BUILD: "pip install numpy==1.17.3 scipy==1.3.2 cython>=0.29.14 setuptools"
   CIBW_TEST_REQUIRES: "pytest scikit-learn gstools"
   CIBW_TEST_COMMAND: "pytest -v {project}/tests"
 
