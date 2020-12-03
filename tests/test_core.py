@@ -439,7 +439,12 @@ def test_core_krige_3d():
 def test_non_exact():
     # custom data for this test
     data = np.array(
-        [[0.0, 0.0, 0.47], [1.5, 1.5, 0.56], [3, 3, 0.74], [4.5, 4.5, 1.47],]
+        [
+            [0.0, 0.0, 0.47],
+            [1.5, 1.5, 0.56],
+            [3, 3, 0.74],
+            [4.5, 4.5, 1.47],
+        ]
     )
 
     # construct grid points so diagonal
