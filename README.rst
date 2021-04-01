@@ -74,6 +74,7 @@ Kriging algorithms
 * ``OrdinaryKriging3D``: 3D ordinary kriging
 * ``UniversalKriging3D``: 3D universal kriging
 * ``RegressionKriging``: An implementation of Regression-Kriging
+* ``ClassificationKriging``: An implementation of Simplicial Indicator Kriging
 
 
 Wrappers
@@ -108,6 +109,17 @@ the ``OrdinaryKriging`` or the ``UniversalKriging`` class, and performs a correc
 
 A demonstration of the regression kriging is provided in the
 `corresponding example <http://pykrige.readthedocs.io/en/latest/examples/07_regression_kriging2d.html#sphx-glr-examples-07-regression-kriging2d-py>`_.
+
+Classification Kriging
+----------------------
+
+`Simplifical Indicator kriging <https://www.sciencedirect.com/science/article/abs/pii/S1002070508600254>`_ can be performed
+with `pykrige.rk.ClassificationKriging <http://pykrige.readthedocs.io/en/latest/examples/10_classification_kriging2d.html>`_.
+This class takes as parameters a scikit-learn classification model, and details of either
+the ``OrdinaryKriging`` or the ``UniversalKriging`` class, and performs a correction steps on the ML classification prediction.
+
+A demonstration of the classification kriging is provided in the
+`corresponding example <http://pykrige.readthedocs.io/en/latest/examples/10_classification_kriging2d.html#sphx-glr-examples-10-classification-kriging2d-py>`_.
 
 
 License

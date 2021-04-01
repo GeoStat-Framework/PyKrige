@@ -3,8 +3,8 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pykrige.rk import Krige
-from pykrige.rk import threed_krige
+from pykrige.compat import Krige
+from pykrige.compat import threed_krige
 
 
 def _method_and_vergiogram():
