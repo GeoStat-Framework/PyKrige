@@ -67,7 +67,7 @@ jobs:
           pip install -r requirements_setup.txt
           pip install -r requirements.txt
           pip install -r requirements_test.txt
-          pip install coveralls>=2.0.0
+          pip install coveralls>=3.0.0
 
       - name: Build sdist
         run: |
@@ -77,7 +77,7 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest --cov pykrige --cov-report term-missing -v tests/
-          python -m coveralls
+          python -m coveralls --service=github
 
       - uses: actions/upload-artifact@v2
         with:
