@@ -28,6 +28,10 @@
         {
             "type": "Other",
             "name": "Daniel Mej\u00eda Raigosa"
+        },
+        {
+            "type": "Other",
+            "name": "Marcelo Albuquerque"
         }
     ],
     "language": "eng",
@@ -37,6 +41,7 @@
         "universal kriging",
         "external drift kriging",
         "regression kriging",
+        "classification kriging",
         "variogram",
         "geostatistics",
         "Python",
