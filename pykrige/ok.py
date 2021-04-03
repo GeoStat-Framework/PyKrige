@@ -961,7 +961,7 @@ class OrdinaryKriging:
                     a,
                     bd,
                     mask.astype("int8"),
-                    bd_idx.astype("int32"),
+                    bd_idx.astype(int),
                     self.X_ADJUSTED.shape[0],
                     c_pars,
                 )
