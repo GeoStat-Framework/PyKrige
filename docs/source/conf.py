@@ -244,6 +244,8 @@ html_favicon = "pics/PyKrige.ico"
 
 # -- Options for LaTeX output ---------------------------------------------
 
+latex_logo = "pics/PyKrige_150.png"
+
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #'papersize': 'letterpaper',
