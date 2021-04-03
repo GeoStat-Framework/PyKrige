@@ -13,14 +13,6 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-env:
-  # needed by coveralls
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  CIBW_BUILD: "cp35-* cp36-* cp37-* cp38-* cp39-*"
-  CIBW_BEFORE_BUILD: 'pip install "numpy<=1.19.4" "scipy<=1.5.4" "cython>=0.29.14" setuptools'
-  CIBW_TEST_REQUIRES: "pytest scikit-learn"
-  CIBW_TEST_COMMAND: "pytest -v {project}/tests"
-
 jobs:
   format_check:
     name: format check
@@ -67,7 +59,7 @@ jobs:
           pip install -r requirements_setup.txt
           pip install -r requirements.txt
           pip install -r requirements_test.txt
-          pip install coveralls>=2.0.0
+          pip install coveralls>=3.0.0
 
       - name: Build sdist
         run: |
@@ -75,9 +67,11 @@ jobs:
           python setup.py build_ext --inplace
 
       - name: Run tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python -m pytest --cov pykrige --cov-report term-missing -v tests/
-          python -m coveralls
+          python -m coveralls --service=github
 
       - uses: actions/upload-artifact@v2
         with:
@@ -96,18 +90,15 @@ jobs:
         with:
           fetch-depth: '0'
 
-      - name: Set up Python
-        uses: actions\setup-python@v2
-        with:
-          python-version: "3.8"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install cibuildwheel==1.7.0
       - name: Build wheels
-        run: |
-          python -m cibuildwheel --output-dir dist
+        uses: joerick/cibuildwheel@v1.10.0
+        env:
+          CIBW_BUILD: cp36-* cp37-* cp38-* cp39-*
+          CIBW_BEFORE_BUILD: pip install numpy==1.19.* scipy==1.5.* cython==0.29.* setuptools
+          CIBW_TEST_REQUIRES: pytest scikit-learn
+          CIBW_TEST_COMMAND: pytest -v {project}/tests
+        with:
+          output-dir: dist
 
       - uses: actions/upload-artifact@v2
         with:
@@ -125,7 +116,7 @@ jobs:
 
       - name: Publish to Test PyPI
         if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.test_pypi_password }}
@@ -135,7 +126,7 @@ jobs:
       - name: Publish to PyPI
         # only if tagged
         if: startsWith(github.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}
