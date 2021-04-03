@@ -1,8 +1,6 @@
 # coding: utf-8
 # pylint: disable= invalid-name,  unused-import
-"""For compatibility"""
-from functools import partial
-
+"""For compatibility."""
 from pykrige.uk3d import UniversalKriging3D
 from pykrige.ok3d import OrdinaryKriging3D
 from pykrige.uk import UniversalKriging
@@ -10,7 +8,7 @@ from pykrige.ok import OrdinaryKriging
 
 # sklearn
 try:
-    from sklearn.model_selection import GridSearchCV
+    # keep train_test_split here for backward compatibility
     from sklearn.model_selection import train_test_split
     from sklearn.base import RegressorMixin, ClassifierMixin, BaseEstimator
 
@@ -18,6 +16,18 @@ try:
 
 except ImportError:
     SKLEARN_INSTALLED = False
+
+    train_test_split = None
+
+    class RegressorMixin:
+        """Mock RegressorMixin."""
+
+    class ClassifierMixin:
+        """Mock ClassifierMixin."""
+
+    class BaseEstimator:
+        """Mock BaseEstimator."""
+
 
 krige_methods = {
     "ordinary": OrdinaryKriging,
@@ -65,7 +75,7 @@ krige_methods_kws = {
 
 
 class SklearnException(Exception):
-    pass
+    """Exception for missing scikit-learn."""
 
 
 def validate_method(method):
@@ -77,6 +87,7 @@ def validate_method(method):
 
 
 def validate_sklearn():
+    """Validate presence of scikit-learn."""
     if not SKLEARN_INSTALLED:
         raise SklearnException(
             "sklearn needs to be installed in order to use this module"

@@ -1,12 +1,13 @@
 # coding: utf-8
+"""Classification Kriging."""
+import numpy as np
 from pykrige.compat import Krige, validate_sklearn, check_sklearn_model
 
 validate_sklearn()
 
-from sklearn.metrics import r2_score, accuracy_score
+from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
 from sklearn.preprocessing import OneHotEncoder
-import numpy as np
 from scipy.linalg import helmert
 
 

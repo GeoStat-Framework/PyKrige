@@ -11,7 +11,7 @@ try:
     from sklearn.linear_model import ElasticNet, Lasso
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.linear_model import LinearRegression
-    from pykrige.compat import train_test_split
+    from sklearn.model_selection import train_test_split
 
     SKLEARN_INSTALLED = True
 except ImportError:

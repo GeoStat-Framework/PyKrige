@@ -1,9 +1,10 @@
 # coding: utf-8
+"""Regression Kriging."""
 from pykrige.compat import Krige, validate_sklearn, check_sklearn_model
 
 validate_sklearn()
 
-from sklearn.metrics import r2_score, accuracy_score
+from sklearn.metrics import r2_score
 from sklearn.svm import SVR
 
 

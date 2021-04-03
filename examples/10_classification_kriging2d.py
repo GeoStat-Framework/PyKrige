@@ -1,6 +1,6 @@
 """
 Classification kriging
-------------------
+----------------------
 
 An example of classification kriging
 """
@@ -12,9 +12,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.datasets import fetch_california_housing
 from sklearn.preprocessing import KBinsDiscretizer
+from sklearn.model_selection import train_test_split
 
 from pykrige.ck import ClassificationKriging
-from pykrige.compat import train_test_split
 
 svc_model = SVC(C=0.1, gamma="auto", probability=True)
 rf_model = RandomForestClassifier(n_estimators=100)

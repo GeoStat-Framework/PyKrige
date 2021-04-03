@@ -10,7 +10,7 @@ try:
     from sklearn.datasets import fetch_california_housing
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.preprocessing import KBinsDiscretizer
-    from pykrige.compat import train_test_split
+    from sklearn.model_selection import train_test_split
 
     SKLEARN_INSTALLED = True
 except ImportError:
