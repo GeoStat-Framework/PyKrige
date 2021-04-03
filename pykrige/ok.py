@@ -958,7 +958,12 @@ class OrdinaryKriging:
                 zvalues, sigmasq = self._exec_loop_moving_window(a, bd, mask, bd_idx)
             elif backend == "C":
                 zvalues, sigmasq = _c_exec_loop_moving_window(
-                    a, bd, mask.astype("int8"), bd_idx, self.X_ADJUSTED.shape[0], c_pars
+                    a,
+                    bd,
+                    mask.astype("int8"),
+                    bd_idx.astype("int32"),
+                    self.X_ADJUSTED.shape[0],
+                    c_pars,
                 )
             else:
                 raise ValueError(
