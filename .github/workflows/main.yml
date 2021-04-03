@@ -116,7 +116,7 @@ jobs:
 
       - name: Publish to Test PyPI
         if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.test_pypi_password }}
@@ -126,7 +126,7 @@ jobs:
       - name: Publish to PyPI
         # only if tagged
         if: startsWith(github.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}
