@@ -48,7 +48,7 @@ extensions = [
     "sphinxcontrib.napoleon",
     "sphinx_gallery.gen_gallery",
     "sphinx.ext.linkcode",
-    "recommonmark",
+    "m2r2",
 ]
 
 
