@@ -48,7 +48,7 @@ extensions = [
     "sphinxcontrib.napoleon",
     "sphinx_gallery.gen_gallery",
     "sphinx.ext.linkcode",
-    "recommonmark",
+    "m2r2",
 ]
 
 
@@ -243,6 +243,8 @@ html_logo = "pics/PyKrige_150.png"
 html_favicon = "pics/PyKrige.ico"
 
 # -- Options for LaTeX output ---------------------------------------------
+
+latex_logo = "pics/PyKrige_150.png"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').

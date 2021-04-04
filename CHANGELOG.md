@@ -2,6 +2,23 @@ Changelog
 =========
 
 
+Version 1.6.0
+-------------
+*April 04, 2021*
+
+**New features**
+
+* added Classification Kriging ([#165](https://github.com/GeoStat-Framework/PyKrige/pull/165), [#184](https://github.com/GeoStat-Framework/PyKrige/pull/184))
+* added wheels for Python 3.9 ([#175](https://github.com/GeoStat-Framework/PyKrige/pull/175))
+
+**Changes**
+
+* moved scikit-learn compat-class `Krige` to `pykrige.compat` ([#165](https://github.com/GeoStat-Framework/PyKrige/pull/165))
+* dropped Python 3.5 support ([#183](https://github.com/GeoStat-Framework/PyKrige/pull/183))
+* moved CI to GitHub-Actions ([#175](https://github.com/GeoStat-Framework/PyKrige/pull/175), [#183](https://github.com/GeoStat-Framework/PyKrige/pull/183))
+* Fixed Typo in `02_kriging3D.py` example ([#182](https://github.com/GeoStat-Framework/PyKrige/pull/182))
+
+
 Version 1.5.1
 -------------
 *August 20, 2020*

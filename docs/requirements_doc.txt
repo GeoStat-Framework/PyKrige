@@ -2,7 +2,7 @@ scikit-learn>=0.19
 gstools>=1.1.1
 sphinx
 pillow
-recommonmark
 sphinx_rtd_theme
 sphinxcontrib-napoleon
 sphinx-gallery
+m2r2

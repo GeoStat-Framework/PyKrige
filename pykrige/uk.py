@@ -969,7 +969,8 @@ class UniversalKriging:
                 i += 1
         if i != n_withdrifts:
             warnings.warn(
-                "Error in setting up kriging system. Kriging may fail.", RuntimeWarning,
+                "Error in setting up kriging system. Kriging may fail.",
+                RuntimeWarning,
             )
         if self.UNBIAS:
             b[:, n_withdrifts, 0] = 1.0

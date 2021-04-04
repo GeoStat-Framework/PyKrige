@@ -1,23 +1,23 @@
 # coding: utf-8
-"""Regression Kriging."""
+"""Classification Kriging."""
+import numpy as np
 from pykrige.compat import Krige, validate_sklearn, check_sklearn_model
 
 validate_sklearn()
 
-from sklearn.metrics import r2_score
-from sklearn.svm import SVR
+from sklearn.metrics import accuracy_score
+from sklearn.svm import SVC
+from sklearn.preprocessing import OneHotEncoder
+from scipy.linalg import helmert
 
 
-class RegressionKriging:
+class ClassificationKriging:
     """
-    An implementation of Regression-Kriging.
-
-    As described here:
-    https://en.wikipedia.org/wiki/Regression-Kriging
+    An implementation of Simplicial Indicator Kriging applied to classification ilr transformed residuals.
 
     Parameters
     ----------
-    regression_model: machine learning model instance from sklearn
+    classification_model: machine learning model instance from sklearn
     method: str, optional
         type of kriging to be performed
     variogram_model: str, optional
@@ -57,7 +57,7 @@ class RegressionKriging:
 
     def __init__(
         self,
-        regression_model=SVR(),
+        classification_model=SVC(),
         method="ordinary",
         variogram_model="linear",
         n_closest_points=10,
@@ -78,10 +78,10 @@ class RegressionKriging:
         ext_drift_grid=(None, None, None),
         functional_drift=None,
     ):
-        check_sklearn_model(regression_model)
-        self.regression_model = regression_model
+        check_sklearn_model(classification_model, task="classification")
+        self.classification_model = classification_model
         self.n_closest_points = n_closest_points
-        self.krige = Krige(
+        self._kriging_kwargs = dict(
             method=method,
             variogram_model=variogram_model,
             nlags=nlags,
@@ -105,25 +105,38 @@ class RegressionKriging:
 
     def fit(self, p, x, y):
         """
-        Fit the regression method and also Krige the residual.
+        Fit the classification method and also krige the residual.
 
         Parameters
         ----------
         p: ndarray
             (Ns, d) array of predictor variables (Ns samples, d dimensions)
-            for regression
+            for classification
         x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
-            corresponding to the lon/lat, for example 2d regression kriging.
+            corresponding to the lon/lat, for example 2d classification kriging.
             array of Points, (x, y, z) pairs of shape (N, 3) for 3d kriging
         y: ndarray
             array of targets (Ns, )
         """
-        self.regression_model.fit(p, y)
-        ml_pred = self.regression_model.predict(p)
-        print("Finished learning regression model")
-        # residual=y-ml_pred
-        self.krige.fit(x=x, y=y - ml_pred)
+        self.classification_model.fit(p, y.ravel())
+        print("Finished learning classification model")
+        self.classes_ = self.classification_model.classes_
+
+        self.krige = []
+        for i in range(len(self.classes_) - 1):
+            self.krige.append(Krige(**self._kriging_kwargs))
+
+        ml_pred = self.classification_model.predict_proba(p)
+        ml_pred_ilr = ilr_transformation(ml_pred)
+
+        self.onehotencode = OneHotEncoder(categories=[self.classes_])
+        y_ohe = np.array(self.onehotencode.fit_transform(y).todense())
+        y_ohe_ilr = ilr_transformation(y_ohe)
+
+        for i in range(len(self.classes_) - 1):
+            self.krige[i].fit(x=x, y=y_ohe_ilr[:, i] - ml_pred_ilr[:, i])
+
         print("Finished kriging residuals")
 
     def predict(self, p, x, **kwargs):
@@ -134,7 +147,7 @@ class RegressionKriging:
         ----------
         p: ndarray
             (Ns, d) array of predictor variables (Ns samples, d dimensions)
-            for regression
+            for classification
         x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
@@ -146,7 +159,14 @@ class RegressionKriging:
             The expected value of ys for the query inputs, of shape (Ns,).
 
         """
-        return self.krige_residual(x, **kwargs) + self.regression_model.predict(p)
+
+        ml_pred = self.classification_model.predict_proba(p)
+        ml_pred_ilr = ilr_transformation(ml_pred)
+
+        pred_proba_ilr = self.krige_residual(x, **kwargs) + ml_pred_ilr
+        pred_proba = inverse_ilr_transformation(pred_proba_ilr)
+
+        return np.argmax(pred_proba, axis=1)
 
     def krige_residual(self, x, **kwargs):
         """
@@ -163,17 +183,22 @@ class RegressionKriging:
         residual: ndarray
             kriged residual values
         """
-        return self.krige.predict(x, **kwargs)
+
+        krig_pred = [
+            self.krige[i].predict(x=x, **kwargs) for i in range(len(self.classes_) - 1)
+        ]
+
+        return np.vstack(krig_pred).T
 
     def score(self, p, x, y, sample_weight=None, **kwargs):
         """
-        Overloading default regression score method.
+        Overloading default classification score method.
 
         Parameters
         ----------
         p: ndarray
             (Ns, d) array of predictor variables (Ns samples, d dimensions)
-            for regression
+            for classification
         x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
             corresponding to the lon/lat, for example.
@@ -181,6 +206,85 @@ class RegressionKriging:
         y: ndarray
             array of targets (Ns, )
         """
-        return r2_score(
+        return accuracy_score(
             y_pred=self.predict(p, x, **kwargs), y_true=y, sample_weight=sample_weight
         )
+
+
+def closure(data, k=1.0):
+    """Apply closure to data, sample-wise.
+    Adapted from https://github.com/ofgulban/compoda.
+
+    Parameters
+    ----------
+    data : 2d numpy array, shape [n_samples, n_measurements]
+        Data to be closed to a certain constant. Do not forget to deal with
+        zeros in the data before this operation.
+    k : float, positive
+        Sum of the measurements will be equal to this number.
+
+    Returns
+    -------
+    data : 2d numpy array, shape [n_samples, n_measurements]
+        Closed data.
+
+    Reference
+    ---------
+    [1] Pawlowsky-Glahn, V., Egozcue, J. J., & Tolosana-Delgado, R.
+        (2015). Modelling and Analysis of Compositional Data, pg. 9.
+        Chichester, UK: John Wiley & Sons, Ltd.
+        DOI: 10.1002/9781119003144
+    """
+
+    return k * data / np.sum(data, axis=1)[:, np.newaxis]
+
+
+def ilr_transformation(data):
+    """Isometric logratio transformation (not vectorized).
+    Adapted from https://github.com/ofgulban/compoda.
+
+    Parameters
+    ----------
+    data : 2d numpy array, shape [n_samples, n_coordinates]
+        Barycentric coordinates (closed) in simplex space.
+
+    Returns
+    -------
+    out : 2d numpy array, shape [n_samples, n_coordinates-1]
+        Coordinates in real space.
+
+    Reference
+    ---------
+    [1] Pawlowsky-Glahn, V., Egozcue, J. J., & Tolosana-Delgado, R.
+        (2015). Modelling and Analysis of Compositional Data, pg. 37.
+        Chichester, UK: John Wiley & Sons, Ltd.
+        DOI: 10.1002/9781119003144
+    """
+    data = np.maximum(data, np.finfo(float).eps)
+
+    return np.einsum("ij,jk->ik", np.log(data), -helmert(data.shape[1]).T)
+
+
+def inverse_ilr_transformation(data):
+    """Inverse isometric logratio transformation (not vectorized).
+    Adapted from https://github.com/ofgulban/compoda.
+
+    Parameters
+    ----------
+    data : 2d numpy array, shape [n_samples, n_coordinates]
+        Isometric log-ratio transformed coordinates in real space.
+
+    Returns
+    -------
+    out : 2d numpy array, shape [n_samples, n_coordinates+1]
+        Barycentric coordinates (closed) in simplex space.
+
+    Reference
+    ---------
+    [1] Pawlowsky-Glahn, V., Egozcue, J. J., & Tolosana-Delgado, R.
+        (2015). Modelling and Analysis of Compositional Data, pg. 37.
+        Chichester, UK: John Wiley & Sons, Ltd.
+        DOI: 10.1002/9781119003144
+    """
+
+    return closure(np.exp(np.einsum("ij,jk->ik", data, -helmert(data.shape[1] + 1))))

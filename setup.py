@@ -35,7 +35,7 @@ for ext_m in EXT_MODULES:
 
 # setup #######################################################################
 
-with open(os.path.join(HERE, "README.rst"), encoding="utf-8") as f:
+with open(os.path.join(HERE, "README.md"), encoding="utf-8") as f:
     README = f.read()
 with open(os.path.join(HERE, "requirements.txt"), encoding="utf-8") as f:
     REQ = f.read().splitlines()
@@ -64,10 +64,10 @@ CLASSIFIERS = [
     "Operating System :: Unix",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.5",
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: GIS",
@@ -78,7 +78,7 @@ setup(
     name="PyKrige",
     description=DOCLINE,
     long_description=README,
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
     author="Benjamin S. Murphy",
     author_email="bscott.murphy@gmail.com",
     maintainer="Sebastian Mueller, Roman Yurchak",
@@ -88,7 +88,7 @@ setup(
     classifiers=CLASSIFIERS,
     platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
     include_package_data=True,
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     use_scm_version={
         "relative_to": __file__,
         "write_to": "pykrige/_version.py",
