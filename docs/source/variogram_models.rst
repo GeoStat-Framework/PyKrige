@@ -92,5 +92,5 @@ According to [1]_, the hole-effect variogram model is only correct for the
 
 References
 ----------
-.. [1] P.K. Kitanidis, Introduction to Geostatistcs: Applications in
+.. [1] P.K. Kitanidis, Introduction to Geostatistics: Applications in
     Hydrogeology, (Cambridge University Press, 1997) 272 p.
