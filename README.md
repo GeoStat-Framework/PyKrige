@@ -92,8 +92,8 @@ example for a more practical illustration.
 can be performed with
 [pykrige.rk.RegressionKriging](http://pykrige.readthedocs.io/en/latest/examples/07_regression_kriging2d.html).
 This class takes as parameters a scikit-learn regression model, and
-details of either either the `OrdinaryKriging` or the `UniversalKriging`
-class, and performs a correction steps on the ML regression prediction.
+details of either the `OrdinaryKriging` or the `UniversalKriging`
+class, and performs a correction step on the ML regression prediction.
 
 A demonstration of the regression kriging is provided in the
 [corresponding
@@ -104,10 +104,10 @@ example](http://pykrige.readthedocs.io/en/latest/examples/07_regression_kriging2
 [Simplifical Indicator
 kriging](https://www.sciencedirect.com/science/article/abs/pii/S1002070508600254)
 can be performed with
-[pykrige.rk.ClassificationKriging](http://pykrige.readthedocs.io/en/latest/examples/10_classification_kriging2d.html).
+[pykrige.ck.ClassificationKriging](http://pykrige.readthedocs.io/en/latest/examples/10_classification_kriging2d.html).
 This class takes as parameters a scikit-learn classification model, and
 details of either the `OrdinaryKriging` or the `UniversalKriging` class,
-and performs a correction steps on the ML classification prediction.
+and performs a correction step on the ML classification prediction.
 
 A demonstration of the classification kriging is provided in the
 [corresponding
