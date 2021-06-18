@@ -15,9 +15,11 @@ Copyright (c) 2015-2020, PyKrige Developers
 import numpy as np
 import warnings
 import io
+import datetime
+import os
 
 
-def write_asc_grid(x, y, z, filename="output.asc", style=1):
+def write_asc_grid(x, y, z, filename="output.asc", no_data=-999.0, style=1):
     r"""Writes gridded data to ASCII grid file (\*.asc).
 
     This is useful for exporting data to a GIS program.
@@ -32,6 +34,8 @@ def write_asc_grid(x, y, z, filename="output.asc", style=1):
         Gridded data values. May be a masked array.
     filename : string, optional
         Name of output \*.asc file. Default name is 'output.asc'.
+    no_data : float, optional
+        no data value to be used
     style : int, optional
         Determines how to write the \*.asc file header.
         Specifying 1 writes out DX, DY, XLLCENTER, YLLCENTER.
@@ -40,7 +44,7 @@ def write_asc_grid(x, y, z, filename="output.asc", style=1):
     """
 
     if np.ma.is_masked(z):
-        z = np.array(z.tolist(-999.0))
+        z = np.array(z.tolist(no_data))
 
     x = np.squeeze(np.array(x))
     y = np.squeeze(np.array(y))
@@ -71,8 +75,8 @@ def write_asc_grid(x, y, z, filename="output.asc", style=1):
     dx = abs(x[1] - x[0])
     dy = abs(y[1] - y[0])
     if (
-        abs((x[-1] - x[0]) / (x.shape[0] - 1)) != dx
-        or abs((y[-1] - y[0]) / (y.shape[0] - 1)) != dy
+            abs((x[-1] - x[0]) / (x.shape[0] - 1)) != dx
+            or abs((y[-1] - y[0]) / (y.shape[0] - 1)) != dy
     ):
         raise ValueError(
             "X or Y spacing is not constant; *.asc grid cannot be written."
@@ -96,8 +100,6 @@ def write_asc_grid(x, y, z, filename="output.asc", style=1):
     if style == 2:
         xllcorner = xllcenter - dx / 2.0
         yllcorner = yllcenter - dy / 2.0
-
-    no_data = -999.0
 
     with io.open(filename, "w") as f:
         if style == 1:
@@ -196,14 +198,14 @@ def read_asc_grid(filename, footer=0):
                 raise IOError("could not read *.asc file. Error in header.")
 
             if (
-                (ncols is not None)
-                and (nrows is not None)
-                and (
+                    (ncols is not None)
+                    and (nrows is not None)
+                    and (
                     ((xllcorner is not None) and (yllcorner is not None))
                     or ((xllcenter is not None) and (yllcenter is not None))
-                )
-                and ((cellsize is not None) or ((dx is not None) and (dy is not None)))
-                and (no_data is not None)
+            )
+                    and ((cellsize is not None) or ((dx is not None) and (dy is not None)))
+                    and (no_data is not None)
             ):
                 break
 
@@ -246,3 +248,181 @@ def read_asc_grid(filename, footer=0):
         cellsize = (dx, dy)
 
     return grid_array, x, y, cellsize, no_data
+
+
+def write_zmap_grid(x, y, z, filename="output.zmap", no_data=-999.0, coord_sys='<null>'):
+    r"""Writes gridded data to ASCII grid file in zmap format (\*.zmap).
+
+    This is useful for exporting data to a GIS program, or Petrel
+    https://gdal.org/drivers/raster/zmap.html
+
+    Parameters
+    ----------
+    x : array_like, shape (N,) or (N, 1)
+        X-coordinates of grid points at center of cells.
+    y : array_like, shape (M,) or (M, 1)
+        Y-coordinates of grid points at center of cells.
+    z : array_like, shape (M, N)
+        Gridded data values. May be a masked array.
+    filename : string, optional
+        Name of output \*.zmap file. Default name is 'output.zmap'.
+    no_data : float, optional
+        no data value to be used
+    coord_sys : String, optional
+        coordinate sytem description
+    """
+
+    nodes_per_line = 5
+    field_width = 15
+
+    if np.ma.is_masked(z):
+        z = np.array(z.tolist(no_data))
+
+    x = np.squeeze(np.array(x))
+    y = np.squeeze(np.array(y))
+    z = np.squeeze(np.array(z))
+    nx = len(x)
+    ny = len(y)
+
+    dx = abs(x[1] - x[0])
+    dy = abs(y[1] - y[0])
+
+    xllcenter = x[0]
+    yllcenter = y[0]
+
+    hix = xllcenter + (nx - 1) * dx
+    hiy = yllcenter + (ny - 1) * dy
+
+    now = datetime.datetime.now()
+
+    with io.open(filename, "w") as f:
+        f.write("!" + "\n")
+        f.write("!     ZIMS FILE NAME :  " + os.path.basename(filename) + "\n")
+        f.write("!     FORMATTED FILE CREATION DATE: " + now.strftime("%d/%m/%Y") + "\n")
+        f.write("!     FORMATTED FILE CREATION TIME: " + now.strftime("%H:%M:%S") + "\n")
+        f.write("!     COORDINATE REFERENCE SYSTEM: " + coord_sys + "\n")
+        f.write("!" + "\n")
+        f.write("@Grid HEADER, GRID, " + str(nodes_per_line) + "\n")
+        f.write(" " + str(field_width) + ", " + str(no_data) + ",  , 1 , 1" + "\n")
+        f.write("   " + str(ny) + ",  " + str(nx) + ",  " + str(xllcenter) + ",  " + str(hix) + ",  " + str(
+            yllcenter) + ",  " + str(hiy) + "\n")
+        f.write("   " + str(dx) + ",  0.0,  0.0    " + "\n")
+        f.write("@" + "\n")
+
+        for n in range(z.shape[1]):
+            count = 0
+            for m in range(z.shape[0] - 1, -1, -1):
+                count += 1
+                if np.isnan(z[m, n]):
+                    f.write(space_back_to_front(format(no_data, "13.7E") + '  '))
+                else:
+                    if abs(z[m, n]) >= 1E100:
+                        f.write(space_back_to_front(format(z[m, n], "13.7E") + ' '))
+                    elif abs(z[m, n]) >= 1E6:
+                        f.write(space_back_to_front(format(z[m, n], "13.7E") + '  '))
+                    else:
+                        f.write(space_back_to_front("{:<13.4f}".format(z[m, n]) + '  '))
+                if count % nodes_per_line == 0 or m == 0:
+                    f.write("\n")
+
+
+def read_zmap_grid(filename):
+    r"""Reads ASCII grid file in zmap format (\*.zmap).
+    https://gdal.org/drivers/raster/zmap.html
+
+    Parameters
+    ----------
+    filename : str
+        Name of \*.zmap file.
+
+    Returns
+    -------
+    grid_array : numpy array, shape (M, N)
+        (M, N) array of grid values, where M is number of Y-coordinates and
+        N is number of X-coordinates. The array entry corresponding to
+        the lower-left coordinates is at index [M, 0], so that
+        the array is oriented as it would be in X-Y space.
+    x : numpy array, shape (N,)
+        1D array of N X-coordinates.
+    y : numpy array, shape (M,)
+        1D array of M Y-coordinates.
+    CELLSIZE : tuple or float
+        Either a two-tuple of (x-cell size, y-cell size),
+        or a float that specifies the uniform cell size.
+    NODATA : float
+        Value that specifies which entries are not actual data.
+    COORD_SYS : String
+        Coordinate system name
+    """
+
+    no_data_value, nx, ny, originx, originy, maxx, maxy, dx, dy = 0, 0, 0, 0, 0, 0, 0, 0, 0
+    data_values = np.empty(1)
+    coord_sys = '<null>'
+
+    i_header_line, i_value = 0, 0
+    with io.open(filename, "r") as f:
+        while True:
+            line = f.readline()
+            if line.startswith('!'):
+                line_strings = line.split(":")
+                if line_strings[0].__contains__('COORDINATE REFERENCE SYSTEM'):
+                    coord_sys = line_strings[1].replace('\n', '')
+            else:
+                line_strings = line.split()
+                line_strings = [string.replace(',', '') for string in line_strings]
+
+            if len(line_strings) == 0:
+                break
+
+            if i_header_line == -1 and not line_strings[0].startswith('!'):
+                for i_string in range(len(line_strings)):
+                    data_values[i_value] = float(line_strings[i_string])
+                    i_value += 1
+
+            if line_strings[0].startswith('@'):
+                if i_header_line == 0:
+                    i_header_line += 1
+                else:
+                    i_header_line = -1
+
+            if i_header_line > 0:
+                if i_header_line == 2:
+                    no_data_value = float(line_strings[1])
+                elif i_header_line == 3:
+                    ny = int(line_strings[0])
+                    nx = int(line_strings[1])
+                    originx = float(line_strings[2])
+                    maxx = float(line_strings[3])
+                    originy = float(line_strings[4])
+                    maxy = float(line_strings[5])
+                    data_values = np.empty(ny * nx)
+                i_header_line += 1
+
+    if nx * ny != len(data_values):
+        raise IOError(
+            "Error reading *.zmap file. Encountered problem "
+            "with header: (nx * ny) does not match with the "
+            "number items in data file body."
+        )
+
+    z = np.empty([ny, nx])
+    i_value = 0
+    for n in range(z.shape[1]):
+        for m in range(z.shape[0] - 1, -1, -1):
+            z[m, n] = data_values[i_value]
+            i_value += 1
+
+    dx = (maxx - originx) / (nx - 1)
+    dy = (maxy - originy) / (ny - 1)
+
+    gridx = np.arange(originx, originx + nx * dx, dx)
+    gridy = np.arange(originy, originy + ny * dy, dy)
+
+    cellsize = (dx, dy)
+
+    return z, gridx, gridy, cellsize, no_data_value, coord_sys
+
+
+def space_back_to_front(string):
+    net = string.replace(' ', '')
+    return "".join(string.rsplit(net)) + net
