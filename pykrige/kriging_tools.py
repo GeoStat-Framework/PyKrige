@@ -75,8 +75,8 @@ def write_asc_grid(x, y, z, filename="output.asc", no_data=-999.0, style=1):
     dx = abs(x[1] - x[0])
     dy = abs(y[1] - y[0])
     if (
-            abs((x[-1] - x[0]) / (x.shape[0] - 1)) != dx
-            or abs((y[-1] - y[0]) / (y.shape[0] - 1)) != dy
+            not np.isclose(abs((x[-1] - x[0]) / (x.shape[0] - 1)), dx)
+            or not np.isclose(abs((y[-1] - y[0]) / (y.shape[0] - 1)), dy)
     ):
         raise ValueError(
             "X or Y spacing is not constant; *.asc grid cannot be written."
@@ -287,6 +287,14 @@ def write_zmap_grid(x, y, z, filename="output.zmap", no_data=-999.0, coord_sys='
     dx = abs(x[1] - x[0])
     dy = abs(y[1] - y[0])
 
+    if (
+            not np.isclose(abs((x[-1] - x[0]) / (x.shape[0] - 1)), dx)
+            or not np.isclose(abs((y[-1] - y[0]) / (y.shape[0] - 1)), dy)
+    ):
+        raise ValueError(
+            "X or Y spacing is not constant; *.asc grid cannot be written."
+        )
+
     xllcenter = x[0]
     yllcenter = y[0]
 
@@ -316,7 +324,7 @@ def write_zmap_grid(x, y, z, filename="output.zmap", no_data=-999.0, coord_sys='
                 if np.isnan(z[m, n]):
                     f.write(space_back_to_front(format(no_data, "13.7E") + '  '))
                 else:
-                    if abs(z[m, n]) >= 1E100:
+                    if abs(z[m, n]) >= 1E100:  # one tailing space less
                         f.write(space_back_to_front(format(z[m, n], "13.7E") + ' '))
                     elif abs(z[m, n]) >= 1E6:
                         f.write(space_back_to_front(format(z[m, n], "13.7E") + '  '))
@@ -346,12 +354,12 @@ def read_zmap_grid(filename):
         1D array of N X-coordinates.
     y : numpy array, shape (M,)
         1D array of M Y-coordinates.
-    CELLSIZE : tuple or float
+    cellsize : tuple or float
         Either a two-tuple of (x-cell size, y-cell size),
         or a float that specifies the uniform cell size.
-    NODATA : float
+    no_data_value : float
         Value that specifies which entries are not actual data.
-    COORD_SYS : String
+    coord_sys : String
         Coordinate system name
     """
 

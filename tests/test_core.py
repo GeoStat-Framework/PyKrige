@@ -1145,7 +1145,22 @@ def test_kriging_tools(sample_data_2d):
     assert_allclose(gridx, x_read)
     assert_allclose(gridy, y_read)
 
+    kt.write_zmap_grid(
+        gridx,
+        gridy,
+        z_write,
+        filename=os.path.join(BASE_DIR, "test_data/temp.zmap"),
+        no_data=1E30,
+    )
+    z_read, x_read, y_read, cellsize, no_data = kt.read_zmap_grid(
+        os.path.join(BASE_DIR, "test_data/temp.zmap")
+    )
+    assert_allclose(z_write, z_read, 0.01, 0.01)
+    assert_allclose(gridx, x_read)
+    assert_allclose(gridy, y_read)
+
     z_write, ss_write = ok.execute("masked", gridx, gridy, mask=mask_ref)
+
     kt.write_asc_grid(
         gridx,
         gridy,
@@ -1155,6 +1170,26 @@ def test_kriging_tools(sample_data_2d):
     )
     z_read, x_read, y_read, cellsize, no_data = kt.read_asc_grid(
         os.path.join(BASE_DIR, "test_data/temp.asc")
+    )
+    assert np.ma.allclose(
+        z_write,
+        np.ma.masked_where(z_read == no_data, z_read),
+        masked_equal=True,
+        rtol=0.01,
+        atol=0.01,
+    )
+    assert_allclose(gridx, x_read)
+    assert_allclose(gridy, y_read)
+
+    kt.write_zmap_grid(
+        gridx,
+        gridy,
+        z_write,
+        filename=os.path.join(BASE_DIR, "test_data/temp.zmap"),
+        no_data=1E30,
+    )
+    z_read, x_read, y_read, cellsize, no_data = kt.read_zmap_grid(
+        os.path.join(BASE_DIR, "test_data/temp.zmap")
     )
     assert np.ma.allclose(
         z_write,
@@ -1183,7 +1218,21 @@ def test_kriging_tools(sample_data_2d):
     assert_allclose(gridx_2, x_read)
     assert_allclose(gridy, y_read)
 
+    kt.write_zmap_grid(
+        gridx_2,
+        gridy,
+        z_write,
+        filename=os.path.join(BASE_DIR, "test_data/temp.zmap"),
+    )
+    z_read, x_read, y_read, cellsize, no_data = kt.read_zmap_grid(
+        os.path.join(BASE_DIR, "test_data/temp.zmap")
+    )
+    assert_allclose(z_write, z_read, 0.01, 0.01)
+    assert_allclose(gridx_2, x_read)
+    assert_allclose(gridy, y_read)
+
     os.remove(os.path.join(BASE_DIR, "test_data/temp.asc"))
+    os.remove(os.path.join(BASE_DIR, "test_data/temp.zmap"))
 
 
 # http://doc.pytest.org/en/latest/skipping.html#id1
