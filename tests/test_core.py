@@ -1152,7 +1152,7 @@ def test_kriging_tools(sample_data_2d):
         filename=os.path.join(BASE_DIR, "test_data/temp.zmap"),
         no_data=1E30,
     )
-    z_read, x_read, y_read, cellsize, no_data = kt.read_zmap_grid(
+    z_read, x_read, y_read, cellsize, no_data, _ = kt.read_zmap_grid(
         os.path.join(BASE_DIR, "test_data/temp.zmap")
     )
     assert_allclose(z_write, z_read, 0.01, 0.01)
@@ -1188,7 +1188,7 @@ def test_kriging_tools(sample_data_2d):
         filename=os.path.join(BASE_DIR, "test_data/temp.zmap"),
         no_data=1E30,
     )
-    z_read, x_read, y_read, cellsize, no_data = kt.read_zmap_grid(
+    z_read, x_read, y_read, cellsize, no_data, _ = kt.read_zmap_grid(
         os.path.join(BASE_DIR, "test_data/temp.zmap")
     )
     assert np.ma.allclose(
@@ -1224,7 +1224,7 @@ def test_kriging_tools(sample_data_2d):
         z_write,
         filename=os.path.join(BASE_DIR, "test_data/temp.zmap"),
     )
-    z_read, x_read, y_read, cellsize, no_data = kt.read_zmap_grid(
+    z_read, x_read, y_read, cellsize, no_data, _ = kt.read_zmap_grid(
         os.path.join(BASE_DIR, "test_data/temp.zmap")
     )
     assert_allclose(z_write, z_read, 0.01, 0.01)
