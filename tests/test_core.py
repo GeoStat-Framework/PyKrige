@@ -1150,7 +1150,7 @@ def test_kriging_tools(sample_data_2d):
         gridy,
         z_write,
         filename=os.path.join(BASE_DIR, "test_data/temp.zmap"),
-        no_data=1E30,
+        no_data=1e30,
     )
     z_read, x_read, y_read, cellsize, no_data, _ = kt.read_zmap_grid(
         os.path.join(BASE_DIR, "test_data/temp.zmap")
@@ -1186,7 +1186,7 @@ def test_kriging_tools(sample_data_2d):
         gridy,
         z_write,
         filename=os.path.join(BASE_DIR, "test_data/temp.zmap"),
-        no_data=1E30,
+        no_data=1e30,
     )
     z_read, x_read, y_read, cellsize, no_data, _ = kt.read_zmap_grid(
         os.path.join(BASE_DIR, "test_data/temp.zmap")

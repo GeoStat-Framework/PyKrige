@@ -74,9 +74,8 @@ def write_asc_grid(x, y, z, filename="output.asc", no_data=-999.0, style=1):
 
     dx = abs(x[1] - x[0])
     dy = abs(y[1] - y[0])
-    if (
-            not np.isclose(abs((x[-1] - x[0]) / (x.shape[0] - 1)), dx)
-            or not np.isclose(abs((y[-1] - y[0]) / (y.shape[0] - 1)), dy)
+    if not np.isclose(abs((x[-1] - x[0]) / (x.shape[0] - 1)), dx) or not np.isclose(
+        abs((y[-1] - y[0]) / (y.shape[0] - 1)), dy
     ):
         raise ValueError(
             "X or Y spacing is not constant; *.asc grid cannot be written."
@@ -198,14 +197,14 @@ def read_asc_grid(filename, footer=0):
                 raise IOError("could not read *.asc file. Error in header.")
 
             if (
-                    (ncols is not None)
-                    and (nrows is not None)
-                    and (
+                (ncols is not None)
+                and (nrows is not None)
+                and (
                     ((xllcorner is not None) and (yllcorner is not None))
                     or ((xllcenter is not None) and (yllcenter is not None))
-            )
-                    and ((cellsize is not None) or ((dx is not None) and (dy is not None)))
-                    and (no_data is not None)
+                )
+                and ((cellsize is not None) or ((dx is not None) and (dy is not None)))
+                and (no_data is not None)
             ):
                 break
 
@@ -250,7 +249,9 @@ def read_asc_grid(filename, footer=0):
     return grid_array, x, y, cellsize, no_data
 
 
-def write_zmap_grid(x, y, z, filename="output.zmap", no_data=-999.0, coord_sys='<null>'):
+def write_zmap_grid(
+    x, y, z, filename="output.zmap", no_data=-999.0, coord_sys="<null>"
+):
     r"""Writes gridded data to ASCII grid file in zmap format (\*.zmap).
 
     This is useful for exporting data to a GIS program, or Petrel
@@ -287,9 +288,8 @@ def write_zmap_grid(x, y, z, filename="output.zmap", no_data=-999.0, coord_sys='
     dx = abs(x[1] - x[0])
     dy = abs(y[1] - y[0])
 
-    if (
-            not np.isclose(abs((x[-1] - x[0]) / (x.shape[0] - 1)), dx)
-            or not np.isclose(abs((y[-1] - y[0]) / (y.shape[0] - 1)), dy)
+    if not np.isclose(abs((x[-1] - x[0]) / (x.shape[0] - 1)), dx) or not np.isclose(
+        abs((y[-1] - y[0]) / (y.shape[0] - 1)), dy
     ):
         raise ValueError(
             "X or Y spacing is not constant; *.asc grid cannot be written."
@@ -306,14 +306,31 @@ def write_zmap_grid(x, y, z, filename="output.zmap", no_data=-999.0, coord_sys='
     with io.open(filename, "w") as f:
         f.write("!" + "\n")
         f.write("!     ZIMS FILE NAME :  " + os.path.basename(filename) + "\n")
-        f.write("!     FORMATTED FILE CREATION DATE: " + now.strftime("%d/%m/%Y") + "\n")
-        f.write("!     FORMATTED FILE CREATION TIME: " + now.strftime("%H:%M:%S") + "\n")
+        f.write(
+            "!     FORMATTED FILE CREATION DATE: " + now.strftime("%d/%m/%Y") + "\n"
+        )
+        f.write(
+            "!     FORMATTED FILE CREATION TIME: " + now.strftime("%H:%M:%S") + "\n"
+        )
         f.write("!     COORDINATE REFERENCE SYSTEM: " + coord_sys + "\n")
         f.write("!" + "\n")
         f.write("@Grid HEADER, GRID, " + str(nodes_per_line) + "\n")
         f.write(" " + str(field_width) + ", " + str(no_data) + ",  , 1 , 1" + "\n")
-        f.write("   " + str(ny) + ",  " + str(nx) + ",  " + str(xllcenter) + ",  " + str(hix) + ",  " + str(
-            yllcenter) + ",  " + str(hiy) + "\n")
+        f.write(
+            "   "
+            + str(ny)
+            + ",  "
+            + str(nx)
+            + ",  "
+            + str(xllcenter)
+            + ",  "
+            + str(hix)
+            + ",  "
+            + str(yllcenter)
+            + ",  "
+            + str(hiy)
+            + "\n"
+        )
         f.write("   " + str(dx) + ",  0.0,  0.0    " + "\n")
         f.write("@" + "\n")
 
@@ -322,14 +339,14 @@ def write_zmap_grid(x, y, z, filename="output.zmap", no_data=-999.0, coord_sys='
             for m in range(z.shape[0] - 1, -1, -1):
                 count += 1
                 if np.isnan(z[m, n]):
-                    f.write(space_back_to_front(format(no_data, "13.7E") + '  '))
+                    f.write(space_back_to_front(format(no_data, "13.7E") + "  "))
                 else:
-                    if abs(z[m, n]) >= 1E100:  # one tailing space less
-                        f.write(space_back_to_front(format(z[m, n], "13.7E") + ' '))
-                    elif abs(z[m, n]) >= 1E6:
-                        f.write(space_back_to_front(format(z[m, n], "13.7E") + '  '))
+                    if abs(z[m, n]) >= 1e100:  # one tailing space less
+                        f.write(space_back_to_front(format(z[m, n], "13.7E") + " "))
+                    elif abs(z[m, n]) >= 1e6:
+                        f.write(space_back_to_front(format(z[m, n], "13.7E") + "  "))
                     else:
-                        f.write(space_back_to_front("{:<13.4f}".format(z[m, n]) + '  '))
+                        f.write(space_back_to_front("{:<13.4f}".format(z[m, n]) + "  "))
                 if count % nodes_per_line == 0 or m == 0:
                     f.write("\n")
 
@@ -363,31 +380,41 @@ def read_zmap_grid(filename):
         Coordinate system name
     """
 
-    no_data_value, nx, ny, originx, originy, maxx, maxy, dx, dy = 0, 0, 0, 0, 0, 0, 0, 0, 0
+    no_data_value, nx, ny, originx, originy, maxx, maxy, dx, dy = (
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    )
     data_values = np.empty(1)
-    coord_sys = '<null>'
+    coord_sys = "<null>"
 
     i_header_line, i_value = 0, 0
     with io.open(filename, "r") as f:
         while True:
             line = f.readline()
-            if line.startswith('!'):
+            if line.startswith("!"):
                 line_strings = line.split(":")
-                if line_strings[0].__contains__('COORDINATE REFERENCE SYSTEM'):
-                    coord_sys = line_strings[1].replace('\n', '')
+                if line_strings[0].__contains__("COORDINATE REFERENCE SYSTEM"):
+                    coord_sys = line_strings[1].replace("\n", "")
             else:
                 line_strings = line.split()
-                line_strings = [string.replace(',', '') for string in line_strings]
+                line_strings = [string.replace(",", "") for string in line_strings]
 
             if len(line_strings) == 0:
                 break
 
-            if i_header_line == -1 and not line_strings[0].startswith('!'):
+            if i_header_line == -1 and not line_strings[0].startswith("!"):
                 for i_string in range(len(line_strings)):
                     data_values[i_value] = float(line_strings[i_string])
                     i_value += 1
 
-            if line_strings[0].startswith('@'):
+            if line_strings[0].startswith("@"):
                 if i_header_line == 0:
                     i_header_line += 1
                 else:
@@ -432,5 +459,5 @@ def read_zmap_grid(filename):
 
 
 def space_back_to_front(string):
-    net = string.replace(' ', '')
+    net = string.replace(" ", "")
     return "".join(string.rsplit(net)) + net
