@@ -1,0 +1,63 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel",
+    "setuptools_scm[toml]>=3.5",
+    "oldest-supported-numpy",
+    "scipy>=1.1.0,<2",
+    "Cython>=0.28.3,<3.0",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "pykrige/_version.py"
+write_to_template = "__version__ = '{version}'"
+local_scheme = "no-local-version"
+fallback_version = "0.0.0.dev0"
+
+[tool.black]
+target-version = [
+    "py36",
+    "py37",
+    "py38",
+]
+
+[tool.coverage]
+    [tool.coverage.run]
+    source = ["pykrige"]
+    omit = [
+        "*docs*",
+        "*examples*",
+        "*tests*",
+    ]
+
+    [tool.coverage.report]
+    exclude_lines = [
+        "pragma: no cover",
+        "def __repr__",
+        "def __str__",
+    ]
+
+[tool.pylint]
+    [tool.pylint.master]
+    extension-pkg-whitelist = [
+        "numpy",
+        "scipy",
+    ]
+    ignore = "_version.py"
+
+    [tool.pylint.message_control]
+    disable = [
+        "R0801",
+    ]
+
+    [tool.pylint.reports]
+    output-format = "colorized"
+
+    [tool.pylint.design]
+    max-args = 20
+    max-locals = 50
+    max-branches = 30
+    max-statements = 80
+    max-attributes = 25
+    max-public-methods = 75
