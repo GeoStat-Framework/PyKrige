@@ -24,7 +24,7 @@ target-version = [
 
 [tool.coverage]
     [tool.coverage.run]
-    source = ["gstools"]
+    source = ["pykrige"]
     omit = [
         "*docs*",
         "*examples*",
