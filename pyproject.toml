@@ -4,6 +4,7 @@ requires = [
     "wheel",
     "setuptools_scm[toml]>=3.5",
     "oldest-supported-numpy",
+    "scipy>=1.1.0,<2",
     "Cython>=0.28.3,<3.0",
 ]
 build-backend = "setuptools.build_meta"
@@ -15,7 +16,6 @@ local_scheme = "no-local-version"
 fallback_version = "0.0.0.dev0"
 
 [tool.black]
-line-length = 79
 target-version = [
     "py36",
     "py37",
