@@ -1,3 +1,0 @@
--r requirements_doc.txt
--r ../requirements_setup.txt
--r ../requirements.txt

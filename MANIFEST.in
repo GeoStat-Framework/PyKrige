@@ -1,7 +1,7 @@
-include README.md
-include MANIFEST.in
-include setup.py
-include setup.cfg
+prune *
+graft tests
 recursive-include pykrige *.py *.pyx *.pxd
-recursive-include tests *.py *.txt *.asc
-include LICENSE
+recursive-exclude pykrige *.c *.cpp
+include LICENSE README.md pyproject.toml setup.py setup.cfg
+exclude CHANGELOG.md
+global-exclude __pycache__ *.py[cod] .*
