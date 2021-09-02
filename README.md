@@ -73,9 +73,10 @@ conda install -c conda-forge pykrige
 
 ### Tools
 
--   `kriging_tools.write_asc_grid`: Writes gridded data to ASCII grid
-    file (`\*.asc`)
+-   `kriging_tools.write_asc_grid`: Writes gridded data to ASCII grid file (`\*.asc`)
 -   `kriging_tools.read_asc_grid`: Reads ASCII grid file (`\*.asc`)
+-   `kriging_tools.write_zmap_grid`: Writes gridded data to zmap file (`\*.zmap`)
+-   `kriging_tools.read_zmap_grid`: Reads zmap file (`\*.zmap`)
 
 ### Kriging Parameters Tuning
 

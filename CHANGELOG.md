@@ -2,6 +2,26 @@ Changelog
 =========
 
 
+Version 1.6.1
+-------------
+*September 02, 2021*
+
+**New features**
+
+* IO routines for zmap files ([#199](https://github.com/GeoStat-Framework/PyKrige/pull/165))
+* `write_asc_grid` got new keyword `no_data` ([#199](https://github.com/GeoStat-Framework/PyKrige/issues/199))
+
+**Changes**
+
+* now using a `pyproject.toml` file ([#211](https://github.com/GeoStat-Framework/PyKrige/pull/211))
+* now using a single `main` branch in the repository ([#212](https://github.com/GeoStat-Framework/PyKrige/pull/212))
+* Fixed typos ([#188](https://github.com/GeoStat-Framework/PyKrige/pull/188), [#189](https://github.com/GeoStat-Framework/PyKrige/pull/189))
+
+**Bug fixes**
+
+* `write_asc_grid` was to strict about dx ([#197](https://github.com/GeoStat-Framework/PyKrige/issues/197))
+
+
 Version 1.6.0
 -------------
 *April 04, 2021*
