@@ -3,14 +3,14 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3738604.svg)](https://doi.org/10.5281/zenodo.3738604)
 [![PyPI version](https://badge.fury.io/py/PyKrige.svg)](https://badge.fury.io/py/PyKrige)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/pykrige.svg)](https://anaconda.org/conda-forge/pykrige)
-[![Build Status](https://github.com/GeoStat-Framework/PyKrige/workflows/Continuous%20Integration/badge.svg?branch=develop)](https://github.com/GeoStat-Framework/PyKrige/actions)
-[![Coverage Status](https://coveralls.io/repos/github/GeoStat-Framework/PyKrige/badge.svg?branch=develop)](https://coveralls.io/github/GeoStat-Framework/PyKrige?branch=develop)
+[![Build Status](https://github.com/GeoStat-Framework/PyKrige/workflows/Continuous%20Integration/badge.svg?branch=main)](https://github.com/GeoStat-Framework/PyKrige/actions)
+[![Coverage Status](https://coveralls.io/repos/github/GeoStat-Framework/PyKrige/badge.svg?branch=main)](https://coveralls.io/github/GeoStat-Framework/PyKrige?branch=main)
 [![Documentation Status](https://readthedocs.org/projects/pykrige/badge/?version=stable)](http://pykrige.readthedocs.io/en/stable/?badge=stable)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 
 <p align="center">
-<img src="https://github.com/GeoStat-Framework/GeoStat-Framework.github.io/raw/master/docs/source/pics/PyKrige_250.png" alt="PyKrige-LOGO" width="251px"/>
+<img src="https://github.com/GeoStat-Framework/GeoStat-Framework.github.io/raw/main/docs/source/pics/PyKrige_250.png" alt="PyKrige-LOGO" width="251px"/>
 </p>
 
 Kriging Toolkit for Python.
