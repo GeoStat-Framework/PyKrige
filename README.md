@@ -10,7 +10,7 @@
 
 
 <p align="center">
-<img src="https://github.com/GeoStat-Framework/GeoStat-Framework.github.io/raw/main/docs/source/pics/PyKrige_250.png" alt="PyKrige-LOGO" width="251px"/>
+<img src="https://github.com/GeoStat-Framework/GeoStat-Framework.github.io/raw/master/docs/source/pics/PyKrige_250.png" alt="PyKrige-LOGO" width="251px"/>
 </p>
 
 Kriging Toolkit for Python.
