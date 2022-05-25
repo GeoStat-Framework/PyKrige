@@ -53,7 +53,7 @@ cdef void _c_gaussian_variogram_model(double [::1] params, long n, double [::1] 
     b = params[1]
     c = params[2]
     for k in range(n):
-        out[k] = (a - c)*(1 - exp(-(dist[k]/(b*4.0/7.0))**2)) + c
+        out[k] = a*(1 - exp(-(dist[k]/(b*4.0/7.0))**2)) + c
 
 
 cdef void _c_exponential_variogram_model(double [::1] params, long n, double[::1] dist, double[::1] out) nogil:
@@ -63,7 +63,7 @@ cdef void _c_exponential_variogram_model(double [::1] params, long n, double[::1
     b = params[1]
     c = params[2]
     for k in range(n):
-        out[k] = (a - c)*(1 - exp(-dist[k]/(b/3.0))) + c
+        out[k] = a*(1 - exp(-dist[k]/(b/3.0))) + c
 
 
 cdef void _c_spherical_variogram_model(double [::1] params, long n, double[::1] dist, double[::1] out) nogil:
@@ -74,6 +74,6 @@ cdef void _c_spherical_variogram_model(double [::1] params, long n, double[::1] 
     c = params[2]
     for k in range(n):
         if dist[k] < b:
-            out[k] = (a - c)*((3*dist[k])/(2*b) - (dist[k]**3)/(2*b**3)) + c
+            out[k] = a*((3*dist[k])/(2*b) - (dist[k]**3)/(2*b**3)) + c
         else:
-            out[k] = a
+            out[k] = a + c
