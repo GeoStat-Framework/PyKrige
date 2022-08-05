@@ -191,7 +191,6 @@ class UniversalKriging:
         Here you can select the algorithm to compute the pseudo-inverse matrix:
 
             * `"pinv"`: use `pinv` from `scipy` which uses `lstsq`
-            * `"pinv2"`: use `pinv2` from `scipy` which uses `SVD`
             * `"pinvh"`: use `pinvh` from `scipy` which uses eigen-values
 
         Default: `"pinv"`
