@@ -31,7 +31,7 @@ import scipy.linalg as spl
 eps = 1.0e-10  # Cutoff for comparison to zero
 
 
-P_INV = {"pinv": spl.pinv, "pinv2": spl.pinv2, "pinvh": spl.pinvh}
+P_INV = {"pinv": spl.pinv, "pinvh": spl.pinvh}
 
 
 def great_circle_distance(lon1, lat1, lon2, lat2):
