@@ -1,7 +1,4 @@
-prune *
-graft tests
-recursive-include pykrige *.py *.pyx *.pxd
-recursive-exclude pykrige *.c *.cpp
-include LICENSE README.md pyproject.toml setup.py setup.cfg
-exclude CHANGELOG.md
-global-exclude __pycache__ *.py[cod] .*
+prune **
+recursive-include tests *.py *.txt *.asc
+recursive-include src/pykrige *.py *.pyx *.pxd
+include LICENSE README.md pyproject.toml setup.py
