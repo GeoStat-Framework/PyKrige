@@ -7,9 +7,10 @@ PyKrige demonstration and usage
 as a non-exact interpolator in 1D. 
 """
 
-from pykrige.ok import OrdinaryKriging
 import matplotlib.pyplot as plt
 import numpy as np
+
+from pykrige.ok import OrdinaryKriging
 
 plt.style.use("ggplot")
 

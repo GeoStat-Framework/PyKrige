@@ -7,11 +7,11 @@ An example of regression kriging
 
 import sys
 
-from sklearn.svm import SVR
+from sklearn.datasets import fetch_california_housing
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
-from sklearn.datasets import fetch_california_housing
 from sklearn.model_selection import train_test_split
+from sklearn.svm import SVR
 
 from pykrige.rk import RegressionKriging
 

@@ -2,21 +2,21 @@
 Testing code.
 Updated BSM February 2017
 """
-import sys
 import os
+import sys
 
 import numpy as np
 import pytest
-from pytest import approx
 from numpy.testing import assert_allclose
+from pytest import approx
 from scipy.spatial.distance import cdist
 
-from pykrige import kriging_tools as kt
 from pykrige import core
+from pykrige import kriging_tools as kt
 from pykrige import variogram_models
 from pykrige.ok import OrdinaryKriging
-from pykrige.uk import UniversalKriging
 from pykrige.ok3d import OrdinaryKriging3D
+from pykrige.uk import UniversalKriging
 from pykrige.uk3d import UniversalKriging3D
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))

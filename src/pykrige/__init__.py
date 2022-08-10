@@ -43,8 +43,8 @@ Copyright (c) 2015-2020, PyKrige Developers
 
 from . import kriging_tools as kt  # noqa
 from .ok import OrdinaryKriging  # noqa
-from .uk import UniversalKriging  # noqa
 from .ok3d import OrdinaryKriging3D  # noqa
+from .uk import UniversalKriging  # noqa
 from .uk3d import UniversalKriging3D  # noqa
 
 try:

@@ -6,10 +6,10 @@ In this example we apply a regional linear trend to the kriging system.
 
 """
 
-from pykrige.uk import UniversalKriging
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
+from pykrige.uk import UniversalKriging
 
 data = np.array(
     [

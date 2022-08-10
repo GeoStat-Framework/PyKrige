@@ -5,10 +5,11 @@ GSTools Interface
 
 Example how to use the PyKrige routines with a GSTools CovModel.
 """
-import numpy as np
-from pykrige.ok import OrdinaryKriging
-from matplotlib import pyplot as plt
 import gstools as gs
+import numpy as np
+from matplotlib import pyplot as plt
+
+from pykrige.ok import OrdinaryKriging
 
 # conditioning data
 data = np.array(

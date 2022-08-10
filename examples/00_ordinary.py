@@ -6,11 +6,11 @@ First we will create a 2D dataset together with the associated x, y grids.
 
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
+
 import pykrige.kriging_tools as kt
 from pykrige.ok import OrdinaryKriging
-import matplotlib.pyplot as plt
-
 
 data = np.array(
     [

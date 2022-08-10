@@ -86,6 +86,10 @@ write_to_template = "__version__ = '{version}'"
 local_scheme = "no-local-version"
 fallback_version = "0.0.0.dev0"
 
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
 [tool.black]
 target-version = [
     "py36",

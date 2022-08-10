@@ -13,11 +13,12 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 import datetime
-import sys
 import os
 import shlex
-import sphinx_rtd_theme
+import sys
+
 import matplotlib
+import sphinx_rtd_theme
 
 matplotlib.use("Agg")
 
@@ -28,8 +29,9 @@ matplotlib.use("Agg")
 # sys.path.insert(0, os.path.abspath("../../"))
 sys.path.insert(0, os.path.abspath("sphinxext"))
 
-import pykrige
 from github_link import make_linkcode_resolve
+
+import pykrige
 
 # -- General configuration ------------------------------------------------
 

@@ -1,17 +1,16 @@
 from itertools import product
-import pytest
 
 import numpy as np
+import pytest
 
 from pykrige.rk import RegressionKriging
 
 try:
-    from sklearn.svm import SVR
     from sklearn.datasets import fetch_california_housing
-    from sklearn.linear_model import ElasticNet, Lasso
     from sklearn.ensemble import RandomForestRegressor
-    from sklearn.linear_model import LinearRegression
+    from sklearn.linear_model import ElasticNet, Lasso, LinearRegression
     from sklearn.model_selection import train_test_split
+    from sklearn.svm import SVR
 
     SKLEARN_INSTALLED = True
 except ImportError:

@@ -1,6 +1,6 @@
 # coding: utf-8
 """Regression Kriging."""
-from pykrige.compat import Krige, validate_sklearn, check_sklearn_model
+from pykrige.compat import Krige, check_sklearn_model, validate_sklearn
 
 validate_sklearn()
 
