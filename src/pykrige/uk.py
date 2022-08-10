@@ -416,7 +416,7 @@ class UniversalKriging:
                     external_drift.shape[0] == external_drift_x.shape[0]
                     and external_drift.shape[1] == external_drift_y.shape[0]
                 ):
-                    self.external_Z_drift = np.array(external_drift.T)
+                    self.external_Z_array = np.array(external_drift.T)
                 else:
                     raise ValueError(
                         "External drift dimensions do not match "
