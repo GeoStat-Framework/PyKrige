@@ -82,7 +82,7 @@ Source = "https://github.com/GeoStat-Framework/PyKrige"
 Tracker = "https://github.com/GeoStat-Framework/PyKrige/issues"
 
 [tool.setuptools_scm]
-write_to = "pykrige/_version.py"
+write_to = "src/pykrige/_version.py"
 write_to_template = "__version__ = '{version}'"
 local_scheme = "no-local-version"
 fallback_version = "0.0.0.dev0"
