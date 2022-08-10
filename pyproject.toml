@@ -133,3 +133,16 @@ target-version = [
     max-statements = 80
     max-attributes = 25
     max-public-methods = 75
+
+[tool.cibuildwheel]
+# Switch to using build
+build-frontend = "build"
+# Disable building PyPy wheels on all platforms, 32bit for py3.10 and musllinux builds, py3.6
+skip = ["cp36-*", "pp*", "cp310-win32", "cp310-manylinux_i686", "*-musllinux_*"]
+# Run the package tests using `pytest`
+test-extras = "test"
+test-command = "pytest -v {package}/tests"
+# Skip trying to test arm64 builds on Intel Macs
+test-skip = "*-macosx_arm64 *-macosx_universal2:arm64"
+# no wheels for linux-32bit anymore for numpy>=1.22
+environment = "PIP_PREFER_BINARY=1"
