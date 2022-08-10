@@ -269,6 +269,10 @@ class UniversalKriging:
             self.model = self.variogram_model
             if self.model.field_dim == 3:
                 raise ValueError("GSTools: model dim is not 1 or 2")
+            if self.model.latlon:
+                raise ValueError(
+                    "GSTools: latlon models not supported for universal kriging"
+                )
             self.variogram_model = "custom"
             variogram_function = self.model.pykrige_vario
             variogram_parameters = []
@@ -675,6 +679,10 @@ class UniversalKriging:
             self.model = self.variogram_model
             if self.model.field_dim == 3:
                 raise ValueError("GSTools: model dim is not 1 or 2")
+            if self.model.latlon:
+                raise ValueError(
+                    "GSTools: latlon models not supported for universal kriging"
+                )
             self.variogram_model = "custom"
             variogram_function = self.model.pykrige_vario
             variogram_parameters = []
