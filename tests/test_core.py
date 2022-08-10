@@ -2779,7 +2779,7 @@ def test_geometric_code():
         dz = np.sin(np.pi / 180.0 * lat) - np.sin(np.pi / 180.0 * lat_ref[i])
         assert_allclose(
             core.great_circle_distance(lon_ref[i], lat_ref[i], lon, lat),
-            core.euclid3_to_great_circle(np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)),
+            core.euclid3_to_great_circle(np.sqrt(dx**2 + dy**2 + dz**2)),
             rtol=1e-5,
         )
 

@@ -326,7 +326,7 @@ texinfo_documents = [
 # The following is used by sphinx.ext.linkcode to provide links to github
 linkcode_resolve = make_linkcode_resolve(
     "pykrige",
-    u"https://github.com/GeoStat-Framework/"
+    "https://github.com/GeoStat-Framework/"
     "PyKrige/blob/{revision}/"
     "{package}/{path}#L{lineno}",
 )

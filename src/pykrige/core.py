@@ -869,9 +869,9 @@ def calcQ1(epsilon):
 
 def calcQ2(epsilon):
     """Returns the Q2 statistic for the variogram fit (see [1])."""
-    return np.sum(epsilon ** 2) / (epsilon.shape[0] - 1)
+    return np.sum(epsilon**2) / (epsilon.shape[0] - 1)
 
 
 def calc_cR(Q2, sigma):
     """Returns the cR statistic for the variogram fit (see [1])."""
-    return Q2 * np.exp(np.sum(np.log(sigma ** 2)) / sigma.shape[0])
+    return Q2 * np.exp(np.sum(np.log(sigma**2)) / sigma.shape[0])
