@@ -217,12 +217,20 @@ class OrdinaryKriging:
             raise ValueError("exact_values has to be boolean True or False")
         self.exact_values = exact_values
 
+        self.coordinates_type = coordinates_type
+
         # check if a GSTools covariance model is given
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
             self.model = self.variogram_model
-            if self.model.dim == 3:
+            if self.model.field_dim == 3:
                 raise ValueError("GSTools: model dim is not 1 or 2")
+            # check if coordinate types match
+            if (self.coordinates_type == "geographic") != self.model.latlon:
+                raise ValueError(
+                    "GSTools: latlon models are needed and only valid "
+                    "for geographic coordinates"
+                )
             self.variogram_model = "custom"
             variogram_function = self.model.pykrige_vario
             variogram_parameters = []
@@ -265,7 +273,7 @@ class OrdinaryKriging:
 
         # adjust for anisotropy... only implemented for euclidean (rectangular)
         # coordinates, as anisotropy is ambiguous for geographic coordinates...
-        if coordinates_type == "euclidean":
+        if self.coordinates_type == "euclidean":
             self.XCENTER = (np.amax(self.X_ORIG) + np.amin(self.X_ORIG)) / 2.0
             self.YCENTER = (np.amax(self.Y_ORIG) + np.amin(self.Y_ORIG)) / 2.0
             self.anisotropy_scaling = anisotropy_scaling
@@ -278,7 +286,7 @@ class OrdinaryKriging:
                 [self.anisotropy_scaling],
                 [self.anisotropy_angle],
             ).T
-        elif coordinates_type == "geographic":
+        elif self.coordinates_type == "geographic":
             # Leave everything as is in geographic case.
             # May be open to discussion?
             if anisotropy_scaling != 1.0:
@@ -298,7 +306,6 @@ class OrdinaryKriging:
                 "Only 'euclidean' and 'geographic' are valid "
                 "values for coordinates-keyword."
             )
-        self.coordinates_type = coordinates_type
 
         if self.verbose:
             print("Initializing variogram model...")
@@ -422,8 +429,14 @@ class OrdinaryKriging:
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
             self.model = self.variogram_model
-            if self.model.dim == 3:
+            if self.model.field_dim == 3:
                 raise ValueError("GSTools: model dim is not 1 or 2")
+            # check if coordinate types match
+            if (self.coordinates_type == "geographic") != self.model.latlon:
+                raise ValueError(
+                    "GSTools: latlon models are needed and only valid "
+                    "for geographic coordinates"
+                )
             self.variogram_model = "custom"
             variogram_function = self.model.pykrige_vario
             variogram_parameters = []
