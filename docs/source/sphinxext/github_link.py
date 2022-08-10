@@ -1,11 +1,11 @@
 # Adapted from scikit learn
 
-from operator import attrgetter
 import inspect
-import subprocess
 import os
+import subprocess
 import sys
 from functools import partial
+from operator import attrgetter
 
 REVISION_CMD = "git rev-parse --short HEAD"
 

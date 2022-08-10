@@ -19,19 +19,20 @@ References
    (Wiley Series in Probability and Statistics, 1993) 137 p.
 Copyright (c) 2015-2020, PyKrige Developers
 """
+import warnings
+
 import numpy as np
 import scipy.linalg
 from scipy.spatial.distance import cdist
-from . import variogram_models
-from . import core
+
+from . import core, variogram_models
 from .core import (
+    P_INV,
     _adjust_for_anisotropy,
+    _find_statistics,
     _initialize_variogram_model,
     _make_variogram_parameter_list,
-    _find_statistics,
-    P_INV,
 )
-import warnings
 
 
 class UniversalKriging:

@@ -1,16 +1,16 @@
 # coding: utf-8
 # pylint: disable= invalid-name,  unused-import
 """For compatibility."""
-from pykrige.uk3d import UniversalKriging3D
+from pykrige.ok import OrdinaryKriging
 from pykrige.ok3d import OrdinaryKriging3D
 from pykrige.uk import UniversalKriging
-from pykrige.ok import OrdinaryKriging
+from pykrige.uk3d import UniversalKriging3D
 
 # sklearn
 try:
     # keep train_test_split here for backward compatibility
+    from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
     from sklearn.model_selection import train_test_split
-    from sklearn.base import RegressorMixin, ClassifierMixin, BaseEstimator
 
     SKLEARN_INSTALLED = True
 

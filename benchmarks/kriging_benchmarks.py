@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """Benchmarks."""
 from time import time
+
 import numpy as np
+
 from pykrige.ok import OrdinaryKriging
 
 np.random.seed(19999)

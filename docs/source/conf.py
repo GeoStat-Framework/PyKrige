@@ -13,11 +13,12 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 import datetime
-import sys
 import os
 import shlex
-import sphinx_rtd_theme
+import sys
+
 import matplotlib
+import sphinx_rtd_theme
 
 matplotlib.use("Agg")
 
@@ -28,8 +29,9 @@ matplotlib.use("Agg")
 # sys.path.insert(0, os.path.abspath("../../"))
 sys.path.insert(0, os.path.abspath("sphinxext"))
 
-import pykrige
 from github_link import make_linkcode_resolve
+
+import pykrige
 
 # -- General configuration ------------------------------------------------
 
@@ -45,17 +47,34 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "sphinxcontrib.napoleon",
+    "sphinx.ext.napoleon",  # parameters look better than with numpydoc only
+    "numpydoc",
     "sphinx_gallery.gen_gallery",
     "sphinx.ext.linkcode",
     "m2r2",
 ]
 
-
-autosummary_generate = True
-
 autodoc_default_flags = ["members", "inherited-members"]
 
+# autosummaries from source-files
+autosummary_generate = True
+# dont show __init__ docstring
+autoclass_content = "class"
+# sort class members
+autodoc_member_order = "groupwise"
+# autodoc_member_order = 'bysource'
+
+# Notes in boxes
+napoleon_use_admonition_for_notes = True
+# Attributes like parameters
+# napoleon_use_ivar = True
+# this is a nice class-doc layout
+numpydoc_show_class_members = True
+# class members have no separate file, so they are not in a toctree
+numpydoc_class_members_toctree = False
+# for the covmodels alot of classmembers show up...
+# maybe switch off with:    :no-inherited-members:
+numpydoc_show_inherited_class_members = True
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
@@ -326,7 +345,7 @@ texinfo_documents = [
 # The following is used by sphinx.ext.linkcode to provide links to github
 linkcode_resolve = make_linkcode_resolve(
     "pykrige",
-    u"https://github.com/GeoStat-Framework/"
+    "https://github.com/GeoStat-Framework/"
     "PyKrige/blob/{revision}/"
     "{package}/{path}#L{lineno}",
 )

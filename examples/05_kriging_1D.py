@@ -4,8 +4,9 @@
 
 An example of 1D kriging with PyKrige
 """
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from pykrige import OrdinaryKriging
 
 plt.style.use("ggplot")

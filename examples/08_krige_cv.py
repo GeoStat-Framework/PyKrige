@@ -7,9 +7,9 @@ Searching for optimal kriging parameters with cross validation
 """
 
 import numpy as np
-from pykrige.rk import Krige
 from sklearn.model_selection import GridSearchCV
 
+from pykrige.rk import Krige
 
 # 2D Kring param opt
 

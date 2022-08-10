@@ -7,10 +7,10 @@ A small example script showing the usage of the 'geographic' coordinates type
 for ordinary kriging on a sphere.
 """
 
-from pykrige.ok import OrdinaryKriging
 import numpy as np
 from matplotlib import pyplot as plt
 
+from pykrige.ok import OrdinaryKriging
 
 # Make this example reproducible:
 np.random.seed(89239413)

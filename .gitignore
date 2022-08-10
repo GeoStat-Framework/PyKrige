@@ -16,6 +16,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!src/pykrige/lib/
 lib64/
 parts/
 sdist/
@@ -108,7 +109,8 @@ tags
 
 # own stuff
 info/
-pykrige/_version.py
+src/pykrige/_version.py
+.vscode/
 
 # Cython generated C code
 *.c

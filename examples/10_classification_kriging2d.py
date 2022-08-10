@@ -7,12 +7,12 @@ An example of classification kriging
 
 import sys
 
-from sklearn.svm import SVC
+from sklearn.datasets import fetch_california_housing
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.datasets import fetch_california_housing
-from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import KBinsDiscretizer
+from sklearn.svm import SVC
 
 from pykrige.ck import ClassificationKriging
 

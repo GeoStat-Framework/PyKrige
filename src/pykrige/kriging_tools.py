@@ -12,11 +12,12 @@ Methods for reading/writing ASCII grid files.
 
 Copyright (c) 2015-2020, PyKrige Developers
 """
-import numpy as np
-import warnings
-import io
 import datetime
+import io
 import os
+import warnings
+
+import numpy as np
 
 
 def write_asc_grid(x, y, z, filename="output.asc", no_data=-999.0, style=1):

@@ -23,10 +23,9 @@ Copyright (c) 2015-2020, PyKrige Developers
 """
 
 import numpy as np
-from scipy.spatial.distance import pdist, squareform, cdist
-from scipy.optimize import least_squares
 import scipy.linalg as spl
-
+from scipy.optimize import least_squares
+from scipy.spatial.distance import cdist, pdist, squareform
 
 eps = 1.0e-10  # Cutoff for comparison to zero
 
@@ -869,9 +868,9 @@ def calcQ1(epsilon):
 
 def calcQ2(epsilon):
     """Returns the Q2 statistic for the variogram fit (see [1])."""
-    return np.sum(epsilon ** 2) / (epsilon.shape[0] - 1)
+    return np.sum(epsilon**2) / (epsilon.shape[0] - 1)
 
 
 def calc_cR(Q2, sigma):
     """Returns the cR statistic for the variogram fit (see [1])."""
-    return Q2 * np.exp(np.sum(np.log(sigma ** 2)) / sigma.shape[0])
+    return Q2 * np.exp(np.sum(np.log(sigma**2)) / sigma.shape[0])

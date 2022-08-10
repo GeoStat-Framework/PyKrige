@@ -1,16 +1,16 @@
 from itertools import product
-import pytest
 
 import numpy as np
+import pytest
 
 from pykrige.ck import ClassificationKriging
 
 try:
-    from sklearn.svm import SVC
     from sklearn.datasets import fetch_california_housing
     from sklearn.ensemble import RandomForestClassifier
-    from sklearn.preprocessing import KBinsDiscretizer
     from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import KBinsDiscretizer
+    from sklearn.svm import SVC
 
     SKLEARN_INSTALLED = True
 except ImportError:

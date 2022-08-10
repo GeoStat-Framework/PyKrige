@@ -1,19 +1,95 @@
 [build-system]
 requires = [
-    "setuptools>=42",
+    "setuptools>=62",
     "wheel",
-    "setuptools_scm[toml]>=3.5",
+    "setuptools_scm[toml]>=6.4",
     "oldest-supported-numpy",
     "scipy>=1.1.0,<2",
     "Cython>=0.28.3,<3.0",
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+requires-python = ">=3.7"
+name = "PyKrige"
+description = "Kriging Toolkit for Python."
+authors = [
+    {name = "Benjamin S. Murphy"},
+    {name = "Sebastian Müller", email = "info@geostat-framework.org"},
+]
+maintainers = [
+    {name = "Sebastian Müller", email = "info@geostat-framework.org"},
+    {name = "Roman Yurchak"},
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+dynamic = ["version"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: Unix",
+    "Operating System :: Microsoft",
+    "Operating System :: MacOS",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "numpy>=1.14.5,<2",
+    "scipy>=1.1.0,<2",
+]
+
+[project.optional-dependencies]
+doc = [
+    "gstools>=1.3,<2",
+    "scipy<1.9",
+    "pillow",
+    "scikit-learn>=0.19",
+    "m2r2>=0.2.8",
+    "matplotlib>=3",
+    "numpydoc>=1.1",
+    "sphinx>=4",
+    "sphinx-gallery>=0.8",
+    "sphinx-rtd-theme>=1",
+    "sphinxcontrib-napoleon",
+]
+plot = ["matplotlib>=3,<4"]
+sklearn = ["scikit-learn>=0.19"]
+test = [
+    "pytest-cov>=3",
+    "scikit-learn>=0.19",
+    # "gstools>=1.3,<2",
+]
+
+[project.urls]
+Changelog = "https://github.com/GeoStat-Framework/PyKrige/blob/main/CHANGELOG.md"
+Conda-Forge = "https://anaconda.org/conda-forge/pykrige"
+Documentation = "https://pykrige.readthedocs.io"
+Homepage = "https://github.com/GeoStat-Framework/PyKrige"
+Source = "https://github.com/GeoStat-Framework/PyKrige"
+Tracker = "https://github.com/GeoStat-Framework/PyKrige/issues"
+
 [tool.setuptools_scm]
-write_to = "pykrige/_version.py"
+write_to = "src/pykrige/_version.py"
 write_to_template = "__version__ = '{version}'"
 local_scheme = "no-local-version"
 fallback_version = "0.0.0.dev0"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
 
 [tool.black]
 target-version = [
@@ -61,3 +137,16 @@ target-version = [
     max-statements = 80
     max-attributes = 25
     max-public-methods = 75
+
+[tool.cibuildwheel]
+# Switch to using build
+build-frontend = "build"
+# Disable building PyPy wheels on all platforms, 32bit for py3.10 and musllinux builds, py3.6
+skip = ["cp36-*", "pp*", "cp310-win32", "cp310-manylinux_i686", "*-musllinux_*"]
+# Run the package tests using `pytest`
+test-extras = "test"
+test-command = "pytest -v {package}/tests"
+# Skip trying to test arm64 builds on Intel Macs
+test-skip = "*-macosx_arm64 *-macosx_universal2:arm64"
+# no wheels for linux-32bit anymore for numpy>=1.22
+environment = "PIP_PREFER_BINARY=1"

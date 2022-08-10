@@ -4,11 +4,11 @@ Three-Dimensional Kriging Example
 
 """
 
-from pykrige.ok3d import OrdinaryKriging3D
-from pykrige.uk3d import UniversalKriging3D
 import numpy as np
 from matplotlib import pyplot as plt
 
+from pykrige.ok3d import OrdinaryKriging3D
+from pykrige.uk3d import UniversalKriging3D
 
 data = np.array(
     [

@@ -1,33 +1,21 @@
 # -*- coding: utf-8 -*-
 """Kriging Toolkit for Python."""
 import os
-from setuptools import setup, Extension
-from Cython.Build import cythonize
+
 import numpy as np
+from Cython.Build import cythonize
+from setuptools import Extension, setup
 
-# cython extensions ###########################################################
-
-CY_MODULES = []
-CY_MODULES.append(
+# cython extensions
+CY_MODULES = [
     Extension(
-        "pykrige.lib.cok",
-        [os.path.join("pykrige", "lib", "cok.pyx")],
+        name=f"pykrige.{ext}",
+        sources=[os.path.join("src", "pykrige", *ext.split(".")) + ".pyx"],
         include_dirs=[np.get_include()],
+        define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
     )
-)
-CY_MODULES.append(
-    Extension(
-        "pykrige.lib.variogram_models",
-        [os.path.join("pykrige", "lib", "variogram_models.pyx")],
-        include_dirs=[np.get_include()],
-    )
-)
-EXT_MODULES = cythonize(CY_MODULES)  # annotate=True
+    for ext in ["lib.cok", "lib.variogram_models"]
+]
 
-# embed signatures for sphinx
-for ext_m in EXT_MODULES:
-    ext_m.cython_directives = {"embedsignature": True}
-
-# setup #######################################################################
-
-setup(ext_modules=EXT_MODULES, include_dirs=[np.get_include()])
+# setup - do not include package data to ignore .pyx files in wheels
+setup(ext_modules=cythonize(CY_MODULES), include_package_data=False)

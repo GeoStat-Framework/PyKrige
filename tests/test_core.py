@@ -2,21 +2,21 @@
 Testing code.
 Updated BSM February 2017
 """
-import sys
 import os
+import sys
 
 import numpy as np
 import pytest
-from pytest import approx
 from numpy.testing import assert_allclose
+from pytest import approx
 from scipy.spatial.distance import cdist
 
-from pykrige import kriging_tools as kt
 from pykrige import core
+from pykrige import kriging_tools as kt
 from pykrige import variogram_models
 from pykrige.ok import OrdinaryKriging
-from pykrige.uk import UniversalKriging
 from pykrige.ok3d import OrdinaryKriging3D
+from pykrige.uk import UniversalKriging
 from pykrige.uk3d import UniversalKriging3D
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -2779,7 +2779,7 @@ def test_geometric_code():
         dz = np.sin(np.pi / 180.0 * lat) - np.sin(np.pi / 180.0 * lat_ref[i])
         assert_allclose(
             core.great_circle_distance(lon_ref[i], lat_ref[i], lon, lat),
-            core.euclid3_to_great_circle(np.sqrt(dx ** 2 + dy ** 2 + dz ** 2)),
+            core.euclid3_to_great_circle(np.sqrt(dx**2 + dy**2 + dz**2)),
             rtol=1e-5,
         )
 
