@@ -47,17 +47,34 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "sphinxcontrib.napoleon",
+    "sphinx.ext.napoleon",  # parameters look better than with numpydoc only
+    "numpydoc",
     "sphinx_gallery.gen_gallery",
     "sphinx.ext.linkcode",
     "m2r2",
 ]
 
-
-autosummary_generate = True
-
 autodoc_default_flags = ["members", "inherited-members"]
 
+# autosummaries from source-files
+autosummary_generate = True
+# dont show __init__ docstring
+autoclass_content = "class"
+# sort class members
+autodoc_member_order = "groupwise"
+# autodoc_member_order = 'bysource'
+
+# Notes in boxes
+napoleon_use_admonition_for_notes = True
+# Attributes like parameters
+# napoleon_use_ivar = True
+# this is a nice class-doc layout
+numpydoc_show_class_members = True
+# class members have no separate file, so they are not in a toctree
+numpydoc_class_members_toctree = False
+# for the covmodels alot of classmembers show up...
+# maybe switch off with:    :no-inherited-members:
+numpydoc_show_inherited_class_members = True
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
