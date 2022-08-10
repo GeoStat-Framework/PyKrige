@@ -226,10 +226,9 @@ class OrdinaryKriging:
             if self.model.field_dim == 3:
                 raise ValueError("GSTools: model dim is not 1 or 2")
             # check if coordinate types match
-            if (self.coordinates_type == "geographic") != self.model.latlon:
+            if self.model.latlon and (self.coordinates_type == "euclidean"):
                 raise ValueError(
-                    "GSTools: latlon models are needed and only valid "
-                    "for geographic coordinates"
+                    "GSTools: latlon models require geographic coordinates"
                 )
             self.variogram_model = "custom"
             variogram_function = self.model.pykrige_vario
@@ -432,10 +431,9 @@ class OrdinaryKriging:
             if self.model.field_dim == 3:
                 raise ValueError("GSTools: model dim is not 1 or 2")
             # check if coordinate types match
-            if (self.coordinates_type == "geographic") != self.model.latlon:
+            if self.model.latlon and (self.coordinates_type == "euclidean"):
                 raise ValueError(
-                    "GSTools: latlon models are needed and only valid "
-                    "for geographic coordinates"
+                    "GSTools: latlon models require geographic coordinates"
                 )
             self.variogram_model = "custom"
             variogram_function = self.model.pykrige_vario
