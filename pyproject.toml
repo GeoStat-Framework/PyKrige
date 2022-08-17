@@ -63,7 +63,6 @@ doc = [
     "sphinx>=4",
     "sphinx-gallery>=0.8",
     "sphinx-rtd-theme>=1",
-    "sphinxcontrib-napoleon",
 ]
 plot = ["matplotlib>=3,<4"]
 sklearn = ["scikit-learn>=0.19"]
