@@ -9,6 +9,7 @@ try:
     GSTOOLS_INSTALLED = True
     GSTOOLS_VERSION = list(map(int, gs.__version__.split(".")[:2]))
 except ImportError:
+    gs = None
     GSTOOLS_INSTALLED = False
     GSTOOLS_VERSION = None
 
