@@ -28,6 +28,7 @@ import scipy.linalg
 from scipy.spatial.distance import cdist
 
 from . import core, variogram_models
+from .compat_gstools import validate_gstools
 from .core import (
     P_INV,
     _adjust_for_anisotropy,
@@ -223,6 +224,7 @@ class OrdinaryKriging:
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
             self.model = self.variogram_model
+            validate_gstools(self.model)
             if self.model.field_dim == 3:
                 raise ValueError("GSTools: model dim is not 1 or 2")
             # check if coordinate types match
@@ -428,6 +430,7 @@ class OrdinaryKriging:
         if hasattr(self.variogram_model, "pykrige_kwargs"):
             # save the model in the class
             self.model = self.variogram_model
+            validate_gstools(self.model)
             if self.model.field_dim == 3:
                 raise ValueError("GSTools: model dim is not 1 or 2")
             # check if coordinate types match
