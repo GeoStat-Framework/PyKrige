@@ -2,6 +2,30 @@ Changelog
 =========
 
 
+Version 1.7.0
+-------------
+*August 18, 2022*
+
+**New features**
+
+* added support for GSTools latlon models ([#245](https://github.com/GeoStat-Framework/PyKrige/pull/245))
+
+**Changes**
+
+* drop Python 3.6 support (setuptools>60 needs py>3.7) ([#242](https://github.com/GeoStat-Framework/PyKrige/pull/242))
+* move `setup.cfg` content to `pyproject.toml` ([PEP 621](https://peps.python.org/pep-0621/)) ([#242](https://github.com/GeoStat-Framework/PyKrige/pull/242))
+* move to `src/` based package structure (better for testing, building and structure) ([#242](https://github.com/GeoStat-Framework/PyKrige/pull/242))
+* build wheels for apple silicon ([#242](https://github.com/GeoStat-Framework/PyKrige/pull/242))
+* apply isort and add check to CI ([#242](https://github.com/GeoStat-Framework/PyKrige/pull/242))
+* fix documentation ([#242](https://github.com/GeoStat-Framework/PyKrige/pull/242), [#252](https://github.com/GeoStat-Framework/PyKrige/pull/252))
+
+**Bug fixes**
+
+* fix AttributeError: 'UniversalKriging' object has no attribute 'external_Z_array' ([#247](https://github.com/GeoStat-Framework/PyKrige/pull/247))
+* remove deprecated scipy (v1.9) method pinv2 ([#237](https://github.com/GeoStat-Framework/PyKrige/pull/237))
+* correcting partial sill in C backend ([#226](https://github.com/GeoStat-Framework/PyKrige/pull/226))
+
+
 Version 1.6.1
 -------------
 *September 02, 2021*

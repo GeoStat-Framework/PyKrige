@@ -14,15 +14,13 @@ requires-python = ">=3.7"
 name = "PyKrige"
 description = "Kriging Toolkit for Python."
 authors = [
-    {name = "Benjamin S. Murphy"},
-    {name = "Sebastian Müller", email = "info@geostat-framework.org"},
+    {name = "Benjamin S. Murphy, Sebastian Müller", email = "info@geostat-framework.org"},
 ]
 maintainers = [
-    {name = "Sebastian Müller", email = "info@geostat-framework.org"},
-    {name = "Roman Yurchak"},
+    {name = "Sebastian Müller, Roman Yurchak", email = "info@geostat-framework.org"},
 ]
 readme = "README.md"
-license = {file = "LICENSE"}
+license = {text = "BSD-3-Clause"}
 dynamic = ["version"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -40,6 +38,7 @@ classifiers = [
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: GIS",
     "Topic :: Scientific/Engineering :: Mathematics",
@@ -63,7 +62,6 @@ doc = [
     "sphinx>=4",
     "sphinx-gallery>=0.8",
     "sphinx-rtd-theme>=1",
-    "sphinxcontrib-napoleon",
 ]
 plot = ["matplotlib>=3,<4"]
 sklearn = ["scikit-learn>=0.19"]
@@ -80,6 +78,9 @@ Documentation = "https://pykrige.readthedocs.io"
 Homepage = "https://github.com/GeoStat-Framework/PyKrige"
 Source = "https://github.com/GeoStat-Framework/PyKrige"
 Tracker = "https://github.com/GeoStat-Framework/PyKrige/issues"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
 
 [tool.setuptools_scm]
 write_to = "src/pykrige/_version.py"
