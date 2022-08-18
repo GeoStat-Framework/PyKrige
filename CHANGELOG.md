@@ -4,7 +4,7 @@ Changelog
 
 Version 1.7.0
 -------------
-*August ?, 2022*
+*August 18, 2022*
 
 **New features**
 
