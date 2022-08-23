@@ -66,7 +66,7 @@ cpdef _c_exec_loop(double [:, ::1] a_all,
             b[k] *= -1
         b[n] = 1.0
 
-        if not pars['exact_values']:
+        if pars['exact_values']:
             check_b_vect(n, bd, b, eps)
 
 
@@ -160,7 +160,8 @@ cpdef _c_exec_loop_moving_window(double [:, ::1] a_all,
             b[k] = - tmp[k]
         b[n] = 1.0
 
-        check_b_vect(n, bd, b, eps)
+        if pars['exact_values']:
+            check_b_vect(n, bd, b, eps)
 
         for k in range(nb):
             x[k] = b[k]
