@@ -176,6 +176,7 @@ class OrdinaryKriging3D:
             * `"pinvh"`: use `pinvh` from `scipy` which uses eigen-values
 
         Default: `"pinv"`
+    device: str, used for cuda calculation using torch. Default: 'cuda:0'
 
     References
     ----------
@@ -216,6 +217,7 @@ class OrdinaryKriging3D:
         exact_values=True,
         pseudo_inv=False,
         pseudo_inv_type="pinv",
+        device="cuda:0"
     ):
         # config the pseudo inverse
         self.pseudo_inv = bool(pseudo_inv)
@@ -300,6 +302,8 @@ class OrdinaryKriging3D:
             [self.anisotropy_scaling_y, self.anisotropy_scaling_z],
             [self.anisotropy_angle_x, self.anisotropy_angle_y, self.anisotropy_angle_z],
         ).T
+        
+        self.device = device
 
         if self.verbose:
             print("Initializing variogram model...")
@@ -356,6 +360,7 @@ class OrdinaryKriging3D:
             self.variogram_model_parameters,
             "euclidean",
             self.pseudo_inv,
+            self.device
         )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
@@ -540,6 +545,7 @@ class OrdinaryKriging3D:
             self.variogram_model_parameters,
             "euclidean",
             self.pseudo_inv,
+            self.device
         )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)

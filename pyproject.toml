@@ -48,6 +48,7 @@ classifiers = [
 dependencies = [
     "numpy>=1.14.5,<2",
     "scipy>=1.1.0,<2",
+    "torch>=2.0.0,<3"
 ]
 
 [project.optional-dependencies]

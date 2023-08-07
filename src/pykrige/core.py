@@ -22,6 +22,7 @@ References
 Copyright (c) 2015-2020, PyKrige Developers
 """
 
+import torch
 import numpy as np
 import scipy.linalg as spl
 from scipy.optimize import least_squares
@@ -685,6 +686,7 @@ def _krige(
     variogram_model_parameters,
     coordinates_type,
     pseudo_inv=False,
+    device='cuda:0'
 ):
     """Sets up and solves the ordinary kriging system for the given
     coordinate pair. This function is only used for the statistics calculations.
@@ -709,6 +711,7 @@ def _krige(
         kriging matrix. If `True`, this leads to more numerical stability
         and redundant points are averaged. But it can take more time.
         Default: False
+    device: str, used for cuda calculation using torch. Default: 'cuda:0'
 
     Returns
     -------
@@ -769,11 +772,25 @@ def _krige(
         b[zero_index, 0] = 0.0
     b[n, 0] = 1.0
 
+    a = torch.from_numpy(a)
+    b = torch.from_numpy(b)
+    
+    if device is not None:
+        a = a.to(device)
+        b = b.to(device)
+    
     # solve
     if pseudo_inv:
-        res = np.linalg.lstsq(a, b, rcond=None)[0]
+        res = torch.linalg.lstsq(a, b, rcond=None)[0]
+        # res = np.linalg.lstsq(a, b, rcond=None)[0]
     else:
-        res = np.linalg.solve(a, b)
+        res = torch.linalg.solve(a, b)
+        # res = np.linalg.solve(a, b)
+        
+    a = a.detach().cpu().numpy()
+    b = b.detach().cpu().numpy()
+    res = res.detach().cpu().numpy()
+    
     zinterp = np.sum(res[:n, 0] * y)
     sigmasq = np.sum(res[:, 0] * -b[:, 0])
 
@@ -787,6 +804,7 @@ def _find_statistics(
     variogram_model_parameters,
     coordinates_type,
     pseudo_inv=False,
+    device='cuda:0'
 ):
     """Calculates variogram fit statistics.
     Returns the delta, sigma, and epsilon values for the variogram fit.
@@ -810,6 +828,7 @@ def _find_statistics(
         kriging matrix. If `True`, this leads to more numerical stability
         and redundant points are averaged. But it can take more time.
         Default: False
+    device: str, used for cuda calculation using torch. Default: 'cuda:0'
 
     Returns
     -------
@@ -839,6 +858,7 @@ def _find_statistics(
                 variogram_model_parameters,
                 coordinates_type,
                 pseudo_inv,
+                device
             )
 
             # if the estimation error is zero, it's probably because
