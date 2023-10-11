@@ -973,7 +973,7 @@ class UniversalKriging3D:
         """
 
         if self.verbose:
-            print("Executing Ordinary Kriging...\n")
+            print("Executing Universal Kriging...\n")
 
         if style != "grid" and style != "masked" and style != "points":
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
@@ -1132,7 +1132,7 @@ class UniversalKriging3D:
         else:
             raise ValueError(
                 "Specified backend {} is not supported for "
-                "3D ordinary kriging.".format(backend)
+                "3D Universal kriging.".format(backend)
             )
 
         if style == "masked":
