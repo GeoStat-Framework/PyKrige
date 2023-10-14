@@ -2,6 +2,24 @@ Changelog
 =========
 
 
+Version 1.7.1
+-------------
+*October 14, 2023*
+
+**New features**
+
+* added wheels for Python v3.11 and v3.12 ([#277](https://github.com/GeoStat-Framework/PyKrige/pull/277))
+
+**Changes**
+
+* dropped Python 3.7 support ([#277](https://github.com/GeoStat-Framework/PyKrige/pull/277))
+
+**Bug fixes**
+
+* fixed print statement in uk3d ([#272](https://github.com/GeoStat-Framework/PyKrige/issues/272))
+* fixed exact_values behavior in C backend ([#256](https://github.com/GeoStat-Framework/PyKrige/pull/256))
+
+
 Version 1.7.0
 -------------
 *August 18, 2022*
