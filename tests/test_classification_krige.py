@@ -90,7 +90,6 @@ def test_krige_classification_housing():
     )
 
     for ml_model, krige_method in _methods():
-
         class_model = ClassificationKriging(
             classification_model=ml_model, method=krige_method, n_closest_points=2
         )
