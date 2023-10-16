@@ -50,7 +50,7 @@ Version 1.6.1
 
 **New features**
 
-* IO routines for zmap files ([#199](https://github.com/GeoStat-Framework/PyKrige/pull/165))
+* IO routines for zmap files ([#199](https://github.com/GeoStat-Framework/PyKrige/pull/199))
 * `write_asc_grid` got new keyword `no_data` ([#199](https://github.com/GeoStat-Framework/PyKrige/issues/199))
 
 **Changes**

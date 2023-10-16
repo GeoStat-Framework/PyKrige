@@ -17,7 +17,7 @@ from pykrige.rk import RegressionKriging
 
 svr_model = SVR(C=0.1, gamma="auto")
 rf_model = RandomForestRegressor(n_estimators=100)
-lr_model = LinearRegression(normalize=True, copy_X=True, fit_intercept=False)
+lr_model = LinearRegression(copy_X=True, fit_intercept=False)
 
 models = [svr_model, rf_model, lr_model]
 
