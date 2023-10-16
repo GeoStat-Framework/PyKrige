@@ -51,7 +51,6 @@ def make_benchark(n_train, n_test, n_dim=2):
     # All the following tests are performed with the linear variogram model
     for backend in BACKENDS:
         for n_closest_points in N_MOVING_WINDOW:
-
             if backend == "vectorized" and n_closest_points is not None:
                 continue  # this is not supported
 

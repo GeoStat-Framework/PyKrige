@@ -26,7 +26,6 @@ allclose_pars = {"rtol": 1e-05, "atol": 1e-08}
 
 @pytest.fixture
 def validation_ref():
-
     data = np.genfromtxt(os.path.join(BASE_DIR, "test_data/test_data.txt"))
     ok_test_answer, ok_test_gridx, ok_test_gridy, cellsize, no_data = kt.read_asc_grid(
         os.path.join(BASE_DIR, "test_data/test1_answer.asc"), footer=2
@@ -44,7 +43,6 @@ def validation_ref():
 
 @pytest.fixture
 def sample_data_2d():
-
     data = np.array(
         [
             [0.3, 1.2, 0.47],
@@ -82,7 +80,6 @@ def sample_data_3d():
 
 
 def test_core_adjust_for_anisotropy():
-
     X = np.array([[1.0, 0.0, -1.0, 0.0], [0.0, 1.0, 0.0, -1.0]]).T
     X_adj = core._adjust_for_anisotropy(X, [0.0, 0.0], [2.0], [90.0])
     assert_allclose(X_adj[:, 0], np.array([0.0, 1.0, 0.0, -1.0]), **allclose_pars)
@@ -90,7 +87,6 @@ def test_core_adjust_for_anisotropy():
 
 
 def test_core_adjust_for_anisotropy_3d():
-
     # this is a bad examples, as the X matrix is symmetric
     # and insensitive to transpositions
     X = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]).T
@@ -115,7 +111,6 @@ def test_core_adjust_for_anisotropy_3d():
 
 
 def test_core_make_variogram_parameter_list():
-
     # test of first case - variogram_model_parameters is None
     # function should return None unaffected
     result = core._make_variogram_parameter_list("linear", None)
@@ -186,7 +181,6 @@ def test_core_make_variogram_parameter_list():
 
 
 def test_core_initialize_variogram_model(validation_ref):
-
     data, _, _ = validation_ref
 
     # Note the variogram_function argument is not a string in real life...
@@ -242,7 +236,6 @@ def test_core_initialize_variogram_model(validation_ref):
 
 
 def test_core_initialize_variogram_model_3d(sample_data_3d):
-
     data, _, _ = sample_data_3d
 
     # Note the variogram_function argument is not a string in real life...
@@ -308,7 +301,6 @@ def test_core_initialize_variogram_model_3d(sample_data_3d):
 
 
 def test_core_calculate_variogram_model():
-
     res = core._calculate_variogram_model(
         np.array([1.0, 2.0, 3.0, 4.0]),
         np.array([2.05, 2.95, 4.05, 4.95]),
@@ -383,7 +375,6 @@ def test_core_calculate_variogram_model():
 
 
 def test_core_krige():
-
     # Example 3.2 from Kitanidis
     data = np.array([[9.7, 47.6, 1.22], [43.8, 24.6, 2.822]])
     z, ss = core._krige(
@@ -410,7 +401,6 @@ def test_core_krige():
 
 
 def test_core_krige_3d():
-
     # Adapted from example 3.2 from Kitanidis
     data = np.array([[9.7, 47.6, 1.0, 1.22], [43.8, 24.6, 1.0, 2.822]])
     z, ss = core._krige(
@@ -497,7 +487,6 @@ def test_non_exact():
 
 
 def test_ok(validation_ref):
-
     # Test to compare OK results to those obtained using KT3D_H2O.
     # (M. Karanovic, M. Tonkin, and D. Wilson, 2009, Groundwater,
     # vol. 47, no. 4, 580-586.)
@@ -518,7 +507,6 @@ def test_ok(validation_ref):
 
 
 def test_ok_update_variogram_model(validation_ref):
-
     data, (ok_test_answer, gridx, gridy), _ = validation_ref
 
     with pytest.raises(ValueError):
@@ -574,7 +562,6 @@ def test_ok_get_variogram_points(validation_ref):
 
 
 def test_ok_execute(sample_data_2d):
-
     data, (gridx, gridy, _), mask_ref = sample_data_2d
 
     ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2])
@@ -717,7 +704,6 @@ def test_cython_ok(sample_data_2d):
 
 
 def test_uk(validation_ref):
-
     # Test to compare UK with linear drift to results from KT3D_H2O.
     # (M. Karanovic, M. Tonkin, and D. Wilson, 2009, Groundwater,
     # vol. 47, no. 4, 580-586.)
@@ -739,7 +725,6 @@ def test_uk(validation_ref):
 
 
 def test_uk_update_variogram_model(sample_data_2d):
-
     data, (gridx, gridy, _), mask_ref = sample_data_2d
 
     with pytest.raises(ValueError):
@@ -806,7 +791,6 @@ def test_uk_get_variogram_points(validation_ref):
 
 
 def test_uk_calculate_data_point_zscalars(sample_data_2d):
-
     data, (gridx, gridy, _), mask_ref = sample_data_2d
 
     dem = np.arange(0.0, 5.1, 0.1)
@@ -869,7 +853,6 @@ def test_uk_calculate_data_point_zscalars(sample_data_2d):
 
 
 def test_uk_execute_single_point():
-
     # Test data and answer from lecture notes by Nicolas Christou, UCLA Stats
     data = np.array(
         [
@@ -912,7 +895,6 @@ def test_uk_execute_single_point():
 
 
 def test_uk_execute(sample_data_2d):
-
     data, (gridx, gridy, _), mask_ref = sample_data_2d
 
     uk = UniversalKriging(
@@ -1035,7 +1017,6 @@ def test_uk_execute(sample_data_2d):
 
 
 def test_ok_uk_produce_same_result(validation_ref):
-
     data, _, (uk_test_answer, gridx_ref, gridy_ref) = validation_ref
 
     gridx = np.linspace(1067000.0, 1072000.0, 100)
@@ -1085,7 +1066,6 @@ def test_ok_uk_produce_same_result(validation_ref):
 
 
 def test_ok_backends_produce_same_result(validation_ref):
-
     data, _, (uk_test_answer, gridx_ref, gridy_ref) = validation_ref
 
     gridx = np.linspace(1067000.0, 1072000.0, 100)
@@ -1105,7 +1085,6 @@ def test_ok_backends_produce_same_result(validation_ref):
 
 
 def test_uk_backends_produce_same_result(validation_ref):
-
     data, _, (uk_test_answer, gridx_ref, gridy_ref) = validation_ref
 
     gridx = np.linspace(1067000.0, 1072000.0, 100)
@@ -1125,7 +1104,6 @@ def test_uk_backends_produce_same_result(validation_ref):
 
 
 def test_kriging_tools(sample_data_2d):
-
     data, (gridx, gridy, gridx_2), mask_ref = sample_data_2d
 
     ok = OrdinaryKriging(data[:, 0], data[:, 1], data[:, 2])
@@ -1238,7 +1216,6 @@ def test_kriging_tools(sample_data_2d):
 # http://doc.pytest.org/en/latest/skipping.html#id1
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_uk_three_primary_drifts(sample_data_2d):
-
     data, (gridx, gridy, gridx_2), mask_ref = sample_data_2d
 
     well = np.array([[1.1, 1.1, -1.0]])
@@ -1277,7 +1254,6 @@ def test_uk_three_primary_drifts(sample_data_2d):
 
 
 def test_uk_specified_drift(sample_data_2d):
-
     data, (gridx, gridy, gridx_2), mask_ref = sample_data_2d
 
     xg, yg = np.meshgrid(gridx, gridy)
@@ -1407,7 +1383,6 @@ def test_uk_specified_drift(sample_data_2d):
 
 
 def test_uk_functional_drift(sample_data_2d):
-
     data, (gridx, gridy, gridx_2), mask_ref = sample_data_2d
 
     well = np.array([[1.1, 1.1, -1.0]])
@@ -1501,7 +1476,6 @@ def test_uk_functional_drift(sample_data_2d):
 
 
 def test_uk_with_external_drift(validation_ref):
-
     data, _, (uk_test_answer, gridx_ref, gridy_ref) = validation_ref
 
     dem, demx, demy, cellsize, no_data = kt.read_asc_grid(
@@ -1937,7 +1911,6 @@ def test_custom_variogram(sample_data_2d):
 
 
 def test_ok3d(validation_ref):
-
     data, (ok_test_answer, gridx_ref, gridy_ref), _ = validation_ref
 
     # Test to compare K3D results to those obtained using KT3D_H2O.
@@ -2016,7 +1989,6 @@ def test_ok3d(validation_ref):
 
 
 def test_ok3d_moving_window():
-
     # Test to compare K3D results to those obtained using KT3D.
     data = np.genfromtxt(
         os.path.join(BASE_DIR, "test_data", "test3d_data.txt"), skip_header=1
@@ -2045,7 +2017,6 @@ def test_ok3d_moving_window():
 
 
 def test_ok3d_uk3d_and_backends_produce_same_results(validation_ref):
-
     data, _, (uk_test_answer, gridx_ref, gridy_ref) = validation_ref
 
     ok3d = OrdinaryKriging3D(
@@ -2123,7 +2094,6 @@ def test_ok3d_uk3d_and_backends_produce_same_results(validation_ref):
 
 
 def test_ok3d_update_variogram_model(sample_data_3d):
-
     data, (gridx_ref, gridy_ref, gridz_ref), mask_ref = sample_data_3d
 
     with pytest.raises(ValueError):
@@ -2160,7 +2130,6 @@ def test_ok3d_update_variogram_model(sample_data_3d):
 
 
 def test_uk3d_update_variogram_model(sample_data_3d):
-
     data, (gridx_ref, gridy_ref, gridz_ref), mask_ref = sample_data_3d
 
     with pytest.raises(ValueError):
@@ -2197,7 +2166,6 @@ def test_uk3d_update_variogram_model(sample_data_3d):
 
 
 def test_ok3d_backends_produce_same_result(sample_data_3d):
-
     data, (gridx_ref, gridy_ref, gridz_ref), mask_ref = sample_data_3d
 
     k3d = OrdinaryKriging3D(
@@ -2234,7 +2202,6 @@ def test_ok3d_backends_produce_same_result(sample_data_3d):
 
 
 def test_ok3d_execute(sample_data_3d):
-
     data, (gridx_ref, gridy_ref, gridz_ref), mask_ref = sample_data_3d
 
     k3d = OrdinaryKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3])
@@ -2385,7 +2352,6 @@ def test_ok3d_execute(sample_data_3d):
 
 
 def test_uk3d_execute(sample_data_3d):
-
     data, (gridx_ref, gridy_ref, gridz_ref), mask_ref = sample_data_3d
 
     uk3d = UniversalKriging3D(data[:, 0], data[:, 1], data[:, 2], data[:, 3])
@@ -2536,7 +2502,6 @@ def test_uk3d_execute(sample_data_3d):
 
 
 def test_force_exact_3d(sample_data_3d):
-
     data, (gridx_ref, gridy_ref, gridz_ref), mask_ref = sample_data_3d
 
     k3d = OrdinaryKriging3D(
@@ -2595,7 +2560,6 @@ def test_force_exact_3d(sample_data_3d):
 
 
 def test_uk3d_specified_drift(sample_data_3d):
-
     data, (gridx_ref, gridy_ref, gridz_ref), mask_ref = sample_data_3d
 
     zg, yg, xg = np.meshgrid(gridz_ref, gridy_ref, gridx_ref, indexing="ij")
@@ -2674,7 +2638,6 @@ def test_uk3d_specified_drift(sample_data_3d):
 
 
 def test_uk3d_functional_drift(sample_data_3d):
-
     data, (gridx, gridy, gridz), mask_ref = sample_data_3d
 
     func_x = lambda x, y, z: x  # noqa
@@ -2725,7 +2688,6 @@ def test_uk3d_functional_drift(sample_data_3d):
 
 
 def test_geometric_code():
-
     # Create selected points distributed across the sphere:
     N = 4
     lon = np.array([7.0, 7.0, 187.0, 73.231])

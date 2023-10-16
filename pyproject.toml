@@ -1,8 +1,7 @@
 [build-system]
 requires = [
-    "setuptools>=62",
-    "wheel",
-    "setuptools_scm[toml]>=6.4",
+    "setuptools>=64",
+    "setuptools_scm>=7",
     "oldest-supported-numpy",
     "scipy>=1.1.0,<2",
     "Cython>=0.28.3,<3.0",
@@ -10,7 +9,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 name = "PyKrige"
 description = "Kriging Toolkit for Python."
 authors = [
@@ -35,10 +34,11 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: GIS",
     "Topic :: Scientific/Engineering :: Mathematics",
@@ -93,11 +93,7 @@ profile = "black"
 multi_line_output = 3
 
 [tool.black]
-target-version = [
-    "py36",
-    "py37",
-    "py38",
-]
+target-version = ["py38"]
 
 [tool.coverage]
     [tool.coverage.run]
@@ -142,8 +138,8 @@ target-version = [
 [tool.cibuildwheel]
 # Switch to using build
 build-frontend = "build"
-# Disable building PyPy wheels on all platforms, 32bit for py3.10 and musllinux builds, py3.6
-skip = ["cp36-*", "pp*", "cp310-win32", "cp310-manylinux_i686", "*-musllinux_*"]
+# Disable building PyPy wheels on all platforms, 32bit for py3.10/11/12 and musllinux builds, py3.6/7
+skip = ["cp36-*", "cp37-*", "pp*", "cp31*-win32", "cp31*-manylinux_i686", "*-musllinux_*"]
 # Run the package tests using `pytest`
 test-extras = "test"
 test-command = "pytest -v {package}/tests"

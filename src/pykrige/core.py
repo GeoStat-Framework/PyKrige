@@ -231,18 +231,14 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
     """
 
     if variogram_model_parameters is None:
-
         parameter_list = None
 
     elif type(variogram_model_parameters) is dict:
-
         if variogram_model in ["linear"]:
-
             if (
                 "slope" not in variogram_model_parameters.keys()
                 or "nugget" not in variogram_model_parameters.keys()
             ):
-
                 raise KeyError(
                     "'linear' variogram model requires 'slope' "
                     "and 'nugget' specified in variogram model "
@@ -250,20 +246,17 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
                 )
 
             else:
-
                 parameter_list = [
                     variogram_model_parameters["slope"],
                     variogram_model_parameters["nugget"],
                 ]
 
         elif variogram_model in ["power"]:
-
             if (
                 "scale" not in variogram_model_parameters.keys()
                 or "exponent" not in variogram_model_parameters.keys()
                 or "nugget" not in variogram_model_parameters.keys()
             ):
-
                 raise KeyError(
                     "'power' variogram model requires 'scale', "
                     "'exponent', and 'nugget' specified in "
@@ -271,7 +264,6 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
                 )
 
             else:
-
                 parameter_list = [
                     variogram_model_parameters["scale"],
                     variogram_model_parameters["exponent"],
@@ -279,12 +271,10 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
                 ]
 
         elif variogram_model in ["gaussian", "spherical", "exponential", "hole-effect"]:
-
             if (
                 "range" not in variogram_model_parameters.keys()
                 or "nugget" not in variogram_model_parameters.keys()
             ):
-
                 raise KeyError(
                     "'%s' variogram model requires 'range', "
                     "'nugget', and either 'sill' or 'psill' "
@@ -293,9 +283,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
                 )
 
             else:
-
                 if "sill" in variogram_model_parameters.keys():
-
                     parameter_list = [
                         variogram_model_parameters["sill"]
                         - variogram_model_parameters["nugget"],
@@ -304,7 +292,6 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
                     ]
 
                 elif "psill" in variogram_model_parameters.keys():
-
                     parameter_list = [
                         variogram_model_parameters["psill"],
                         variogram_model_parameters["range"],
@@ -312,7 +299,6 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
                     ]
 
                 else:
-
                     raise KeyError(
                         "'%s' variogram model requires either "
                         "'sill' or 'psill' specified in "
@@ -321,7 +307,6 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
                     )
 
         elif variogram_model in ["custom"]:
-
             raise TypeError(
                 "For user-specified custom variogram model, "
                 "parameters must be specified in a list, "
@@ -329,7 +314,6 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
             )
 
         else:
-
             raise ValueError(
                 "Specified variogram model must be one of the "
                 "following: 'linear', 'power', 'gaussian', "
@@ -338,11 +322,8 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
             )
 
     elif type(variogram_model_parameters) is list:
-
         if variogram_model in ["linear"]:
-
             if len(variogram_model_parameters) != 2:
-
                 raise ValueError(
                     "Variogram model parameter list must have "
                     "exactly two entries when variogram model "
@@ -352,9 +333,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
             parameter_list = variogram_model_parameters
 
         elif variogram_model in ["power"]:
-
             if len(variogram_model_parameters) != 3:
-
                 raise ValueError(
                     "Variogram model parameter list must have "
                     "exactly three entries when variogram model "
@@ -364,9 +343,7 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
             parameter_list = variogram_model_parameters
 
         elif variogram_model in ["gaussian", "spherical", "exponential", "hole-effect"]:
-
             if len(variogram_model_parameters) != 3:
-
                 raise ValueError(
                     "Variogram model parameter list must have "
                     "exactly three entries when variogram model "
@@ -380,11 +357,9 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
             ]
 
         elif variogram_model in ["custom"]:
-
             parameter_list = variogram_model_parameters
 
         else:
-
             raise ValueError(
                 "Specified variogram model must be one of the "
                 "following: 'linear', 'power', 'gaussian', "
@@ -393,7 +368,6 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
             )
 
     else:
-
         raise TypeError(
             "Variogram model parameters must be provided in either "
             "a list or a dict when they are explicitly specified."
@@ -825,7 +799,6 @@ def _find_statistics(
     sigma = np.zeros(y.shape)
 
     for i in range(y.shape[0]):
-
         # skip the first value in the kriging problem
         if i == 0:
             continue

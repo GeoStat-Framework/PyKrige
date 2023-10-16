@@ -535,7 +535,6 @@ class UniversalKriging:
 
         for m in range(ny):
             for n in range(nx):
-
                 if type_ == "scalar":
                     xn = x
                     yn = y

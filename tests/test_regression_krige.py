@@ -88,7 +88,6 @@ def test_krige_housing():
     )
 
     for ml_model, krige_method in _methods():
-
         reg_kr_model = RegressionKriging(
             regression_model=ml_model, method=krige_method, n_closest_points=2
         )
