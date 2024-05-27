@@ -2,6 +2,23 @@ Changelog
 =========
 
 
+Version 1.7.2
+-------------
+*May 27, 2024*
+
+**New features**
+
+* added support for numpy 2 ([#290](https://github.com/GeoStat-Framework/PyKrige/pull/290))
+
+**Changes**
+
+* remove universal2 wheels for macos (we already provide separate intel and arm64 wheels) ([#290](https://github.com/GeoStat-Framework/PyKrige/pull/290))
+
+**Bug fixes**
+
+* fixed cython long / longlong issue on windows ([#290](https://github.com/GeoStat-Framework/PyKrige/issues/290))
+
+
 Version 1.7.1
 -------------
 *October 14, 2023*

@@ -1,9 +1,7 @@
-#cython: language_level=3, boundscheck=False, wraparound=False, cdivision=True
-# -*- coding: utf-8 -*-
+# cython: language_level=3, boundscheck=False, wraparound=False, cdivision=True
 import numpy as np
 
 cimport numpy as np
-from libc.math cimport sqrt
 
 import scipy.linalg
 
@@ -13,12 +11,14 @@ from scipy.linalg.cython_lapack cimport dgesv
 from .variogram_models cimport get_variogram_model
 
 
-cpdef _c_exec_loop(double [:, ::1] a_all,
-              double [:, ::1] bd_all,
-              char [::1] mask,
-              long n,
-              dict pars):
-    cdef long i, j, k
+cpdef _c_exec_loop(
+    double [:, ::1] a_all,
+    double [:, ::1] bd_all,
+    char [::1] mask,
+    long n,
+    dict pars
+):
+    cdef long i, k
 
     npt = bd_all.shape[0]
 
@@ -34,13 +34,11 @@ cpdef _c_exec_loop(double [:, ::1] a_all,
 
     nb = n + 1
 
-
     c_variogram_function = get_variogram_model(pars['variogram_function'].__name__)
 
     cdef double [::1] variogram_model_parameters = np.asarray(pars['variogram_model_parameters'])
 
-    cdef double [::1,:] a_inv = np.asfortranarray(np.empty_like(a_all))
-
+    cdef double [::1, :] a_inv = np.asfortranarray(np.empty_like(a_all))
 
     if pars['pseudo_inv']:
         if pars['pseudo_inv_type'] == "pinv":
@@ -54,8 +52,8 @@ cpdef _c_exec_loop(double [:, ::1] a_all,
     else:
         a_inv = np.asfortranarray(scipy.linalg.inv(a_all))
 
-
-    for i in range(npt):   # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
+    # same thing as range(npt) if mask is not defined, otherwise take the non masked elements
+    for i in range(npt):
         if mask[i]:
             continue
         bd = bd_all[i]
@@ -69,22 +67,20 @@ cpdef _c_exec_loop(double [:, ::1] a_all,
         if pars['exact_values']:
             check_b_vect(n, bd, b, eps)
 
-
         # Do the BLAS matrix-vector multiplication call
-        dgemv(
-                                  # # Compute y := alpha*A*x + beta*y
-             'N',                 # char *trans, # {'T','C'}: o(A)=A'; {'N'}: o(A)=A
-             &nb,                 # int *m, # Rows of A (prior to transpose from *trans)
-             &nb,                 # int *n, # Columns of A / min(len(x))
-             &alpha,              # np.float64_t *alpha, # Scalar multiple
-             &(a_inv[0,0]),          # np.float64_t *a, # Matrix A: mxn
-             &nb,                 # int *lda, # The size of the first dimension of A (in memory)
-             &(b[0]),             # np.float64_t *x, # Vector x, min(len(x)) = n
-             &inc,                # int *incx, # The increment between elements of x (usually 1)
-             &beta,               # np.float64_t *beta, # Scalar multiple
-             &(x[0]),           # np.float64_t *y, # Vector y, min(len(y)) = m
-             &inc                 # int *incy # The increment between elements of y (usually 1)
-            )
+        dgemv(                   # Compute y := alpha*A*x + beta*y
+            'N',                 # char *trans, # {'T','C'}: o(A)=A'; {'N'}: o(A)=A
+            &nb,                 # int *m, # Rows of A (prior to transpose from *trans)
+            &nb,                 # int *n, # Columns of A / min(len(x))
+            &alpha,              # np.float64_t *alpha, # Scalar multiple
+            &(a_inv[0, 0]),      # np.float64_t *a, # Matrix A: mxn
+            &nb,                 # int *lda, # The size of the first dimension of A (in memory)
+            &(b[0]),             # np.float64_t *x, # Vector x, min(len(x)) = n
+            &inc,                # int *incx, # The increment between elements of x (usually 1)
+            &beta,               # np.float64_t *beta, # Scalar multiple
+            &(x[0]),             # np.float64_t *y, # Vector y, min(len(y)) = m
+            &inc                 # int *incy # The increment between elements of y (usually 1)
+        )
 
         z_tmp = 0.0
         ss_tmp = 0.0
@@ -99,12 +95,14 @@ cpdef _c_exec_loop(double [:, ::1] a_all,
 
     return zvalues.base, sigmasq.base
 
-cpdef _c_exec_loop_moving_window(double [:, ::1] a_all,
-              double [:, ::1] bd_all,
-              char [::1] mask,
-              long [:,::1] bd_idx,
-              long n_max,
-              dict pars):
+cpdef _c_exec_loop_moving_window(
+    double [:, ::1] a_all,
+    double [:, ::1] bd_all,
+    char [::1] mask,
+    long [:, ::1] bd_idx,
+    long n_max,
+    dict pars
+):
     cdef long i, j, k, p_i, p_j, npt, n
 
     npt = bd_all.shape[0]
@@ -121,18 +119,13 @@ cpdef _c_exec_loop_moving_window(double [:, ::1] a_all,
     cdef double z_tmp, ss_tmp, eps=pars['eps']
     cdef int nb, nrhs=1, info
     cdef int [::1] ipiv = np.zeros(n_max+1, dtype='int32')
-    cdef double alpha=1.0, beta=0.0
     cdef long [::1] bd_idx_sel
 
     nb = n + 1
 
-
-
     c_variogram_function = get_variogram_model(pars['variogram_function'].__name__)
 
     cdef double [::1] variogram_model_parameters = np.asarray(pars['variogram_model_parameters'])
-
-
 
     for i in range(npt):
         if mask[i]:
@@ -141,7 +134,6 @@ cpdef _c_exec_loop_moving_window(double [:, ::1] a_all,
         bd = bd_all[i, :]
 
         bd_idx_sel = bd_idx[i, :]
-
 
         for k in range(n):
             p_i = bd_idx_sel[k]
@@ -167,8 +159,8 @@ cpdef _c_exec_loop_moving_window(double [:, ::1] a_all,
             x[k] = b[k]
 
         # higher level (and slower) call to do the same thing as dgesv below
-        #a2D = a_selection.base[:nb*nb].reshape((nb, nb))
-        #x =  scipy.linalg.solve(a2D, b.base[:nb])
+        # a2D = a_selection.base[:nb*nb].reshape((nb, nb))
+        # x = scipy.linalg.solve(a2D, b.base[:nb])
 
         dgesv(
                 &nb,
@@ -185,7 +177,6 @@ cpdef _c_exec_loop_moving_window(double [:, ::1] a_all,
             raise ValueError('Singular matrix')
         elif info < 0:
             raise ValueError('Wrong arguments')
-
 
         z_tmp = 0.0
         ss_tmp = 0.0

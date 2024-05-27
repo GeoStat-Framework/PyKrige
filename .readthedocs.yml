@@ -8,7 +8,7 @@ build:
 sphinx:
   configuration: docs/source/conf.py
 
-formats: all
+formats: [pdf]
 
 python:
   install:
