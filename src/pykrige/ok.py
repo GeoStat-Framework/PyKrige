@@ -165,6 +165,7 @@ class OrdinaryKriging:
             * `"pinvh"`: use `pinvh` from `scipy` which uses eigen-values
 
         Default: `"pinv"`
+    device: str, used for cuda calculation using torch. Default: 'cuda:0'
 
     References
     ----------
@@ -203,6 +204,7 @@ class OrdinaryKriging:
         exact_values=True,
         pseudo_inv=False,
         pseudo_inv_type="pinv",
+        device="cuda:0"
     ):
         # config the pseudo inverse
         self.pseudo_inv = bool(pseudo_inv)
@@ -271,6 +273,8 @@ class OrdinaryKriging:
         self.enable_plotting = enable_plotting
         if self.enable_plotting and self.verbose:
             print("Plotting Enabled\n")
+
+        self.device = device
 
         # adjust for anisotropy... only implemented for euclidean (rectangular)
         # coordinates, as anisotropy is ambiguous for geographic coordinates...
@@ -365,6 +369,7 @@ class OrdinaryKriging:
                 self.variogram_model_parameters,
                 self.coordinates_type,
                 self.pseudo_inv,
+                self.device
             )
             self.Q1 = core.calcQ1(self.epsilon)
             self.Q2 = core.calcQ2(self.epsilon)
@@ -543,6 +548,7 @@ class OrdinaryKriging:
             self.variogram_model_parameters,
             self.coordinates_type,
             self.pseudo_inv,
+            self.device
         )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
