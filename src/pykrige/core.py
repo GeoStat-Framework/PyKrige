@@ -21,6 +21,7 @@ References
 
 Copyright (c) 2015-2020, PyKrige Developers
 """
+from time import time
 
 import torch
 import numpy as np
@@ -425,14 +426,16 @@ def _initialize_variogram_model(
         user specified them or returned from the automatic variogram
         estimation routine
     """
-
+    t_start = time()
     # distance calculation for rectangular coords now leverages
     # scipy.spatial.distance's pdist function, which gives pairwise distances
     # in a condensed distance vector (distance matrix flattened to a vector)
     # to calculate semivariances...
     if coordinates_type == "euclidean":
+        t0 = time()
         d = pdist(X, metric="euclidean")
         g = 0.5 * pdist(y[:, None], metric="sqeuclidean")
+        print(f"in _initialize_variogram_model. pdist time: {time() - t0}")
 
     # geographic coordinates only accepted if the problem is 2D
     # assume X[:, 0] ('x') => lon, X[:, 1] ('y') => lat
@@ -532,6 +535,7 @@ def _initialize_variogram_model(
             variogram_model_parameters = _calculate_variogram_model(
                 lags, semivariance, variogram_model, variogram_function, weight
             )
+    print(f"all _initialize_variogram_model. time: {time() - t_start}")
 
     return lags, semivariance, variogram_model_parameters
 

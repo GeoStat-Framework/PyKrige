@@ -22,6 +22,7 @@ Copyright (c) 2015-2020, PyKrige Developers
 """
 
 import warnings
+from time import time
 
 import numpy as np
 import scipy.linalg
@@ -848,10 +849,12 @@ class OrdinaryKriging:
         xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
         ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
         n = self.X_ADJUSTED.shape[0]
+        print(f"n: {n} in execute function")
         nx = xpts.size
         ny = ypts.size
+        t0 = time()
         a = self._get_kriging_matrix(n)
-
+        print(f"_get_kriging_matrix take {time() - t0} sec in execute function")
         if style in ["grid", "masked"]:
             if style == "masked":
                 if mask is None:
@@ -883,6 +886,8 @@ class OrdinaryKriging:
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         if self.coordinates_type == "euclidean":
+            # TODO: check possibility to add GPU here
+            t1 = time()
             xpts, ypts = _adjust_for_anisotropy(
                 np.vstack((xpts, ypts)).T,
                 [self.XCENTER, self.YCENTER],
@@ -896,6 +901,7 @@ class OrdinaryKriging:
             xy_points = np.concatenate(
                 (xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1
             )
+            print(f"time _adjust_for_anisotropy in execute {time() - t1}")
         elif self.coordinates_type == "geographic":
             # In spherical coordinates, we do not correct for anisotropy.
             # Also, we don't use scipy.spatial.cdist, so we do not have to
@@ -1002,7 +1008,9 @@ class OrdinaryKriging:
                 )
 
             if backend == "vectorized":
+                t2 = time()
                 zvalues, sigmasq = self._exec_vector(a, bd, mask)
+                print(f"_exec_vector take {time() - t2} sec in execute function")
             elif backend == "loop":
                 zvalues, sigmasq = self._exec_loop(a, bd, mask)
             elif backend == "C":
