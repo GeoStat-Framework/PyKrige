@@ -140,9 +140,14 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
     X_adj : ndarray
         float array [n_samples, n_dim], the X array adjusted for anisotropy.
     """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    X = torch.tensor(X, dtype=torch.float32, device=device)
+    center = torch.tensor(center, dtype=torch.float32, device=device).unsqueeze(0)
+    scaling = torch.tensor(scaling, dtype=torch.float32, device=device)
+    angle = torch.tensor(angle, dtype=torch.float32, device=device) * torch.pi / 180
 
-    center = np.asarray(center)[None, :]
-    angle = np.asarray(angle) * np.pi / 180
+    # center = np.asarray(center)[None, :]
+    # angle = np.asarray(angle) * np.pi / 180
 
     X -= center
 
@@ -151,13 +156,19 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
     if Ndim == 1:
         raise NotImplementedError("Not implemnented yet?")
     elif Ndim == 2:
-        stretch = np.array([[1, 0], [0, scaling[0]]])
-        rot_tot = np.array(
-            [
-                [np.cos(-angle[0]), -np.sin(-angle[0])],
-                [np.sin(-angle[0]), np.cos(-angle[0])],
-            ]
-        )
+        print("Ndim == 2")
+        stretch = torch.tensor([[1, 0], [0, scaling[0]]], device=device)
+        rot_tot = torch.tensor([
+            [torch.cos(-angle[0]), -torch.sin(-angle[0])],
+            [torch.sin(-angle[0]), torch.cos(-angle[0])]
+        ], device=device)
+        # stretch = np.array([[1, 0], [0, scaling[0]]])
+        # rot_tot = np.array(
+        #     [
+        #         [np.cos(-angle[0]), -np.sin(-angle[0])],
+        #         [np.sin(-angle[0]), np.cos(-angle[0])],
+        #     ]
+        # )
     elif Ndim == 3:
         stretch = np.array(
             [[1.0, 0.0, 0.0], [0.0, scaling[0], 0.0], [0.0, 0.0, scaling[1]]]
@@ -188,11 +199,16 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
         raise ValueError(
             "Adjust for anisotropy function doesn't support ND spaces where N>3"
         )
-    X_adj = np.dot(stretch, np.dot(rot_tot, X.T)).T
+    X_adj = torch.mm(stretch, torch.mm(rot_tot, X.t())).t()
 
     X_adj += center
 
-    return X_adj
+    return X_adj.cpu().numpy()
+    # X_adj = np.dot(stretch, np.dot(rot_tot, X.T)).T
+    #
+    # X_adj += center
+    #
+    # return X_adj
 
 
 def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
