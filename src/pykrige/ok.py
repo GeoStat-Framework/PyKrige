@@ -208,6 +208,7 @@ class OrdinaryKriging:
         pseudo_inv_type="pinv",
         device="cuda:0"
     ):
+        print("new version")
         # config the pseudo inverse
         self.pseudo_inv = bool(pseudo_inv)
         self.pseudo_inv_type = str(pseudo_inv_type)
