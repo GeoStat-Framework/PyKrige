@@ -685,7 +685,6 @@ class OrdinaryKriging:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
 
-        print("torch b - 1", b)
         if (~mask).any():
             t0 = time()
             mask_torch = torch.tensor(mask, dtype=torch.bool)
@@ -694,20 +693,6 @@ class OrdinaryKriging:
             print(f"time to mask b torch: {time() - t0}")
             mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
             b = np.ma.array(b, mask=mask_b)
-
-        print("torch b - 2", b)
-
-        b = np.zeros((npt, n + 1, 1))
-        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-        if zero_value and self.exact_values:
-            b[zero_index[0], zero_index[1], 0] = 0.0
-        b[:, n, 0] = 1.0
-
-        if (~mask).any():
-            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
-            b_ = np.ma.array(b, mask=mask_b)
-
-        print("np b", b_)
 
         x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
         Z_torch = torch.tensor(self.Z, dtype=torch.float32)
@@ -721,8 +706,8 @@ class OrdinaryKriging:
 
 
         x = np.dot(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).T
-        zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
-        sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
+        # zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
+        # sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
 
         print("x np", x)
         print("Z np", self.Z)
