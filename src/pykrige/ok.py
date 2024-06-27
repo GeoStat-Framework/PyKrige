@@ -658,16 +658,12 @@ class OrdinaryKriging:
     def _exec_vector(self, a, bd, mask):
         """Solves the kriging system as a vectorized operation. This method
         can take a lot of memory for large grids and/or large datasets."""
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if device == "cpu":
-            print("Attention!!!! cpu")
-
         npt = bd.shape[0]
         n = self.X_ADJUSTED.shape[0]
         zero_index = None
         zero_value = False
 
-        mask_torch = torch.tensor(mask, dtype=torch.bool, device=device)
+        mask_torch = torch.tensor(mask, dtype=torch.bool)
 
         # use the desired method to invert the kriging matrix
         if self.pseudo_inv:
@@ -677,23 +673,24 @@ class OrdinaryKriging:
             # a_inv = torch.inverse(a_torch)
             a_inv = scipy.linalg.inv(a)
 
-        a_inv = torch.tensor(a_inv, dtype=torch.float32, device=device)
+        a_inv = torch.tensor(a_inv, dtype=torch.float32)
 
         if np.any(np.absolute(bd) <= self.eps):
             zero_value = True
             zero_index = np.where(np.absolute(bd) <= self.eps)
 
-        b = torch.zeros((npt, n + 1, 1), dtype=torch.float32, device=device)
-        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, b)
+        b = torch.zeros((npt, n + 1, 1), dtype=torch.float32)
+        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
         if zero_value and self.exact_values:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
 
+        print("torch b - 1", b)
         if (~mask_torch).any():
             mask_b = mask_torch.unsqueeze(1).unsqueeze(2).repeat(1, n + 1, 1)
-            b = torch.where(mask_b, b, torch.tensor(float('nan'), device=device))
+            b = torch.where(mask_b, b, torch.tensor(float('nan')))
 
-        print("torch b", b)
+        print("torch b - 2", b)
 
         b = np.zeros((npt, n + 1, 1))
         b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
