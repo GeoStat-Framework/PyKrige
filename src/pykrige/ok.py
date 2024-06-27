@@ -688,7 +688,7 @@ class OrdinaryKriging:
         if (~mask).any():
             mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
             b = np.ma.array(b, mask=mask_b)
-            b = torch.tensor(b, dtype=torch.bool)
+            b = torch.tensor(b, dtype=torch.float32)
 
         x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
         Z_torch = torch.tensor(self.Z, dtype=torch.float32)
