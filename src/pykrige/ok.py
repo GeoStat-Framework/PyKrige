@@ -667,7 +667,6 @@ class OrdinaryKriging:
         zero_index = None
         zero_value = False
 
-        bd_torch = torch.tensor(bd, dtype=torch.float32, device=device)
         mask_torch = torch.tensor(mask, dtype=torch.bool, device=device)
 
         # use the desired method to invert the kriging matrix
@@ -680,18 +679,12 @@ class OrdinaryKriging:
 
         a_inv = torch.tensor(a_inv, dtype=torch.float32, device=device)
 
-        if torch.any(torch.abs(bd_torch) <= self.eps):
-            zero_value = True
-            zero_index = torch.where(torch.abs(bd_torch) <= self.eps)
-            print("torch zero index", zero_index)
-
         if np.any(np.absolute(bd) <= self.eps):
             zero_value = True
             zero_index = np.where(np.absolute(bd) <= self.eps)
-            print("np zero index", zero_index)
 
         b = torch.zeros((npt, n + 1, 1), dtype=torch.float32, device=device)
-        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd_torch)
+        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, b)
         if zero_value and self.exact_values:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
