@@ -680,7 +680,9 @@ class OrdinaryKriging:
             zero_index = np.where(np.absolute(bd) <= self.eps)
 
         b = torch.zeros((npt, n + 1, 1), dtype=torch.float32)
-        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
+        result = -self.variogram_function(self.variogram_model_parameters, bd)
+        b[:, :n, 0] = torch.tensor(result, dtype=torch.float32)
+
         if zero_value and self.exact_values:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
