@@ -857,7 +857,7 @@ class OrdinaryKriging:
             set of points. If style was specified as 'masked', sigmasq
             will be a numpy masked array.
         """
-
+        current_gpu = torch.cuda.current_device()
         print(torch.cuda.get_device_name(current_gpu))
 
         if self.verbose:
