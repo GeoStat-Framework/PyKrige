@@ -668,58 +668,58 @@ class OrdinaryKriging:
         zero_index = None
         zero_value = False
 
-        a_torch = torch.tensor(a, dtype=torch.float32, device=device)
-        bd_torch = torch.tensor(bd, dtype=torch.float32, device=device)
-        mask_torch = torch.tensor(mask, dtype=torch.bool, device=device)
+        # a_torch = torch.tensor(a, dtype=torch.float32, device=device)
+        # bd_torch = torch.tensor(bd, dtype=torch.float32, device=device)
+        # mask_torch = torch.tensor(mask, dtype=torch.bool, device=device)
 
         # use the desired method to invert the kriging matrix
         if self.pseudo_inv:
             # a_inv = self.pseudo_inverse(a_torch)
-            a_inv = P_INV[self.pseudo_inv_type](a_torch)
+            a_inv = P_INV[self.pseudo_inv_type](a)
         else:
-            a_inv = torch.inverse(a_torch)
-            # a_inv = scipy.linalg.inv(a)
+            # a_inv = torch.inverse(a_torch)
+            a_inv = scipy.linalg.inv(a)
 
-        if torch.any(torch.abs(bd_torch) <= self.eps):
-            zero_value = True
-            zero_index = torch.where(torch.abs(bd_torch) <= self.eps)
-
-        # if np.any(np.absolute(bd) <= self.eps):
+        # if torch.any(torch.abs(bd_torch) <= self.eps):
         #     zero_value = True
-        #     zero_index = np.where(np.absolute(bd) <= self.eps)
+        #     zero_index = torch.where(torch.abs(bd_torch) <= self.eps)
 
-        b = torch.zeros((npt, n + 1, 1), dtype=torch.float32, device=device)
-        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd_torch)
+        if np.any(np.absolute(bd) <= self.eps):
+            zero_value = True
+            zero_index = np.where(np.absolute(bd) <= self.eps)
+
+        # b = torch.zeros((npt, n + 1, 1), dtype=torch.float32, device=device)
+        # b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd_torch)
+        # if zero_value and self.exact_values:
+        #     b[zero_index[0], zero_index[1], 0] = 0.0
+        # b[:, n, 0] = 1.0
+
+        # if (~mask_torch).any():
+        #     mask_b = mask_torch.unsqueeze(1).unsqueeze(2).repeat(1, n + 1, 1)
+        #     b = torch.where(mask_b, b, torch.tensor(float('nan'), device=device))
+        #
+        # x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
+        # Z_torch = torch.tensor(self.Z, dtype=torch.float32, device=device)
+        # zvalues = torch.sum(x[:, :n, 0] * Z_torch, dim=1)
+        # sigmasq = torch.sum(x[:, :, 0] * -b[:, :, 0], dim=1)
+        #
+        # return zvalues.cpu().numpy(), sigmasq.cpu().numpy()
+
+        b = np.zeros((npt, n + 1, 1))
+        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
         if zero_value and self.exact_values:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
 
-        if (~mask_torch).any():
-            mask_b = mask_torch.unsqueeze(1).unsqueeze(2).repeat(1, n + 1, 1)
-            b = torch.where(mask_b, b, torch.tensor(float('nan'), device=device))
+        if (~mask).any():
+            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
+            b = np.ma.array(b, mask=mask_b)
 
-        x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
-        Z_torch = torch.tensor(self.Z, dtype=torch.float32, device=device)
-        zvalues = torch.sum(x[:, :n, 0] * Z_torch, dim=1)
-        sigmasq = torch.sum(x[:, :, 0] * -b[:, :, 0], dim=1)
+        x = np.dot(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).T
+        zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
+        sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
 
-        return zvalues.cpu().numpy(), sigmasq.cpu().numpy()
-
-        # b = np.zeros((npt, n + 1, 1))
-        # b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
-        # if zero_value and self.exact_values:
-        #     b[zero_index[0], zero_index[1], 0] = 0.0
-        # b[:, n, 0] = 1.0
-        #
-        # if (~mask).any():
-        #     mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
-        #     b = np.ma.array(b, mask=mask_b)
-        #
-        # x = np.dot(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).T
-        # zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
-        # sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
-        #
-        # return zvalues, sigmasq
+        return zvalues, sigmasq
 
     def _exec_loop(self, a, bd_all, mask):
         """Solves the kriging system by looping over all specified points.
