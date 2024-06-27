@@ -663,8 +663,6 @@ class OrdinaryKriging:
         zero_index = None
         zero_value = False
 
-        mask_torch = torch.tensor(mask, dtype=torch.bool)
-
         # use the desired method to invert the kriging matrix
         if self.pseudo_inv:
             # a_inv = self.pseudo_inverse(a_torch)
@@ -688,9 +686,14 @@ class OrdinaryKriging:
         b[:, n, 0] = 1.0
 
         print("torch b - 1", b)
-        if (~mask_torch).any():
+        if (~mask).any():
+            t0 = time()
+            mask_torch = torch.tensor(mask, dtype=torch.bool)
             mask_b = mask_torch.unsqueeze(1).unsqueeze(2).repeat(1, n + 1, 1)
-            b = torch.where(mask_b, b, torch.tensor(float('nan')))
+            b_ = torch.where(mask_b, b, torch.tensor(float('nan')))
+            print(f"time to mask b torch: {time() - t0}")
+            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
+            b = np.ma.array(b, mask=mask_b)
 
         print("torch b - 2", b)
 
@@ -702,12 +705,12 @@ class OrdinaryKriging:
 
         if (~mask).any():
             mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
-            b = np.ma.array(b, mask=mask_b)
+            b_ = np.ma.array(b, mask=mask_b)
 
-        print("np b", b)
+        print("np b", b_)
 
         x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
-        Z_torch = torch.tensor(self.Z, dtype=torch.float32, device=device)
+        Z_torch = torch.tensor(self.Z, dtype=torch.float32)
         zvalues = torch.sum(x[:, :n, 0] * Z_torch, dim=1)
         sigmasq = torch.sum(x[:, :, 0] * -b[:, :, 0], dim=1)
 
