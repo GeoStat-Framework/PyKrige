@@ -858,6 +858,8 @@ class OrdinaryKriging:
             will be a numpy masked array.
         """
 
+        print(torch.cuda.current_device())
+
         if self.verbose:
             print("Executing Ordinary Kriging...\n")
 
