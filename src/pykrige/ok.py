@@ -665,10 +665,8 @@ class OrdinaryKriging:
 
         # use the desired method to invert the kriging matrix
         if self.pseudo_inv:
-            # a_inv = self.pseudo_inverse(a_torch)
             a_inv = P_INV[self.pseudo_inv_type](a)
         else:
-            # a_inv = torch.inverse(a_torch)
             a_inv = scipy.linalg.inv(a)
 
         a_inv = torch.tensor(a_inv, dtype=torch.float32)
@@ -695,20 +693,7 @@ class OrdinaryKriging:
         zvalues = torch.sum(x[:, :n, 0] * Z_torch, dim=1)
         sigmasq = torch.sum(x[:, :, 0] * -b[:, :, 0], dim=1)
 
-        print("x torch", x)
-        print("Z_torch torch", Z_torch)
-
-
-
-
         x = np.dot(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).T
-        # zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
-        # sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
-
-        print("x np", x)
-        print("Z np", self.Z)
-        #
-        # return zvalues, sigmasq
 
         return zvalues.cpu().numpy(), sigmasq.cpu().numpy()
 
