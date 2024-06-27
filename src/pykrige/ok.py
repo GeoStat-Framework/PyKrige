@@ -689,9 +689,11 @@ class OrdinaryKriging:
         b[:, n, 0] = 1.0
 
         if (~mask).any():
-            mask_b = cp.repeat(mask[:, cp.newaxis, cp.newaxis], n + 1, axis=1)
-            b = cp.ma.array(b, mask=mask_b)
-            b = torch.tensor(b, dtype=torch.float32)
+            mask_torch = torch.from_numpy(cp.asnumpy(cp.repeat(mask[:, cp.newaxis, cp.newaxis], n + 1, axis=1)))
+            b = torch.masked_fill(b, mask_torch, value=torch.tensor(float('nan')))
+
+            # b = cp.ma.array(b, mask=mask_b)
+            # b = torch.tensor(b, dtype=torch.float32)
         print("b time: ", time() - t1)
 
         t2 = time()
