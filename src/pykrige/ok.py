@@ -27,6 +27,7 @@ from time import time
 import numpy as np
 import scipy.linalg
 import torch
+import cupy as cp
 from scipy.spatial.distance import cdist
 
 from . import core, variogram_models
@@ -679,8 +680,8 @@ class OrdinaryKriging:
 
         t1 = time()
         b = torch.zeros((npt, n + 1, 1), dtype=torch.float32)
-        result = -self.variogram_function(self.variogram_model_parameters, bd)
-        b[:, :n, 0] = torch.tensor(result, dtype=torch.float32)
+        bd = torch.tensor(bd, dtype=torch.float32)
+        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
 
 
         if zero_value and self.exact_values:
@@ -688,8 +689,8 @@ class OrdinaryKriging:
         b[:, n, 0] = 1.0
 
         if (~mask).any():
-            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
-            b = np.ma.array(b, mask=mask_b)
+            mask_b = cp.repeat(mask[:, cp.newaxis, cp.newaxis], n + 1, axis=1)
+            b = cp.ma.array(b, mask=mask_b)
             b = torch.tensor(b, dtype=torch.float32)
         print("b time: ", time() - t1)
 

@@ -156,7 +156,6 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
     if Ndim == 1:
         raise NotImplementedError("Not implemnented yet?")
     elif Ndim == 2:
-        print("Ndim == 2")
         stretch = torch.tensor([[1, 0], [0, scaling[0]]], device=device)
         rot_tot = torch.tensor([
             [torch.cos(-angle[0]), -torch.sin(-angle[0])],
