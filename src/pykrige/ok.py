@@ -672,33 +672,34 @@ class OrdinaryKriging:
             a_inv = scipy.linalg.inv(a)
             print("scipy.linalg.inv time: ", time() - t0)
 
-        a_inv = torch.tensor(a_inv, dtype=torch.float32)
+        with torch.autograd.profiler.profile(use_cuda=True) as prof:
+            a_inv = torch.tensor(a_inv, dtype=torch.float32)
 
-        if np.any(np.absolute(bd) <= self.eps):
-            zero_value = True
-            zero_index = np.where(np.absolute(bd) <= self.eps)
+            if np.any(np.absolute(bd) <= self.eps):
+                zero_value = True
+                zero_index = np.where(np.absolute(bd) <= self.eps)
 
-        t1 = time()
-        b = torch.zeros((npt, n + 1, 1), dtype=torch.float32)
-        bd = torch.tensor(bd, dtype=torch.float32)
-        b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
+            t1 = time()
+            b = torch.zeros((npt, n + 1, 1), dtype=torch.float32)
+            bd = torch.tensor(bd, dtype=torch.float32)
+            b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
 
+            if zero_value and self.exact_values:
+                b[zero_index[0], zero_index[1], 0] = 0.0
+            b[:, n, 0] = 1.0
 
-        if zero_value and self.exact_values:
-            b[zero_index[0], zero_index[1], 0] = 0.0
-        b[:, n, 0] = 1.0
+            if (~mask).any():
+                mask_torch = torch.from_numpy(cp.asnumpy(cp.repeat(mask[:, cp.newaxis, cp.newaxis], n + 1, axis=1)))
+                b = torch.masked_fill(b, mask_torch, value=torch.tensor(float('nan')))
 
-        if (~mask).any():
-            mask_torch = torch.from_numpy(cp.asnumpy(cp.repeat(mask[:, cp.newaxis, cp.newaxis], n + 1, axis=1)))
-            b = torch.masked_fill(b, mask_torch, value=torch.tensor(float('nan')))
+                # b = cp.ma.array(b, mask=mask_b)
+                # b = torch.tensor(b, dtype=torch.float32)
+            print("b time: ", time() - t1)
 
-            # b = cp.ma.array(b, mask=mask_b)
-            # b = torch.tensor(b, dtype=torch.float32)
-        print("b time: ", time() - t1)
-
-        t2 = time()
-        x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
-        print("x time: ", time() - t2)
+            t2 = time()
+            x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
+            print("x time: ", time() - t2)
+        print(prof)
 
         Z_torch = torch.tensor(self.Z, dtype=torch.float32)
 
