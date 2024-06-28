@@ -648,6 +648,7 @@ class OrdinaryKriging:
                 self.Y_ADJUSTED,
             )
         a = np.zeros((n + 1, n + 1))
+        d = torch.tensor(d, dtype=torch.float32).to(device)
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
 
         np.fill_diagonal(a, 0.0)
