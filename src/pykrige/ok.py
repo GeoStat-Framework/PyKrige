@@ -682,7 +682,7 @@ class OrdinaryKriging:
 
         t1 = time()
         b = torch.zeros((npt, n + 1, 1), dtype=torch.float32).to(device)
-        bd = torch.tensor(bd, dtype=torch.float32)
+        bd = torch.tensor(bd, dtype=torch.float32).to(device)
         b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
 
         if zero_value and self.exact_values:
