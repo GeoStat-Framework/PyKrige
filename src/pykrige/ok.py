@@ -651,7 +651,8 @@ class OrdinaryKriging:
         d = torch.tensor(d, dtype=torch.float32).to(device)
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
 
-        np.fill_diagonal(a, 0.0)
+        a.fill_diagonal_(0)
+        # np.fill_diagonal(a, 0.0)
         a[n, :] = 1.0
         a[:, n] = 1.0
         a[n, n] = 0.0
