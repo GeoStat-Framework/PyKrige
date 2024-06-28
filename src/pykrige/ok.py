@@ -673,7 +673,7 @@ class OrdinaryKriging:
             a_inv = P_INV[self.pseudo_inv_type](a)
         else:
             t0 = time()
-            a_inv = scipy.linalg.inv(a)
+            a_inv = scipy.linalg.inv(a.cpu().numpy())
             print("scipy.linalg.inv time: ", time() - t0)
 
         a_inv = torch.tensor(a_inv, dtype=torch.float32).to(device)
