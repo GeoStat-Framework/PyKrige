@@ -647,7 +647,7 @@ class OrdinaryKriging:
                 self.X_ADJUSTED,
                 self.Y_ADJUSTED,
             )
-        a = torch.zeros((n + 1, n + 1), dtype=torch.float32, device=device)
+        a = torch.zeros((n + 1, n + 1), dtype=torch.float32).to(device)
         d = torch.tensor(d, dtype=torch.float32).to(device)
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
 
@@ -678,13 +678,17 @@ class OrdinaryKriging:
 
         a_inv = torch.tensor(a_inv, dtype=torch.float32).to(device)
 
-        if np.any(np.absolute(bd) <= self.eps):
+        # if np.any(np.absolute(bd) <= self.eps):
+        #     zero_value = True
+        #     zero_index = np.where(np.absolute(bd) <= self.eps)
+
+        bd = torch.tensor(bd, dtype=torch.float32).to(device)
+        if torch.any(torch.abs(bd) <= self.eps):
             zero_value = True
-            zero_index = np.where(np.absolute(bd) <= self.eps)
+            zero_index = torch.where(torch.abs(bd) <= self.eps)
 
         t1 = time()
         b = torch.zeros((npt, n + 1, 1), dtype=torch.float32).to(device)
-        bd = torch.tensor(bd, dtype=torch.float32).to(device)
         b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
 
         if zero_value and self.exact_values:
