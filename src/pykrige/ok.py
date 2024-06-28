@@ -697,9 +697,9 @@ class OrdinaryKriging:
             # b = torch.tensor(b, dtype=torch.float32)
         print("b time: ", time() - t1)
 
-            t2 = time()
-            x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
-            print("x time: ", time() - t2)
+        t2 = time()
+        x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
+        print("x time: ", time() - t2)
 
         Z_torch = torch.tensor(self.Z, dtype=torch.float32).to(device)
 
