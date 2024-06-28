@@ -631,6 +631,11 @@ def _calculate_variogram_model(
     (psill = sill - nugget) -- setting bounds such that psill > 0 ensures that
     the sill will always be greater than the nugget...
     """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    semivariance = torch.tensor(semivariance, dtype=torch.float32).to(device)
+    lags = torch.tensor(lags, dtype=torch.float32).to(device)
+
 
     if variogram_model == "linear":
         x0 = [
@@ -649,13 +654,13 @@ def _calculate_variogram_model(
         bnds = ([0.0, 0.001, 0.0], [np.inf, 1.999, np.amax(semivariance)])
     else:
         x0 = [
-            np.amax(semivariance) - np.amin(semivariance),
-            0.25 * np.amax(lags),
-            np.amin(semivariance),
+            torch.max(semivariance) - torch.min(semivariance),
+            0.25 * torch.max(lags),
+            torch.min(semivariance),
         ]
         bnds = (
             [0.0, 0.0, 0.0],
-            [10.0 * np.amax(semivariance), np.amax(lags), np.amax(semivariance)],
+            [10.0 * torch.max(semivariance), torch.max(lags), torch.max(semivariance)],
         )
 
     # use 'soft' L1-norm minimization in order to buffer against
