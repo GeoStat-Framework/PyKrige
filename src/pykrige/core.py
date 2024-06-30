@@ -432,6 +432,8 @@ def _initialize_variogram_model(
     # in a condensed distance vector (distance matrix flattened to a vector)
     # to calculate semivariances...
     if coordinates_type == "euclidean":
+        X = torch.tensor(X, dtype=torch.float32).to(device)
+        y = torch.tensor(y, dtype=torch.float32).to(device)
         X = X.to(device)
         y = y.to(device)
         d = torch.pdist(X)
