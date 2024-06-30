@@ -270,7 +270,11 @@ class OrdinaryKriging:
         self.Y_ORIG = np.atleast_1d(
             np.squeeze(np.array(y, copy=True, dtype=np.float64))
         )
-        self.Z = np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float64)))
+
+        z = torch.tensor(z, dtype=torch.float32).to(device).squeeze()
+        if z.dim() == 0:
+            z = z.unsqueeze(0)
+        self.Z = np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float32)))
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
