@@ -491,6 +491,7 @@ class OrdinaryKriging:
                     [self.XCENTER, self.YCENTER],
                     [self.anisotropy_scaling],
                     [self.anisotropy_angle],
+                    self.device
                 ).T
             elif self.coordinates_type == "geographic":
                 if anisotropy_scaling != 1.0:
@@ -906,6 +907,7 @@ class OrdinaryKriging:
                 [self.XCENTER, self.YCENTER],
                 [self.anisotropy_scaling],
                 [self.anisotropy_angle],
+                self.device
             ).T
             # Prepare for cdist:
             xy_data = np.concatenate(
