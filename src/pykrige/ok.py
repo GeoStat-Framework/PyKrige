@@ -706,7 +706,9 @@ class OrdinaryKriging:
         x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
         print("x time: ", time() - t2)
 
+        t3 = time()
         Z_torch = torch.tensor(self.Z, dtype=torch.float32).to(device)
+        print("Z_torch time: ", time() - t3)
 
         t3 = time()
         zvalues = torch.sum(x[:, :n, 0] * Z_torch, dim=1)
