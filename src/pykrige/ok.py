@@ -716,7 +716,14 @@ class OrdinaryKriging:
         sigmasq = torch.sum(x[:, :, 0] * -b[:, :, 0], dim=1)
         print("sigmasq time: ", time() - t4)
 
-        return zvalues.cpu().numpy(), sigmasq.cpu().numpy()
+        t0 = time()
+        np_zvalues = zvalues.cpu().numpy()
+        print("zvalues to numpy time: ", time() - t0)
+
+        t0 = time()
+        np_sigmasq = sigmasq.cpu().numpy()
+        print("sigmasq to numpy time: ", time() - t0)
+        return np_zvalues, np_sigmasq
 
     def _exec_loop(self, a, bd_all, mask):
         """Solves the kriging system by looping over all specified points.
