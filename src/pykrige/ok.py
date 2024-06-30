@@ -676,16 +676,15 @@ class OrdinaryKriging:
             a_inv = scipy.linalg.inv(a.cpu().numpy())
             print("scipy.linalg.inv time: ", time() - t0)
 
+        t1 = time()
         a_inv = torch.tensor(a_inv, dtype=torch.float32).to(device)
-
-        # if np.any(np.absolute(bd) <= self.eps):
-        #     zero_value = True
-        #     zero_index = np.where(np.absolute(bd) <= self.eps)
 
         bd = torch.tensor(bd, dtype=torch.float32).to(device)
         if torch.any(torch.abs(bd) <= self.eps):
             zero_value = True
             zero_index = torch.where(torch.abs(bd) <= self.eps)
+        print("a_inv time: ", time() - t1)
+
 
         t1 = time()
         b = torch.zeros((npt, n + 1, 1), dtype=torch.float32).to(device)
