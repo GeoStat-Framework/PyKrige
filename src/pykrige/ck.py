@@ -111,8 +111,7 @@ class ClassificationKriging:
         Parameters
         ----------
         p: ndarray
-            (Ns, d) array of prediy
-            ctor variables (Ns samples, d dimensions)
+            (Ns, d) array of predictor variables (Ns samples, d dimensions)
             for classification
         x: ndarray
             ndarray of (x, y) points. Needs to be a (Ns, 2) array
