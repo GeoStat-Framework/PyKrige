@@ -207,8 +207,10 @@ class OrdinaryKriging:
         exact_values=True,
         pseudo_inv=False,
         pseudo_inv_type="pinv",
-        device="cuda:0"
     ):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
+
         # config the pseudo inverse
         self.pseudo_inv = bool(pseudo_inv)
         self.pseudo_inv_type = str(pseudo_inv_type)
@@ -275,14 +277,11 @@ class OrdinaryKriging:
         if z.dim() == 0:
             z = z.unsqueeze(0)
         self.Z = z
-        # self.Z = np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float32)))
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
         if self.enable_plotting and self.verbose:
             print("Plotting Enabled\n")
-
-        self.device = device
 
         # adjust for anisotropy... only implemented for euclidean (rectangular)
         # coordinates, as anisotropy is ambiguous for geographic coordinates...
@@ -298,6 +297,7 @@ class OrdinaryKriging:
                 [self.XCENTER, self.YCENTER],
                 [self.anisotropy_scaling],
                 [self.anisotropy_angle],
+                self.device
             ).T
         elif self.coordinates_type == "geographic":
             # Leave everything as is in geographic case.
@@ -339,6 +339,7 @@ class OrdinaryKriging:
             nlags,
             weight,
             self.coordinates_type,
+            self.device
         )
 
         if self.verbose:
@@ -637,9 +638,8 @@ class OrdinaryKriging:
         print("Q2 =", self.Q2)
         print("cR =", self.cR)
 
-    def _get_kriging_matrix(self, n):
+    def _get_kriging_matrix(self, n, device):
         """Assembles the kriging matrix."""
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if self.coordinates_type == "euclidean":
             xy = np.concatenate(
                 (self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1
@@ -662,7 +662,7 @@ class OrdinaryKriging:
         a[n, n] = 0.0
         return a
 
-    def _exec_vector(self, a, bd, mask):
+    def _exec_vector(self, a, bd, mask, device):
         """Solves the kriging system as a vectorized operation. This method
         can take a lot of memory for large grids and/or large datasets."""
         npt = bd.shape[0]
@@ -670,27 +670,19 @@ class OrdinaryKriging:
         zero_index = None
         zero_value = False
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
         # use the desired method to invert the kriging matrix
         if self.pseudo_inv:
             a_inv = P_INV[self.pseudo_inv_type](a)
         else:
-            t0 = time()
             a_inv = torch.inverse(a)
-            print("scipy.linalg.inv time: ", time() - t0)
 
-        t1 = time()
         a_inv = torch.tensor(a_inv, dtype=torch.float32).to(device)
 
         bd = torch.tensor(bd, dtype=torch.float32).to(device)
         if torch.any(torch.abs(bd) <= self.eps):
             zero_value = True
             zero_index = torch.where(torch.abs(bd) <= self.eps)
-        print("a_inv time: ", time() - t1)
 
-
-        t1 = time()
         b = torch.zeros((npt, n + 1, 1), dtype=torch.float32).to(device)
         b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
 
@@ -701,27 +693,15 @@ class OrdinaryKriging:
         if (~mask).any():
             mask_torch = torch.from_numpy(cp.asnumpy(cp.repeat(mask[:, cp.newaxis, cp.newaxis], n + 1, axis=1))).to(device)
             b = torch.masked_fill(b, mask_torch, value=torch.tensor(float('nan'))).to(device)
-        print("b time: ", time() - t1)
 
-        t2 = time()
         x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
-        print("x time: ", time() - t2)
 
-        t3 = time()
         zvalues = torch.sum(x[:, :n, 0] * self.Z, dim=1)
-        print("zvalues time: ", time() - t3)
 
-        t4 = time()
         sigmasq = torch.sum(x[:, :, 0] * -b[:, :, 0], dim=1)
-        print("sigmasq time: ", time() - t4)
 
-        t0 = time()
         np_zvalues = zvalues.cpu().numpy()
-        print("zvalues to numpy time: ", time() - t0)
-
-        t0 = time()
         np_sigmasq = sigmasq.cpu().numpy()
-        print("sigmasq to numpy time: ", time() - t0)
         return np_zvalues, np_sigmasq
 
     def _exec_loop(self, a, bd_all, mask):
@@ -886,12 +866,9 @@ class OrdinaryKriging:
         xpts = np.atleast_1d(np.squeeze(np.array(xpoints, copy=True)))
         ypts = np.atleast_1d(np.squeeze(np.array(ypoints, copy=True)))
         n = self.X_ADJUSTED.shape[0]
-        print(f"n: {n} in execute function")
         nx = xpts.size
         ny = ypts.size
-        t0 = time()
-        a = self._get_kriging_matrix(n)
-        print(f"_get_kriging_matrix take {time() - t0} sec in execute function")
+        a = self._get_kriging_matrix(n, self.device)
         if style in ["grid", "masked"]:
             if style == "masked":
                 if mask is None:
@@ -923,8 +900,6 @@ class OrdinaryKriging:
             raise ValueError("style argument must be 'grid', 'points', or 'masked'")
 
         if self.coordinates_type == "euclidean":
-            # TODO: check possibility to add GPU here
-            t1 = time()
             xpts, ypts = _adjust_for_anisotropy(
                 np.vstack((xpts, ypts)).T,
                 [self.XCENTER, self.YCENTER],
@@ -938,7 +913,6 @@ class OrdinaryKriging:
             xy_points = np.concatenate(
                 (xpts[:, np.newaxis], ypts[:, np.newaxis]), axis=1
             )
-            print(f"time _adjust_for_anisotropy in execute {time() - t1}")
         elif self.coordinates_type == "geographic":
             # In spherical coordinates, we do not correct for anisotropy.
             # Also, we don't use scipy.spatial.cdist, so we do not have to
@@ -1045,9 +1019,9 @@ class OrdinaryKriging:
                 )
 
             if backend == "vectorized":
-                t2 = time()
-                zvalues, sigmasq = self._exec_vector(a, bd, mask)
-                print(f"_exec_vector take {time() - t2} sec in execute function")
+                t0 = time()
+                zvalues, sigmasq = self._exec_vector(a, bd, mask, self.device)
+                print(f"_exec_vector take {time() - t0} sec in execute function")
             elif backend == "loop":
                 zvalues, sigmasq = self._exec_loop(a, bd, mask)
             elif backend == "C":

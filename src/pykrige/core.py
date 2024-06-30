@@ -119,7 +119,7 @@ def euclid3_to_great_circle(euclid3_distance):
     return 180.0 - 360.0 / np.pi * np.arccos(0.5 * euclid3_distance)
 
 
-def _adjust_for_anisotropy(X, center, scaling, angle):
+def _adjust_for_anisotropy(X, center, scaling, angle, device):
     """Adjusts data coordinates to take into account anisotropy.
     Can also be used to take into account data scaling. Angles are CCW about
     specified axes. Scaling is applied in rotated coordinate system.
@@ -140,14 +140,10 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
     X_adj : ndarray
         float array [n_samples, n_dim], the X array adjusted for anisotropy.
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     X = torch.tensor(X, dtype=torch.float32, device=device)
     center = torch.tensor(center, dtype=torch.float32, device=device).unsqueeze(0)
     scaling = torch.tensor(scaling, dtype=torch.float32, device=device)
     angle = torch.tensor(angle, dtype=torch.float32, device=device) * torch.pi / 180
-
-    # center = np.asarray(center)[None, :]
-    # angle = np.asarray(angle) * np.pi / 180
 
     X -= center
 
@@ -160,14 +156,7 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
         rot_tot = torch.tensor([
             [torch.cos(-angle[0]), -torch.sin(-angle[0])],
             [torch.sin(-angle[0]), torch.cos(-angle[0])]
-        ], device=device)
-        # stretch = np.array([[1, 0], [0, scaling[0]]])
-        # rot_tot = np.array(
-        #     [
-        #         [np.cos(-angle[0]), -np.sin(-angle[0])],
-        #         [np.sin(-angle[0]), np.cos(-angle[0])],
-        #     ]
-        # )
+        ]).to(device)
     elif Ndim == 3:
         stretch = np.array(
             [[1.0, 0.0, 0.0], [0.0, scaling[0], 0.0], [0.0, 0.0, scaling[1]]]
@@ -203,11 +192,6 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
     X_adj += center
 
     return X_adj.cpu().numpy()
-    # X_adj = np.dot(stretch, np.dot(rot_tot, X.T)).T
-    #
-    # X_adj += center
-    #
-    # return X_adj
 
 
 def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
@@ -402,6 +386,7 @@ def _initialize_variogram_model(
     nlags,
     weight,
     coordinates_type,
+    device
 ):
     """Initializes the variogram model for kriging. If user does not specify
     parameters, calls automatic variogram estimation routine.
@@ -441,22 +426,16 @@ def _initialize_variogram_model(
         user specified them or returned from the automatic variogram
         estimation routine
     """
-    t_start = time()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # distance calculation for rectangular coords now leverages
     # scipy.spatial.distance's pdist function, which gives pairwise distances
     # in a condensed distance vector (distance matrix flattened to a vector)
     # to calculate semivariances...
     if coordinates_type == "euclidean":
-        t0 = time()
-        # d = pdist(X, metric="euclidean")
         X = X.to(device)
         y = y.to(device)
         d = torch.pdist(X)
-        # g = 0.5 * pdist(y[:, None], metric="sqeuclidean")
         g = 0.5 * torch.pdist(y.unsqueeze(1), p=2).pow(2)
-        print(f"in _initialize_variogram_model. pdist time: {time() - t0}")
 
     # geographic coordinates only accepted if the problem is 2D
     # assume X[:, 0] ('x') => lon, X[:, 1] ('y') => lat
@@ -500,50 +479,6 @@ def _initialize_variogram_model(
     # being biased too high for the larger values and thereby throws off
     # automatic variogram calculation and confuses comparison of the
     # semivariogram with the variogram model.
-    #
-    # dmax = np.amax(d)
-    # dmin = np.amin(d)
-    # dd = dmax - dmin
-    # bins = [dd*(0.5**n) + dmin for n in range(nlags, 1, -1)]
-    # bins.insert(0, dmin)
-    # bins.append(dmax)
-
-    """
-    lags = np.zeros(nlags)
-    semivariance = np.zeros(nlags)
-
-    for n in range(nlags):
-        # This 'if... else...' statement ensures that there are data
-        # in the bin so that numpy can actually find the mean. If we
-        # don't test this first, then Python kicks out an annoying warning
-        # message when there is an empty bin and we try to calculate the mean.
-        if d[(d >= bins[n]) & (d < bins[n + 1])].size > 0:
-            lags[n] = np.mean(d[(d >= bins[n]) & (d < bins[n + 1])])
-            semivariance[n] = np.mean(g[(d >= bins[n]) & (d < bins[n + 1])])
-        else:
-            lags[n] = np.nan
-            semivariance[n] = np.nan
-
-    lags = lags[~np.isnan(semivariance)]
-    semivariance = semivariance[~np.isnan(semivariance)]
-
-    """
-
-    # lags = torch.zeros(nlags)
-    # semivariance = torch.zeros(nlags)
-    #
-    # for n in range(nlags):
-    #     mask = (d >= bins[n]) & (d < bins[n + 1])
-    #     if mask.sum() > 0:
-    #         lags[n] = d[mask].mean()
-    #         semivariance[n] = g[mask].mean()
-    #     else:
-    #         lags[n] = torch.nan
-    #         semivariance[n] = torch.nan
-    #
-    # non_nan_mask = ~torch.isnan(semivariance)
-    # lags = lags[non_nan_mask]
-    # semivariance = semivariance[non_nan_mask]
 
     # a few tests the make sure that, if the variogram_model_parameters
     # are supplied, they have been supplied as expected...
@@ -581,9 +516,8 @@ def _initialize_variogram_model(
             )
         else:
             variogram_model_parameters = _calculate_variogram_model(
-                lags, semivariance, variogram_model, variogram_function, weight
+                lags, semivariance, variogram_model, variogram_function, weight, device
             )
-    print(f"all _initialize_variogram_model. time: {time() - t_start}")
 
     return lags, semivariance, variogram_model_parameters
 
@@ -633,7 +567,7 @@ def _variogram_residuals(params, x, y, variogram_function, weight):
 
 
 def _calculate_variogram_model(
-    lags, semivariance, variogram_model, variogram_function, weight
+    lags, semivariance, variogram_model, variogram_function, weight, device
 ):
     """Function that fits a variogram model when parameters are not specified.
     Returns variogram model parameters that minimize the RMSE between the
@@ -664,8 +598,6 @@ def _calculate_variogram_model(
     (psill = sill - nugget) -- setting bounds such that psill > 0 ensures that
     the sill will always be greater than the nugget...
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     semivariance = torch.tensor(semivariance, dtype=torch.float32).to(device)
     lags = torch.tensor(lags, dtype=torch.float32).to(device)
 
