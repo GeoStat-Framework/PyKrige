@@ -449,7 +449,8 @@ def _initialize_variogram_model(
     if coordinates_type == "euclidean":
         t0 = time()
         d = pdist(X, metric="euclidean")
-        g = 0.5 * pdist(y[:, None], metric="sqeuclidean")
+        # g = 0.5 * pdist(y[:, None], metric="sqeuclidean")
+        g = 0.5 * torch.pdist(y.unsqueeze(1), p=2).pow(2)
         print(f"in _initialize_variogram_model. pdist time: {time() - t0}")
 
     # geographic coordinates only accepted if the problem is 2D
@@ -505,6 +506,7 @@ def _initialize_variogram_model(
     # bins.insert(0, dmin)
     # bins.append(dmax)
 
+    """
     lags = np.zeros(nlags)
     semivariance = np.zeros(nlags)
 
@@ -522,6 +524,24 @@ def _initialize_variogram_model(
 
     lags = lags[~np.isnan(semivariance)]
     semivariance = semivariance[~np.isnan(semivariance)]
+
+    """
+
+    lags = torch.zeros(nlags)
+    semivariance = torch.zeros(nlags)
+
+    for n in range(nlags):
+        mask = (d >= bins[n]) & (d < bins[n + 1])
+        if mask.sum() > 0:
+            lags[n] = d[mask].mean()
+            semivariance[n] = g[mask].mean()
+        else:
+            lags[n] = torch.nan
+            semivariance[n] = torch.nan
+
+    non_nan_mask = ~torch.isnan(semivariance)
+    lags = lags[non_nan_mask]
+    semivariance = semivariance[non_nan_mask]
 
     # a few tests the make sure that, if the variogram_model_parameters
     # are supplied, they have been supplied as expected...
