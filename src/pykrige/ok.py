@@ -712,11 +712,7 @@ class OrdinaryKriging:
         print("x time: ", time() - t2)
 
         t3 = time()
-        Z_torch = torch.tensor(self.Z, dtype=torch.float32).to(device)
-        print("Z_torch time: ", time() - t3)
-
-        t3 = time()
-        zvalues = torch.sum(x[:, :n, 0] * Z_torch, dim=1)
+        zvalues = torch.sum(x[:, :n, 0] * self.Z, dim=1)
         print("zvalues time: ", time() - t3)
 
         t4 = time()
