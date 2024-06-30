@@ -45,8 +45,6 @@ def gaussian_variogram_model(m, d):
     nugget = float(m[2])
     return psill * (1.0 - torch.exp(-(d**2.0) / (range_ * 4.0 / 7.0) ** 2.0)) + nugget
 
-    # return psill * (1.0 - np.exp(-(d**2.0) / (range_ * 4.0 / 7.0) ** 2.0)) + nugget
-
 
 def exponential_variogram_model(m, d):
     """Exponential model, m is [psill, range, nugget]"""
