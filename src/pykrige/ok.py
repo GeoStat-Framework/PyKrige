@@ -678,7 +678,8 @@ class OrdinaryKriging:
             a_inv = P_INV[self.pseudo_inv_type](a)
         else:
             t0 = time()
-            a_inv = scipy.linalg.inv(a.cpu().numpy())
+            a_inv = torch.inverse(a)
+            # a_inv = scipy.linalg.inv(a.cpu().numpy())
             print("scipy.linalg.inv time: ", time() - t0)
 
         t1 = time()
@@ -702,9 +703,6 @@ class OrdinaryKriging:
         if (~mask).any():
             mask_torch = torch.from_numpy(cp.asnumpy(cp.repeat(mask[:, cp.newaxis, cp.newaxis], n + 1, axis=1))).to(device)
             b = torch.masked_fill(b, mask_torch, value=torch.tensor(float('nan'))).to(device)
-
-            # b = cp.ma.array(b, mask=mask_b)
-            # b = torch.tensor(b, dtype=torch.float32)
         print("b time: ", time() - t1)
 
         t2 = time()
