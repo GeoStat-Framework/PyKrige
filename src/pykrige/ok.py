@@ -657,7 +657,6 @@ class OrdinaryKriging:
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
 
         a.fill_diagonal_(0)
-        # np.fill_diagonal(a, 0.0)
         a[n, :] = 1.0
         a[:, n] = 1.0
         a[n, n] = 0.0
@@ -679,7 +678,6 @@ class OrdinaryKriging:
         else:
             t0 = time()
             a_inv = torch.inverse(a)
-            # a_inv = scipy.linalg.inv(a.cpu().numpy())
             print("scipy.linalg.inv time: ", time() - t0)
 
         t1 = time()

@@ -442,13 +442,18 @@ def _initialize_variogram_model(
         estimation routine
     """
     t_start = time()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     # distance calculation for rectangular coords now leverages
     # scipy.spatial.distance's pdist function, which gives pairwise distances
     # in a condensed distance vector (distance matrix flattened to a vector)
     # to calculate semivariances...
     if coordinates_type == "euclidean":
         t0 = time()
-        d = pdist(X, metric="euclidean")
+        # d = pdist(X, metric="euclidean")
+        X = X.to(device)
+        y = y.to(device)
+        d = torch.pdist(X)
         # g = 0.5 * pdist(y[:, None], metric="sqeuclidean")
         g = 0.5 * torch.pdist(y.unsqueeze(1), p=2).pow(2)
         print(f"in _initialize_variogram_model. pdist time: {time() - t0}")
@@ -482,12 +487,9 @@ def _initialize_variogram_model(
     # (specifically, say, ending up as 0.99999999999999 instead of 1.0).
     # Appending dmax + 0.001 ensures that the largest distance value
     # is included in the semivariogram calculation.
-    dmax = np.amax(d)
-    dmin = np.amin(d)
-    dd = (dmax - dmin) / nlags
-    bins = [dmin + n * dd for n in range(nlags)]
-    dmax += 0.001
-    bins.append(dmax)
+    dmax = torch.max(d)
+    dmin = torch.min(d)
+    bins = torch.linspace(dmin, dmax + 0.001, nlags + 1, device=device)
 
     # This old binning method was experimental and doesn't seem
     # to work too well. Bins were computed such that there are more
@@ -527,25 +529,36 @@ def _initialize_variogram_model(
 
     """
 
-    lags = torch.zeros(nlags)
-    semivariance = torch.zeros(nlags)
+    # lags = torch.zeros(nlags)
+    # semivariance = torch.zeros(nlags)
+    #
+    # for n in range(nlags):
+    #     mask = (d >= bins[n]) & (d < bins[n + 1])
+    #     if mask.sum() > 0:
+    #         lags[n] = d[mask].mean()
+    #         semivariance[n] = g[mask].mean()
+    #     else:
+    #         lags[n] = torch.nan
+    #         semivariance[n] = torch.nan
+    #
+    # non_nan_mask = ~torch.isnan(semivariance)
+    # lags = lags[non_nan_mask]
+    # semivariance = semivariance[non_nan_mask]
 
-    for n in range(nlags):
-        mask = (d >= bins[n]) & (d < bins[n + 1])
-        if mask.sum() > 0:
-            lags[n] = d[mask].mean()
-            semivariance[n] = g[mask].mean()
-        else:
-            lags[n] = torch.nan
-            semivariance[n] = torch.nan
+    # a few tests the make sure that, if the variogram_model_parameters
+    # are supplied, they have been supplied as expected...
+    # if variogram_model_parameters was not defined, then estimate the variogram
+
+    mask = (d.unsqueeze(0) >= bins[:-1].unsqueeze(1)) & (d.unsqueeze(0) < bins[1:].unsqueeze(1))
+    lags = torch.where(mask.sum(1) > 0, (d.unsqueeze(0) * mask).sum(1) / mask.sum(1),
+                       torch.tensor(float('nan'), device=device))
+    semivariance = torch.where(mask.sum(1) > 0, (g.unsqueeze(0) * mask).sum(1) / mask.sum(1),
+                               torch.tensor(float('nan'), device=device))
 
     non_nan_mask = ~torch.isnan(semivariance)
     lags = lags[non_nan_mask]
     semivariance = semivariance[non_nan_mask]
 
-    # a few tests the make sure that, if the variogram_model_parameters
-    # are supplied, they have been supplied as expected...
-    # if variogram_model_parameters was not defined, then estimate the variogram
     if variogram_model_parameters is not None:
         if variogram_model == "linear" and len(variogram_model_parameters) != 2:
             raise ValueError(
