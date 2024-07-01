@@ -207,7 +207,6 @@ class OrdinaryKriging:
         pseudo_inv_type="pinv",
     ):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        device = 'cpu'
         current_gpu = torch.cuda.current_device()
         print(device)
         print(torch.cuda.get_device_name(current_gpu))
