@@ -434,8 +434,6 @@ def _initialize_variogram_model(
     if coordinates_type == "euclidean":
         X = torch.tensor(X, dtype=torch.float32).to(device)
         y = torch.tensor(y, dtype=torch.float32).to(device)
-        X = X.to(device)
-        y = y.to(device)
         d = torch.pdist(X)
         g = 0.5 * torch.pdist(y.unsqueeze(1), p=2).pow(2)
 
@@ -650,8 +648,8 @@ def _krige(
     variogram_function,
     variogram_model_parameters,
     coordinates_type,
-    pseudo_inv=False,
-    device='cuda:0'
+    device,
+    pseudo_inv=False
 ):
     """Sets up and solves the ordinary kriging system for the given
     coordinate pair. This function is only used for the statistics calculations.
@@ -671,13 +669,12 @@ def _krige(
     coordinates_type: str
         type of coordinates in X array, can be 'euclidean' for standard
         rectangular coordinates or 'geographic' if the coordinates are lat/lon
+    device: str, used for cuda calculation using torch.
     pseudo_inv : :class:`bool`, optional
         Whether the kriging system is solved with the pseudo inverted
         kriging matrix. If `True`, this leads to more numerical stability
         and redundant points are averaged. But it can take more time.
         Default: False
-    device: str, used for cuda calculation using torch. Default: 'cuda:0'
-
     Returns
     -------
     zinterp: float
@@ -740,9 +737,8 @@ def _krige(
     a = torch.from_numpy(a)
     b = torch.from_numpy(b)
 
-    if device is not None:
-        a = a.to(device)
-        b = b.to(device)
+    a = a.to(device)
+    b = b.to(device)
 
     # solve
     if pseudo_inv:
@@ -766,8 +762,8 @@ def _find_statistics(
     variogram_function,
     variogram_model_parameters,
     coordinates_type,
+    device,
     pseudo_inv=False,
-    device='cuda:0'
 ):
     """Calculates variogram fit statistics.
     Returns the delta, sigma, and epsilon values for the variogram fit.
@@ -786,12 +782,12 @@ def _find_statistics(
     coordinates_type: str
         type of coordinates in X array, can be 'euclidean' for standard
         rectangular coordinates or 'geographic' if the coordinates are lat/lon
+    device: str, used for cuda calculation using torch.
     pseudo_inv : :class:`bool`, optional
         Whether the kriging system is solved with the pseudo inverted
         kriging matrix. If `True`, this leads to more numerical stability
         and redundant points are averaged. But it can take more time.
         Default: False
-    device: str, used for cuda calculation using torch. Default: 'cuda:0'
 
     Returns
     -------
@@ -819,8 +815,8 @@ def _find_statistics(
                 variogram_function,
                 variogram_model_parameters,
                 coordinates_type,
+                device,
                 pseudo_inv,
-                device
             )
 
             # if the estimation error is zero, it's probably because

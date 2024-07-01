@@ -27,7 +27,6 @@ from time import time
 import numpy as np
 import scipy.linalg
 import torch
-import cupy as cp
 from scipy.spatial.distance import cdist
 
 from . import core, variogram_models
@@ -168,7 +167,6 @@ class OrdinaryKriging:
             * `"pinvh"`: use `pinvh` from `scipy` which uses eigen-values
 
         Default: `"pinv"`
-    device: str, used for cuda calculation using torch. Default: 'cuda:0'
 
     References
     ----------
@@ -209,6 +207,7 @@ class OrdinaryKriging:
         pseudo_inv_type="pinv",
     ):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = 'cpu'
         current_gpu = torch.cuda.current_device()
         print(device)
         print(torch.cuda.get_device_name(current_gpu))
@@ -380,8 +379,8 @@ class OrdinaryKriging:
                 self.variogram_function,
                 self.variogram_model_parameters,
                 self.coordinates_type,
+                self.device,
                 self.pseudo_inv,
-                self.device
             )
             self.Q1 = core.calcQ1(self.epsilon)
             self.Q2 = core.calcQ2(self.epsilon)
@@ -560,8 +559,8 @@ class OrdinaryKriging:
             self.variogram_function,
             self.variogram_model_parameters,
             self.coordinates_type,
-            self.pseudo_inv,
-            self.device
+            self.device,
+            self.pseudo_inv
         )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
@@ -642,7 +641,7 @@ class OrdinaryKriging:
         print("Q2 =", self.Q2)
         print("cR =", self.cR)
 
-    def _get_kriging_matrix(self, n, device):
+    def _get_kriging_matrix(self, n):
         """Assembles the kriging matrix."""
         if self.coordinates_type == "euclidean":
             xy = np.concatenate(
@@ -656,8 +655,8 @@ class OrdinaryKriging:
                 self.X_ADJUSTED,
                 self.Y_ADJUSTED,
             )
-        a = torch.zeros((n + 1, n + 1), dtype=torch.float32).to(device)
-        d = torch.tensor(d, dtype=torch.float32).to(device)
+        a = torch.zeros((n + 1, n + 1), dtype=torch.float32).to(self.device)
+        d = torch.tensor(d, dtype=torch.float32).to(self.device)
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
 
         a.fill_diagonal_(0)
@@ -666,7 +665,7 @@ class OrdinaryKriging:
         a[n, n] = 0.0
         return a
 
-    def _exec_vector(self, a, bd, mask, device):
+    def _exec_vector(self, a, bd, mask):
         """Solves the kriging system as a vectorized operation. This method
         can take a lot of memory for large grids and/or large datasets."""
         npt = bd.shape[0]
@@ -680,14 +679,14 @@ class OrdinaryKriging:
         else:
             a_inv = torch.inverse(a)
 
-        a_inv = torch.tensor(a_inv, dtype=torch.float32).to(device)
+        a_inv = torch.tensor(a_inv, dtype=torch.float32).to(self.device)
 
-        bd = torch.tensor(bd, dtype=torch.float32).to(device)
+        bd = torch.tensor(bd, dtype=torch.float32).to(self.device)
         if torch.any(torch.abs(bd) <= self.eps):
             zero_value = True
             zero_index = torch.where(torch.abs(bd) <= self.eps)
 
-        b = torch.zeros((npt, n + 1, 1), dtype=torch.float32).to(device)
+        b = torch.zeros((npt, n + 1, 1), dtype=torch.float32).to(self.device)
         b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
 
         if zero_value and self.exact_values:
@@ -695,8 +694,8 @@ class OrdinaryKriging:
         b[:, n, 0] = 1.0
 
         if (~mask).any():
-            mask_torch = torch.from_numpy(cp.asnumpy(cp.repeat(mask[:, cp.newaxis, cp.newaxis], n + 1, axis=1))).to(device)
-            b = torch.masked_fill(b, mask_torch, value=torch.tensor(float('nan'))).to(device)
+            mask_torch = torch.repeat_interleave(mask.unsqueeze(1).unsqueeze(1), n + 1, dim=1).to(self.device)
+            b = torch.masked_fill(b, mask_torch, value=torch.tensor(float('nan'))).to(self.device)
 
         x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
 
