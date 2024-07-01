@@ -1022,7 +1022,7 @@ class OrdinaryKriging:
 
             if backend == "vectorized":
                 t0 = time()
-                zvalues, sigmasq = self._exec_vector(a, bd, mask, self.device)
+                zvalues, sigmasq = self._exec_vector(a, bd, mask)
                 print(f"_exec_vector take {time() - t0} sec in execute function")
             elif backend == "loop":
                 zvalues, sigmasq = self._exec_loop(a, bd, mask)
