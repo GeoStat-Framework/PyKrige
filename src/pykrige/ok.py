@@ -869,7 +869,7 @@ class OrdinaryKriging:
         n = self.X_ADJUSTED.shape[0]
         nx = xpts.size
         ny = ypts.size
-        a = self._get_kriging_matrix(n, self.device)
+        a = self._get_kriging_matrix(n)
         if style in ["grid", "masked"]:
             if style == "masked":
                 if mask is None:
