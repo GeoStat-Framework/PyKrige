@@ -209,9 +209,6 @@ class OrdinaryKriging:
         is_cuda_available = torch.cuda.is_available()
         device = torch.device("cuda" if is_cuda_available else "cpu")
         print(f"used device : {device}")
-        if is_cuda_available:
-            current_gpu = torch.cuda.current_device()
-            print(f"GPU name : {torch.cuda.get_device_name(current_gpu)}")
         self.device = device
 
         # config the pseudo inverse
