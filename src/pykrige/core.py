@@ -433,7 +433,6 @@ def _initialize_variogram_model(
     # to calculate semivariances...
     if coordinates_type == "euclidean":
         X = torch.tensor(X, dtype=torch.float32).to(device)
-        y = torch.tensor(y, dtype=torch.float32).to(device)
         d = torch.pdist(X)
         g = 0.5 * torch.pdist(y.unsqueeze(1), p=2).pow(2)
 
