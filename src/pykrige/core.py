@@ -21,7 +21,9 @@ References
 
 Copyright (c) 2015-2020, PyKrige Developers
 """
+from time import time
 
+import torch
 import numpy as np
 import scipy.linalg as spl
 from scipy.optimize import least_squares
@@ -117,7 +119,7 @@ def euclid3_to_great_circle(euclid3_distance):
     return 180.0 - 360.0 / np.pi * np.arccos(0.5 * euclid3_distance)
 
 
-def _adjust_for_anisotropy(X, center, scaling, angle):
+def _adjust_for_anisotropy(X, center, scaling, angle, device):
     """Adjusts data coordinates to take into account anisotropy.
     Can also be used to take into account data scaling. Angles are CCW about
     specified axes. Scaling is applied in rotated coordinate system.
@@ -138,9 +140,10 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
     X_adj : ndarray
         float array [n_samples, n_dim], the X array adjusted for anisotropy.
     """
-
-    center = np.asarray(center)[None, :]
-    angle = np.asarray(angle) * np.pi / 180
+    X = torch.tensor(X, dtype=torch.float32, device=device)
+    center = torch.tensor(center, dtype=torch.float32, device=device).unsqueeze(0)
+    scaling = torch.tensor(scaling, dtype=torch.float32, device=device)
+    angle = torch.tensor(angle, dtype=torch.float32, device=device) * torch.pi / 180
 
     X -= center
 
@@ -149,13 +152,11 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
     if Ndim == 1:
         raise NotImplementedError("Not implemnented yet?")
     elif Ndim == 2:
-        stretch = np.array([[1, 0], [0, scaling[0]]])
-        rot_tot = np.array(
-            [
-                [np.cos(-angle[0]), -np.sin(-angle[0])],
-                [np.sin(-angle[0]), np.cos(-angle[0])],
-            ]
-        )
+        stretch = torch.tensor([[1, 0], [0, scaling[0]]], device=device)
+        rot_tot = torch.tensor([
+            [torch.cos(-angle[0]), -torch.sin(-angle[0])],
+            [torch.sin(-angle[0]), torch.cos(-angle[0])]
+        ]).to(device)
     elif Ndim == 3:
         stretch = np.array(
             [[1.0, 0.0, 0.0], [0.0, scaling[0], 0.0], [0.0, 0.0, scaling[1]]]
@@ -186,11 +187,11 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
         raise ValueError(
             "Adjust for anisotropy function doesn't support ND spaces where N>3"
         )
-    X_adj = np.dot(stretch, np.dot(rot_tot, X.T)).T
+    X_adj = torch.mm(stretch, torch.mm(rot_tot, X.t())).t()
 
     X_adj += center
 
-    return X_adj
+    return X_adj.cpu().numpy()
 
 
 def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
@@ -385,6 +386,7 @@ def _initialize_variogram_model(
     nlags,
     weight,
     coordinates_type,
+    device
 ):
     """Initializes the variogram model for kriging. If user does not specify
     parameters, calls automatic variogram estimation routine.
@@ -430,8 +432,9 @@ def _initialize_variogram_model(
     # in a condensed distance vector (distance matrix flattened to a vector)
     # to calculate semivariances...
     if coordinates_type == "euclidean":
-        d = pdist(X, metric="euclidean")
-        g = 0.5 * pdist(y[:, None], metric="sqeuclidean")
+        X = torch.tensor(X, dtype=torch.float32).to(device)
+        d = torch.pdist(X)
+        g = 0.5 * torch.pdist(y.unsqueeze(1), p=2).pow(2)
 
     # geographic coordinates only accepted if the problem is 2D
     # assume X[:, 0] ('x') => lon, X[:, 1] ('y') => lat
@@ -462,12 +465,9 @@ def _initialize_variogram_model(
     # (specifically, say, ending up as 0.99999999999999 instead of 1.0).
     # Appending dmax + 0.001 ensures that the largest distance value
     # is included in the semivariogram calculation.
-    dmax = np.amax(d)
-    dmin = np.amin(d)
-    dd = (dmax - dmin) / nlags
-    bins = [dmin + n * dd for n in range(nlags)]
-    dmax += 0.001
-    bins.append(dmax)
+    dmax = torch.max(d)
+    dmin = torch.min(d)
+    bins = torch.linspace(dmin, dmax + 0.001, nlags + 1, device=device)
 
     # This old binning method was experimental and doesn't seem
     # to work too well. Bins were computed such that there are more
@@ -478,35 +478,21 @@ def _initialize_variogram_model(
     # being biased too high for the larger values and thereby throws off
     # automatic variogram calculation and confuses comparison of the
     # semivariogram with the variogram model.
-    #
-    # dmax = np.amax(d)
-    # dmin = np.amin(d)
-    # dd = dmax - dmin
-    # bins = [dd*(0.5**n) + dmin for n in range(nlags, 1, -1)]
-    # bins.insert(0, dmin)
-    # bins.append(dmax)
-
-    lags = np.zeros(nlags)
-    semivariance = np.zeros(nlags)
-
-    for n in range(nlags):
-        # This 'if... else...' statement ensures that there are data
-        # in the bin so that numpy can actually find the mean. If we
-        # don't test this first, then Python kicks out an annoying warning
-        # message when there is an empty bin and we try to calculate the mean.
-        if d[(d >= bins[n]) & (d < bins[n + 1])].size > 0:
-            lags[n] = np.mean(d[(d >= bins[n]) & (d < bins[n + 1])])
-            semivariance[n] = np.mean(g[(d >= bins[n]) & (d < bins[n + 1])])
-        else:
-            lags[n] = np.nan
-            semivariance[n] = np.nan
-
-    lags = lags[~np.isnan(semivariance)]
-    semivariance = semivariance[~np.isnan(semivariance)]
 
     # a few tests the make sure that, if the variogram_model_parameters
     # are supplied, they have been supplied as expected...
     # if variogram_model_parameters was not defined, then estimate the variogram
+
+    mask = (d.unsqueeze(0) >= bins[:-1].unsqueeze(1)) & (d.unsqueeze(0) < bins[1:].unsqueeze(1))
+    lags = torch.where(mask.sum(1) > 0, (d.unsqueeze(0) * mask).sum(1) / mask.sum(1),
+                       torch.tensor(float('nan'), device=device))
+    semivariance = torch.where(mask.sum(1) > 0, (g.unsqueeze(0) * mask).sum(1) / mask.sum(1),
+                               torch.tensor(float('nan'), device=device))
+
+    non_nan_mask = ~torch.isnan(semivariance)
+    lags = lags[non_nan_mask]
+    semivariance = semivariance[non_nan_mask]
+
     if variogram_model_parameters is not None:
         if variogram_model == "linear" and len(variogram_model_parameters) != 2:
             raise ValueError(
@@ -529,7 +515,7 @@ def _initialize_variogram_model(
             )
         else:
             variogram_model_parameters = _calculate_variogram_model(
-                lags, semivariance, variogram_model, variogram_function, weight
+                lags, semivariance, variogram_model, variogram_function, weight, device
             )
 
     return lags, semivariance, variogram_model_parameters
@@ -580,7 +566,7 @@ def _variogram_residuals(params, x, y, variogram_function, weight):
 
 
 def _calculate_variogram_model(
-    lags, semivariance, variogram_model, variogram_function, weight
+    lags, semivariance, variogram_model, variogram_function, weight, device
 ):
     """Function that fits a variogram model when parameters are not specified.
     Returns variogram model parameters that minimize the RMSE between the
@@ -611,6 +597,9 @@ def _calculate_variogram_model(
     (psill = sill - nugget) -- setting bounds such that psill > 0 ensures that
     the sill will always be greater than the nugget...
     """
+    semivariance = torch.tensor(semivariance, dtype=torch.float32).to(device)
+    lags = torch.tensor(lags, dtype=torch.float32).to(device)
+
 
     if variogram_model == "linear":
         x0 = [
@@ -629,13 +618,13 @@ def _calculate_variogram_model(
         bnds = ([0.0, 0.001, 0.0], [np.inf, 1.999, np.amax(semivariance)])
     else:
         x0 = [
-            np.amax(semivariance) - np.amin(semivariance),
-            0.25 * np.amax(lags),
-            np.amin(semivariance),
+            torch.max(semivariance) - torch.min(semivariance),
+            0.25 * torch.max(lags),
+            torch.min(semivariance),
         ]
         bnds = (
             [0.0, 0.0, 0.0],
-            [10.0 * np.amax(semivariance), np.amax(lags), np.amax(semivariance)],
+            [10.0 * torch.max(semivariance), torch.max(lags), torch.max(semivariance)],
         )
 
     # use 'soft' L1-norm minimization in order to buffer against
@@ -658,7 +647,8 @@ def _krige(
     variogram_function,
     variogram_model_parameters,
     coordinates_type,
-    pseudo_inv=False,
+    device,
+    pseudo_inv=False
 ):
     """Sets up and solves the ordinary kriging system for the given
     coordinate pair. This function is only used for the statistics calculations.
@@ -678,12 +668,12 @@ def _krige(
     coordinates_type: str
         type of coordinates in X array, can be 'euclidean' for standard
         rectangular coordinates or 'geographic' if the coordinates are lat/lon
+    device: str, used for cuda calculation using torch.
     pseudo_inv : :class:`bool`, optional
         Whether the kriging system is solved with the pseudo inverted
         kriging matrix. If `True`, this leads to more numerical stability
         and redundant points are averaged. But it can take more time.
         Default: False
-
     Returns
     -------
     zinterp: float
@@ -743,11 +733,22 @@ def _krige(
         b[zero_index, 0] = 0.0
     b[n, 0] = 1.0
 
+    a = torch.from_numpy(a)
+    b = torch.from_numpy(b)
+
+    a = a.to(device)
+    b = b.to(device)
+
     # solve
     if pseudo_inv:
-        res = np.linalg.lstsq(a, b, rcond=None)[0]
+        res = torch.linalg.lstsq(a, b, rcond=None)[0]
     else:
-        res = np.linalg.solve(a, b)
+        res = torch.linalg.solve(a, b)
+
+    a = a.detach().cpu().numpy()
+    b = b.detach().cpu().numpy()
+    res = res.detach().cpu().numpy()
+
     zinterp = np.sum(res[:n, 0] * y)
     sigmasq = np.sum(res[:, 0] * -b[:, 0])
 
@@ -760,6 +761,7 @@ def _find_statistics(
     variogram_function,
     variogram_model_parameters,
     coordinates_type,
+    device,
     pseudo_inv=False,
 ):
     """Calculates variogram fit statistics.
@@ -779,6 +781,7 @@ def _find_statistics(
     coordinates_type: str
         type of coordinates in X array, can be 'euclidean' for standard
         rectangular coordinates or 'geographic' if the coordinates are lat/lon
+    device: str, used for cuda calculation using torch.
     pseudo_inv : :class:`bool`, optional
         Whether the kriging system is solved with the pseudo inverted
         kriging matrix. If `True`, this leads to more numerical stability
@@ -811,6 +814,7 @@ def _find_statistics(
                 variogram_function,
                 variogram_model_parameters,
                 coordinates_type,
+                device,
                 pseudo_inv,
             )
 

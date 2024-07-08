@@ -20,6 +20,7 @@ References
 Copyright (c) 2015-2020, PyKrige Developers
 """
 import numpy as np
+import torch
 
 
 def linear_variogram_model(m, d):
@@ -42,7 +43,7 @@ def gaussian_variogram_model(m, d):
     psill = float(m[0])
     range_ = float(m[1])
     nugget = float(m[2])
-    return psill * (1.0 - np.exp(-(d**2.0) / (range_ * 4.0 / 7.0) ** 2.0)) + nugget
+    return psill * (1.0 - torch.exp(-(d**2.0) / (range_ * 4.0 / 7.0) ** 2.0)) + nugget
 
 
 def exponential_variogram_model(m, d):

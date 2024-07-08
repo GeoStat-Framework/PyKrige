@@ -22,9 +22,11 @@ Copyright (c) 2015-2020, PyKrige Developers
 """
 
 import warnings
+from time import time
 
 import numpy as np
 import scipy.linalg
+import torch
 from scipy.spatial.distance import cdist
 
 from . import core, variogram_models
@@ -204,6 +206,14 @@ class OrdinaryKriging:
         pseudo_inv=False,
         pseudo_inv_type="pinv",
     ):
+        is_cuda_available = torch.cuda.is_available()
+        device = torch.device("cuda" if is_cuda_available else "cpu")
+        print(f"used device : {device}")
+        if is_cuda_available:
+            current_gpu = torch.cuda.current_device()
+            print(f"GPU name : {torch.cuda.get_device_name(current_gpu)}")
+        self.device = device
+
         # config the pseudo inverse
         self.pseudo_inv = bool(pseudo_inv)
         self.pseudo_inv_type = str(pseudo_inv_type)
@@ -265,7 +275,11 @@ class OrdinaryKriging:
         self.Y_ORIG = np.atleast_1d(
             np.squeeze(np.array(y, copy=True, dtype=np.float64))
         )
-        self.Z = np.atleast_1d(np.squeeze(np.array(z, copy=True, dtype=np.float64)))
+
+        z = torch.tensor(z.values, dtype=torch.float32).to(device).squeeze()
+        if z.dim() == 0:
+            z = z.unsqueeze(0)
+        self.Z = z
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
@@ -286,6 +300,7 @@ class OrdinaryKriging:
                 [self.XCENTER, self.YCENTER],
                 [self.anisotropy_scaling],
                 [self.anisotropy_angle],
+                self.device
             ).T
         elif self.coordinates_type == "geographic":
             # Leave everything as is in geographic case.
@@ -327,6 +342,7 @@ class OrdinaryKriging:
             nlags,
             weight,
             self.coordinates_type,
+            self.device
         )
 
         if self.verbose:
@@ -364,6 +380,7 @@ class OrdinaryKriging:
                 self.variogram_function,
                 self.variogram_model_parameters,
                 self.coordinates_type,
+                self.device,
                 self.pseudo_inv,
             )
             self.Q1 = core.calcQ1(self.epsilon)
@@ -474,6 +491,7 @@ class OrdinaryKriging:
                     [self.XCENTER, self.YCENTER],
                     [self.anisotropy_scaling],
                     [self.anisotropy_angle],
+                    self.device
                 ).T
             elif self.coordinates_type == "geographic":
                 if anisotropy_scaling != 1.0:
@@ -542,7 +560,8 @@ class OrdinaryKriging:
             self.variogram_function,
             self.variogram_model_parameters,
             self.coordinates_type,
-            self.pseudo_inv,
+            self.device,
+            self.pseudo_inv
         )
         self.Q1 = core.calcQ1(self.epsilon)
         self.Q2 = core.calcQ2(self.epsilon)
@@ -625,7 +644,6 @@ class OrdinaryKriging:
 
     def _get_kriging_matrix(self, n):
         """Assembles the kriging matrix."""
-
         if self.coordinates_type == "euclidean":
             xy = np.concatenate(
                 (self.X_ADJUSTED[:, np.newaxis], self.Y_ADJUSTED[:, np.newaxis]), axis=1
@@ -638,10 +656,11 @@ class OrdinaryKriging:
                 self.X_ADJUSTED,
                 self.Y_ADJUSTED,
             )
-        a = np.zeros((n + 1, n + 1))
+        a = torch.zeros((n + 1, n + 1), dtype=torch.float32).to(self.device)
+        d = torch.tensor(d, dtype=torch.float32).to(self.device)
         a[:n, :n] = -self.variogram_function(self.variogram_model_parameters, d)
 
-        np.fill_diagonal(a, 0.0)
+        a.fill_diagonal_(0)
         a[n, :] = 1.0
         a[:, n] = 1.0
         a[n, n] = 0.0
@@ -650,7 +669,6 @@ class OrdinaryKriging:
     def _exec_vector(self, a, bd, mask):
         """Solves the kriging system as a vectorized operation. This method
         can take a lot of memory for large grids and/or large datasets."""
-
         npt = bd.shape[0]
         n = self.X_ADJUSTED.shape[0]
         zero_index = None
@@ -660,27 +678,35 @@ class OrdinaryKriging:
         if self.pseudo_inv:
             a_inv = P_INV[self.pseudo_inv_type](a)
         else:
-            a_inv = scipy.linalg.inv(a)
+            a_inv = torch.inverse(a)
 
-        if np.any(np.absolute(bd) <= self.eps):
+        a_inv = torch.tensor(a_inv, dtype=torch.float32).to(self.device)
+
+        bd = torch.tensor(bd, dtype=torch.float32).to(self.device)
+        if torch.any(torch.abs(bd) <= self.eps):
             zero_value = True
-            zero_index = np.where(np.absolute(bd) <= self.eps)
+            zero_index = torch.where(torch.abs(bd) <= self.eps)
 
-        b = np.zeros((npt, n + 1, 1))
+        b = torch.zeros((npt, n + 1, 1), dtype=torch.float32).to(self.device)
         b[:, :n, 0] = -self.variogram_function(self.variogram_model_parameters, bd)
+
         if zero_value and self.exact_values:
             b[zero_index[0], zero_index[1], 0] = 0.0
         b[:, n, 0] = 1.0
 
         if (~mask).any():
-            mask_b = np.repeat(mask[:, np.newaxis, np.newaxis], n + 1, axis=1)
-            b = np.ma.array(b, mask=mask_b)
+            mask_torch = torch.repeat_interleave(torch.from_numpy(mask).unsqueeze(1).unsqueeze(1), n + 1, dim=1).to(self.device)
+            b = torch.masked_fill(b, mask_torch, value=torch.tensor(float('nan'))).to(self.device)
 
-        x = np.dot(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).T
-        zvalues = np.sum(x[:, :n, 0] * self.Z, axis=1)
-        sigmasq = np.sum(x[:, :, 0] * -b[:, :, 0], axis=1)
+        x = torch.matmul(a_inv, b.reshape((npt, n + 1)).T).reshape((1, n + 1, npt)).transpose(0, 2)
 
-        return zvalues, sigmasq
+        zvalues = torch.sum(x[:, :n, 0] * self.Z, dim=1)
+
+        sigmasq = torch.sum(x[:, :, 0] * -b[:, :, 0], dim=1)
+
+        np_zvalues = zvalues.cpu().numpy()
+        np_sigmasq = sigmasq.cpu().numpy()
+        return np_zvalues, np_sigmasq
 
     def _exec_loop(self, a, bd_all, mask):
         """Solves the kriging system by looping over all specified points.
@@ -845,7 +871,6 @@ class OrdinaryKriging:
         nx = xpts.size
         ny = ypts.size
         a = self._get_kriging_matrix(n)
-
         if style in ["grid", "masked"]:
             if style == "masked":
                 if mask is None:
@@ -882,6 +907,7 @@ class OrdinaryKriging:
                 [self.XCENTER, self.YCENTER],
                 [self.anisotropy_scaling],
                 [self.anisotropy_angle],
+                self.device
             ).T
             # Prepare for cdist:
             xy_data = np.concatenate(
@@ -996,7 +1022,9 @@ class OrdinaryKriging:
                 )
 
             if backend == "vectorized":
+                t0 = time()
                 zvalues, sigmasq = self._exec_vector(a, bd, mask)
+                print(f"_exec_vector take {time() - t0} sec in execute function")
             elif backend == "loop":
                 zvalues, sigmasq = self._exec_loop(a, bd, mask)
             elif backend == "C":
