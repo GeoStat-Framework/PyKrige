@@ -1046,3 +1046,11 @@ class OrdinaryKriging:
             sigmasq = sigmasq.reshape((ny, nx))
 
         return zvalues, sigmasq
+
+    def get_device_info(self):
+        is_cuda_available = torch.cuda.is_available()
+        device = torch.device("cuda" if is_cuda_available else "cpu")
+        current_gpu = None
+        if is_cuda_available:
+            current_gpu = torch.cuda.current_device()
+        return device, current_gpu
