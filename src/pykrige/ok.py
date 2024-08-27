@@ -205,9 +205,10 @@ class OrdinaryKriging:
         exact_values=True,
         pseudo_inv=False,
         pseudo_inv_type="pinv",
+        use_gpu=True
     ):
         is_cuda_available = torch.cuda.is_available()
-        device = torch.device("cuda" if is_cuda_available else "cpu")
+        device = torch.device("cuda" if is_cuda_available and use_gpu else "cpu")
         print(f"used device : {device}")
         if is_cuda_available:
             current_gpu = torch.cuda.current_device()
@@ -1047,7 +1048,7 @@ class OrdinaryKriging:
 
         return zvalues, sigmasq
 
-    def get_device_info(self):
+    def get_device_info(xself):
         is_cuda_available = torch.cuda.is_available()
         device = torch.device("cuda" if is_cuda_available else "cpu")
         current_gpu = None
