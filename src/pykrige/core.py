@@ -482,14 +482,15 @@ def _initialize_variogram_model(
     # are supplied, they have been supplied as expected...
     # if variogram_model_parameters was not defined, then estimate the variogram
 
+    print("total gpu memory", torch.cuda.get_device_properties(torch.cuda.current_device()).total_memory)
     mask = (d.unsqueeze(0) >= bins[:-1].unsqueeze(1)) & (d.unsqueeze(0) < bins[1:].unsqueeze(1))
-    print("memory usage: after mask ", torch.cuda.memory_allocated() / 1024 ** 2, "MB")
+    print("memory usage: after mask ", torch.cuda.memory_allocated())
     lags = torch.where(mask.sum(1) > 0, (d.unsqueeze(0) * mask).sum(1) / mask.sum(1),
                        torch.tensor(float('nan'), device=device))
-    print("memory usage: after lags ", torch.cuda.memory_allocated() / 1024 ** 2, "MB")
+    print("memory usage: after lags ", torch.cuda.memory_allocated())
     semivariance = torch.where(mask.sum(1) > 0, (g.unsqueeze(0) * mask).sum(1) / mask.sum(1),
                                torch.tensor(float('nan'), device=device))
-    print("memory usage: after lags and semivariance ", torch.cuda.memory_allocated() / 1024 ** 2, "MB")
+    print("memory usage: after lags and semivariance ", torch.cuda.memory_allocated())
     non_nan_mask = ~torch.isnan(semivariance)
     lags = lags[non_nan_mask]
     semivariance = semivariance[non_nan_mask]
