@@ -435,7 +435,6 @@ def _initialize_variogram_model(
         X = torch.tensor(X, dtype=torch.float32).to(device)
         d = torch.pdist(X)
         g = 0.5 * torch.pdist(y.unsqueeze(1), p=2).pow(2)
-
     # geographic coordinates only accepted if the problem is 2D
     # assume X[:, 0] ('x') => lon, X[:, 1] ('y') => lat
     # old method of distance calculation is retained here...
@@ -458,7 +457,7 @@ def _initialize_variogram_model(
         raise ValueError(
             "Specified coordinate type '%s' is not supported." % coordinates_type
         )
-
+    print("memory usage: after coord euclidean ", torch.cuda.memory_allocated() / 1024 ** 2, "MB")
     # Equal-sized bins are now implemented. The upper limit on the bins
     # is appended to the list (instead of calculated as part of the
     # list comprehension) to avoid any numerical oddities
@@ -468,7 +467,7 @@ def _initialize_variogram_model(
     dmax = torch.max(d)
     dmin = torch.min(d)
     bins = torch.linspace(dmin, dmax + 0.001, nlags + 1, device=device)
-
+    print("memory usage: after bins ", torch.cuda.memory_allocated() / 1024 ** 2, "MB")
     # This old binning method was experimental and doesn't seem
     # to work too well. Bins were computed such that there are more
     # at shorter lags. This effectively weights smaller distances more
@@ -488,7 +487,7 @@ def _initialize_variogram_model(
                        torch.tensor(float('nan'), device=device))
     semivariance = torch.where(mask.sum(1) > 0, (g.unsqueeze(0) * mask).sum(1) / mask.sum(1),
                                torch.tensor(float('nan'), device=device))
-
+    print("memory usage: after lags and semivariance ", torch.cuda.memory_allocated() / 1024 ** 2, "MB")
     non_nan_mask = ~torch.isnan(semivariance)
     lags = lags[non_nan_mask]
     semivariance = semivariance[non_nan_mask]

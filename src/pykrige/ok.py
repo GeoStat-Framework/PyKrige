@@ -271,13 +271,16 @@ class OrdinaryKriging:
         # problems with referencing the original passed arguments.
         # Also, values are forced to be float... in the future, might be worth
         # developing complex-number kriging (useful for vector field kriging)
+        print("memory allocated before X_ORIG", torch.cuda.memory_allocated())
         self.X_ORIG = np.atleast_1d(
             np.squeeze(np.array(x, copy=True, dtype=np.float64))
         )
+        print("memory allocated before Y_ORIG", torch.cuda.memory_allocated())
         self.Y_ORIG = np.atleast_1d(
             np.squeeze(np.array(y, copy=True, dtype=np.float64))
         )
 
+        print("memory allocated before z", torch.cuda.memory_allocated())
         z = torch.tensor(z.values, dtype=torch.float32).to(device).squeeze()
         if z.dim() == 0:
             z = z.unsqueeze(0)
@@ -331,6 +334,7 @@ class OrdinaryKriging:
         vp_temp = _make_variogram_parameter_list(
             self.variogram_model, variogram_parameters
         )
+        print("memory allocated before _initialize_variogram_model", torch.cuda.memory_allocated())
         (
             self.lags,
             self.semivariance,
@@ -682,9 +686,7 @@ class OrdinaryKriging:
         if self.pseudo_inv:
             a_inv = P_INV[self.pseudo_inv_type](a)
         else:
-            a_inv = torch.inverse(a)
-
-        a_inv = torch.tensor(a_inv, dtype=torch.float32).to(self.device)
+            a_inv = torch.inverse(a.to(device=self.device, dtype=torch.float32))
 
         bd = torch.tensor(bd, dtype=torch.float32).to(self.device)
         if torch.any(torch.abs(bd) <= self.eps):
