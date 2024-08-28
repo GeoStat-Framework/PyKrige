@@ -214,7 +214,8 @@ class OrdinaryKriging:
             current_gpu = torch.cuda.current_device()
             print(f"GPU name : {torch.cuda.get_device_name(current_gpu)}")
         self.device = device
-
+        print("memory allocated before run constructor", torch.cuda.memory_allocated())
+        print("max memory allocated before run constructor", torch.cuda.memory_allocated())
         # config the pseudo inverse
         self.pseudo_inv = bool(pseudo_inv)
         self.pseudo_inv_type = str(pseudo_inv_type)
@@ -393,6 +394,8 @@ class OrdinaryKriging:
                 print("cR =", self.cR, "\n")
         else:
             self.delta, self.sigma, self.epsilon, self.Q1, self.Q2, self.cR = [None] * 6
+        print("memory allocated after run constructor", torch.cuda.memory_allocated())
+        print("max memory allocated after run constructor", torch.cuda.memory_allocated())
 
     def update_variogram_model(
         self,
@@ -854,7 +857,8 @@ class OrdinaryKriging:
             set of points. If style was specified as 'masked', sigmasq
             will be a numpy masked array.
         """
-
+        print("memory allocated before run execute", torch.cuda.memory_allocated())
+        print("max memory allocated before run execute", torch.cuda.memory_allocated())
         if self.verbose:
             print("Executing Ordinary Kriging...\n")
 
@@ -1024,7 +1028,11 @@ class OrdinaryKriging:
 
             if backend == "vectorized":
                 t0 = time()
+                print("memory allocated before run _exec_vector", torch.cuda.memory_allocated())
+                print("max memory allocated before run _exec_vector", torch.cuda.memory_allocated())
                 zvalues, sigmasq = self._exec_vector(a, bd, mask)
+                print("memory allocated after run _exec_vector", torch.cuda.memory_allocated())
+                print("max memory allocated after run _exec_vector", torch.cuda.memory_allocated())
                 print(f"_exec_vector take {time() - t0} sec in execute function")
             elif backend == "loop":
                 zvalues, sigmasq = self._exec_loop(a, bd, mask)
