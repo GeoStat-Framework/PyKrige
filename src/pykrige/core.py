@@ -457,7 +457,6 @@ def _initialize_variogram_model(
         raise ValueError(
             "Specified coordinate type '%s' is not supported." % coordinates_type
         )
-    print("memory usage: after coord euclidean ", torch.cuda.memory_allocated() / 1024 ** 2, "MB")
     # Equal-sized bins are now implemented. The upper limit on the bins
     # is appended to the list (instead of calculated as part of the
     # list comprehension) to avoid any numerical oddities
@@ -467,7 +466,6 @@ def _initialize_variogram_model(
     dmax = torch.max(d)
     dmin = torch.min(d)
     bins = torch.linspace(dmin, dmax + 0.001, nlags + 1, device=device)
-    print("memory usage: after bins ", torch.cuda.memory_allocated() / 1024 ** 2, "MB")
     # This old binning method was experimental and doesn't seem
     # to work too well. Bins were computed such that there are more
     # at shorter lags. This effectively weights smaller distances more
@@ -482,15 +480,11 @@ def _initialize_variogram_model(
     # are supplied, they have been supplied as expected...
     # if variogram_model_parameters was not defined, then estimate the variogram
 
-    print("total gpu memory", torch.cuda.get_device_properties(torch.cuda.current_device()).total_memory)
     mask = (d.unsqueeze(0) >= bins[:-1].unsqueeze(1)) & (d.unsqueeze(0) < bins[1:].unsqueeze(1))
-    print("memory usage: after mask ", torch.cuda.memory_allocated())
     lags = torch.where(mask.sum(1) > 0, (d.unsqueeze(0) * mask).sum(1) / mask.sum(1),
                        torch.tensor(float('nan'), device=device))
-    print("memory usage: after lags ", torch.cuda.memory_allocated())
     semivariance = torch.where(mask.sum(1) > 0, (g.unsqueeze(0) * mask).sum(1) / mask.sum(1),
                                torch.tensor(float('nan'), device=device))
-    print("memory usage: after lags and semivariance ", torch.cuda.memory_allocated())
     non_nan_mask = ~torch.isnan(semivariance)
     lags = lags[non_nan_mask]
     semivariance = semivariance[non_nan_mask]
