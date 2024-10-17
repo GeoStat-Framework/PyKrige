@@ -583,6 +583,7 @@ class OrdinaryKriging:
         """
         return (
             self.lags,
+            self.semivariance,
             self.variogram_function(self.variogram_model_parameters, self.lags),
         )
 
