@@ -330,21 +330,26 @@ class OrdinaryKriging:
         vp_temp = _make_variogram_parameter_list(
             self.variogram_model, variogram_parameters
         )
-        (
-            self.lags,
-            self.semivariance,
-            self.variogram_model_parameters,
-        ) = _initialize_variogram_model(
-            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
-            self.Z,
-            self.variogram_model,
-            vp_temp,
-            self.variogram_function,
-            nlags,
-            weight,
-            self.coordinates_type,
-            self.device
-        )
+        try:
+            (
+                self.lags,
+                self.semivariance,
+                self.variogram_model_parameters,
+            ) = _initialize_variogram_model(
+                np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+                self.Z,
+                self.variogram_model,
+                vp_temp,
+                self.variogram_function,
+                nlags,
+                weight,
+                self.coordinates_type,
+                self.device
+            )
+        except RuntimeError as e:
+            if is_cuda_available and "CUDA out of memory" in str(e):
+                torch.cuda.empty_cache()
+                raise ValueError()
 
         if self.verbose:
             print("Coordinates type: '%s'" % self.coordinates_type, "\n")
