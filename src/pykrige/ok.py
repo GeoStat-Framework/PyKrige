@@ -349,7 +349,7 @@ class OrdinaryKriging:
         except RuntimeError as e:
             if is_cuda_available and "CUDA out of memory" in str(e):
                 torch.cuda.empty_cache()
-                raise ValueError()
+                raise RuntimeError()
 
         if self.verbose:
             print("Coordinates type: '%s'" % self.coordinates_type, "\n")
