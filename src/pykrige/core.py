@@ -480,14 +480,42 @@ def _initialize_variogram_model(
     # are supplied, they have been supplied as expected...
     # if variogram_model_parameters was not defined, then estimate the variogram
 
-    mask = (d.unsqueeze(0) >= bins[:-1].unsqueeze(1)) & (d.unsqueeze(0) < bins[1:].unsqueeze(1))
-    lags = torch.where(mask.sum(1) > 0, (d.unsqueeze(0) * mask).sum(1) / mask.sum(1),
-                       torch.tensor(float('nan'), device=device))
-    semivariance = torch.where(mask.sum(1) > 0, (g.unsqueeze(0) * mask).sum(1) / mask.sum(1),
-                               torch.tensor(float('nan'), device=device))
-    non_nan_mask = ~torch.isnan(semivariance)
-    lags = lags[non_nan_mask]
-    semivariance = semivariance[non_nan_mask]
+    # mask = (d.unsqueeze(0) >= bins[:-1].unsqueeze(1)) & (d.unsqueeze(0) < bins[1:].unsqueeze(1))
+    # lags = torch.where(mask.sum(1) > 0, (d.unsqueeze(0) * mask).sum(1) / mask.sum(1),
+    #                    torch.tensor(float('nan'), device=device))
+    # semivariance = torch.where(mask.sum(1) > 0, (g.unsqueeze(0) * mask).sum(1) / mask.sum(1),
+    #                            torch.tensor(float('nan'), device=device))
+    # non_nan_mask = ~torch.isnan(semivariance)
+    # lags = lags[non_nan_mask]
+    # semivariance = semivariance[non_nan_mask]
+
+    indices = torch.bucketize(d, bins)
+    valid = (indices > 0) & (indices < len(bins))
+    indices_valid = indices[valid]
+    d_valid = d[valid]
+    g_valid = g[valid]
+
+    lags_sum = torch.zeros(len(bins) - 1)
+    lags_count = torch.zeros(len(bins) - 1)
+    semivariance_sum = torch.zeros(len(bins) - 1)
+
+    lags_sum.index_add_(0, indices_valid - 1, d_valid)
+    lags_count.index_add_(0, indices_valid - 1, torch.ones_like(d_valid))
+    semivariance_sum.index_add_(0, indices_valid - 1, g_valid)
+
+    lags = torch.where(
+        lags_count > 0,
+        lags_sum / lags_count,
+        torch.tensor(float('nan'))
+    )
+
+    semivariance = torch.where(
+        lags_count > 0,
+        semivariance_sum / lags_count,
+        torch.tensor(float('nan'))
+    )
+
+
 
     if variogram_model_parameters is not None:
         if variogram_model == "linear" and len(variogram_model_parameters) != 2:
