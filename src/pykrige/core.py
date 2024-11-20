@@ -525,9 +525,12 @@ def _initialize_variogram_model(
     print("3 ------------")
     get_vram_usage()
 
-    lags_sum.index_add_(0, indices_valid - 1, d_valid)
-    lags_count.index_add_(0, indices_valid - 1, torch.ones_like(d_valid))
-    semivariance_sum.index_add_(0, indices_valid - 1, g_valid)
+    try:
+        lags_sum.index_add_(0, indices_valid - 1, d_valid)
+        lags_count.index_add_(0, indices_valid - 1, torch.ones_like(d_valid))
+        semivariance_sum.index_add_(0, indices_valid - 1, g_valid)
+    except Exception as e:
+        print("An error occurred:", e)
     print("4 ------------")
     get_vram_usage()
 
