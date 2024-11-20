@@ -488,8 +488,9 @@ def _initialize_variogram_model(
     non_nan_mask = ~torch.isnan(semivariance)
     lags = lags[non_nan_mask]
     semivariance = semivariance[non_nan_mask]
-    print(lags)
-    print(semivariance)
+
+    print("lags1", lags)
+    print("semivariance1", semivariance)
 
     indices = torch.bucketize(d, bins)
     valid = (indices > 0) & (indices < len(bins))
@@ -517,8 +518,8 @@ def _initialize_variogram_model(
         torch.tensor(float('nan'))
     )
 
-    print(lags)
-    print(semivariance)
+    print("lags2", lags)
+    print("semivariance2", semivariance)
 
 
 
