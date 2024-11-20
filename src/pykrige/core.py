@@ -376,6 +376,20 @@ def _make_variogram_parameter_list(variogram_model, variogram_model_parameters):
 
     return parameter_list
 
+def get_vram_usage():
+    if torch.cuda.is_available():
+        # Obtenir l'utilisation de la mémoire en octets
+        allocated_memory = torch.cuda.memory_allocated()
+        reserved_memory = torch.cuda.memory_reserved()
+
+        # Convertir en gigaoctets
+        allocated_memory_gb = allocated_memory / (1024 ** 3)
+        reserved_memory_gb = reserved_memory / (1024 ** 3)
+
+        print(f"VRAM utilisée (mémoire allouée): {allocated_memory_gb:.2f} GB")
+        print(f"VRAM réservée (mémoire réservée): {reserved_memory_gb:.2f} GB")
+    else:
+        print("CUDA n'est pas disponible.")
 
 def _initialize_variogram_model(
     X,
@@ -483,14 +497,21 @@ def _initialize_variogram_model(
     mask = (d.unsqueeze(0) >= bins[:-1].unsqueeze(1)) & (d.unsqueeze(0) < bins[1:].unsqueeze(1))
     lags = torch.where(mask.sum(1) > 0, (d.unsqueeze(0) * mask).sum(1) / mask.sum(1),
                        torch.tensor(float('nan'), device=device))
+    print("0 ------------")
+    get_vram_usage()
     semivariance = torch.where(mask.sum(1) > 0, (g.unsqueeze(0) * mask).sum(1) / mask.sum(1),
                                torch.tensor(float('nan'), device=device))
+    print("1 ------------")
+    get_vram_usage()
     non_nan_mask = ~torch.isnan(semivariance)
     lags = lags[non_nan_mask]
     semivariance = semivariance[non_nan_mask]
 
     print("lags1", lags)
     print("semivariance1", semivariance)
+
+    print("2 ------------")
+    get_vram_usage()
 
     indices = torch.bucketize(d, bins)
     valid = (indices > 0) & (indices < len(bins))
@@ -501,22 +522,31 @@ def _initialize_variogram_model(
     lags_sum = torch.zeros(len(bins) - 1)
     lags_count = torch.zeros(len(bins) - 1)
     semivariance_sum = torch.zeros(len(bins) - 1)
+    print("3 ------------")
+    get_vram_usage()
 
     lags_sum.index_add_(0, indices_valid - 1, d_valid)
     lags_count.index_add_(0, indices_valid - 1, torch.ones_like(d_valid))
     semivariance_sum.index_add_(0, indices_valid - 1, g_valid)
+    print("4 ------------")
+    get_vram_usage()
 
     lags = torch.where(
         lags_count > 0,
         lags_sum / lags_count,
         torch.tensor(float('nan'))
     )
+    print("5 ------------")
+    get_vram_usage()
 
     semivariance = torch.where(
         lags_count > 0,
         semivariance_sum / lags_count,
         torch.tensor(float('nan'))
     )
+
+    print("6 ------------")
+    get_vram_usage()
 
     print("lags2", lags)
     print("semivariance2", semivariance)
