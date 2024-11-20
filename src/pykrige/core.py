@@ -480,14 +480,16 @@ def _initialize_variogram_model(
     # are supplied, they have been supplied as expected...
     # if variogram_model_parameters was not defined, then estimate the variogram
 
-    # mask = (d.unsqueeze(0) >= bins[:-1].unsqueeze(1)) & (d.unsqueeze(0) < bins[1:].unsqueeze(1))
-    # lags = torch.where(mask.sum(1) > 0, (d.unsqueeze(0) * mask).sum(1) / mask.sum(1),
-    #                    torch.tensor(float('nan'), device=device))
-    # semivariance = torch.where(mask.sum(1) > 0, (g.unsqueeze(0) * mask).sum(1) / mask.sum(1),
-    #                            torch.tensor(float('nan'), device=device))
-    # non_nan_mask = ~torch.isnan(semivariance)
-    # lags = lags[non_nan_mask]
-    # semivariance = semivariance[non_nan_mask]
+    mask = (d.unsqueeze(0) >= bins[:-1].unsqueeze(1)) & (d.unsqueeze(0) < bins[1:].unsqueeze(1))
+    lags = torch.where(mask.sum(1) > 0, (d.unsqueeze(0) * mask).sum(1) / mask.sum(1),
+                       torch.tensor(float('nan'), device=device))
+    semivariance = torch.where(mask.sum(1) > 0, (g.unsqueeze(0) * mask).sum(1) / mask.sum(1),
+                               torch.tensor(float('nan'), device=device))
+    non_nan_mask = ~torch.isnan(semivariance)
+    lags = lags[non_nan_mask]
+    semivariance = semivariance[non_nan_mask]
+    print(lags)
+    print(semivariance)
 
     indices = torch.bucketize(d, bins)
     valid = (indices > 0) & (indices < len(bins))
@@ -514,6 +516,9 @@ def _initialize_variogram_model(
         semivariance_sum / lags_count,
         torch.tensor(float('nan'))
     )
+
+    print(lags)
+    print(semivariance)
 
 
 
