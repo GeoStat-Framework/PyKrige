@@ -519,9 +519,9 @@ def _initialize_variogram_model(
     d_valid = d[valid]
     g_valid = g[valid]
 
-    lags_sum = torch.zeros(len(bins) - 1)
-    lags_count = torch.zeros(len(bins) - 1)
-    semivariance_sum = torch.zeros(len(bins) - 1)
+    lags_sum = torch.zeros(len(bins) - 1, device=device)
+    lags_count = torch.zeros(len(bins) - 1, device=device)
+    semivariance_sum = torch.zeros(len(bins) - 1, device=device)
     print("3 ------------")
     get_vram_usage()
 
