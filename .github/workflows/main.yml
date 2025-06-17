@@ -76,17 +76,15 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-13, macos-14]
         # https://github.com/scipy/oldest-supported-numpy/blob/main/setup.cfg
         ver:
-          - {py: '3.8', np: '==1.20.0', sp: '==1.5.4'}
-          - {py: '3.9', np: '==1.20.0', sp: '==1.5.4'}
+          - {py: '3.9', np: '==1.20.0', sp: '==1.6.3'}
           - {py: '3.10', np: '==1.21.6', sp: '==1.7.2'}
           - {py: '3.11', np: '==1.23.2', sp: '==1.9.2'}
           - {py: '3.12', np: '==1.26.2', sp: '==1.11.2'}
-          - {py: '3.12', np: '>=2.0.0rc1', sp: '>=1.13.0'}
+          - {py: '3.12', np: '>=2.0.0', sp: '>=1.13.0'}
+          - {py: '3.13', np: '>=2.1.0', sp: '>=1.14.1'}
         exclude:
           - os: macos-14
-            ver: {py: '3.8', np: '==1.20.0', sp: '==1.5.4'}
-          - os: macos-14
-            ver: {py: '3.9', np: '==1.20.0', sp: '==1.5.4'}
+            ver: {py: '3.9', np: '==1.20.0', sp: '==1.6.3'}
           - os: macos-14
             ver: {py: '3.10', np: '==1.21.6', sp: '==1.7.2'}
     steps:
