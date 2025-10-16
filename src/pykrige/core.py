@@ -711,11 +711,11 @@ def _krige(
         d = great_circle_distance(x1, y1, x2, y2)
         bd = np.asarray(
             great_circle_distance(
-            X[:, 0],
-            X[:, 1],
-            coords[0] * np.ones(X.shape[0]),
-            coords[1] * np.ones(X.shape[0]),
-        )
+                X[:, 0],
+                X[:, 1],
+                coords[0] * np.ones(X.shape[0]),
+                coords[1] * np.ones(X.shape[0]),
+            )
         ).ravel()
 
     # this check is done when initializing variogram, but kept here anyways...
