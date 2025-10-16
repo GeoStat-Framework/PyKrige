@@ -69,14 +69,13 @@ def test_krige_housing():
 
     try:
         housing = fetch_california_housing()
-    except (ssl.SSLError, urllib.error.URLError):
-        ssl._create_default_https_context = ssl._create_unverified_context
-        try:
-            housing = fetch_california_housing()
-        except PermissionError:
-            # This can raise permission error on Appveyor
-            pytest.skip("Failed to load california housing dataset")
-        ssl._create_default_https_context = ssl.create_default_context
+    except (
+        ssl.SSLError,
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        PermissionError,
+    ):
+        pytest.skip("Failed to load california housing dataset")
 
     # take only first 1000
     p = housing["data"][:1000, :-2]
