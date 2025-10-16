@@ -70,6 +70,8 @@ jobs:
   build_sdist:
     name: sdist on ${{ matrix.os }} with py ${{ matrix.ver.py }} numpy${{ matrix.ver.np }}
     runs-on: ${{ matrix.os }}
+    env:
+      SCIKIT_LEARN_DATA: ${{ github.workspace }}/.cache/scikit_learn_data
     strategy:
       fail-fast: false
       matrix:
@@ -93,6 +95,12 @@ jobs:
         with:
           fetch-depth: "0"
 
+      - name: Cache scikit-learn dataset
+        uses: actions/cache@v4
+        with:
+          path: .cache/scikit_learn_data
+          key: ${{ runner.os }}-sklearn-data
+
       - name: Set up Python ${{ matrix.ver.py }}
         uses: actions/setup-python@v5
         with:
@@ -106,6 +114,9 @@ jobs:
       - name: Install pykrige
         run: |
           pip install -v --editable .[test]
+
+      - name: Pre-fetch scikit-learn datasets
+        run: python -c "from sklearn.datasets import fetch_california_housing; fetch_california_housing()"
 
       - name: Run tests
         run: |
@@ -126,11 +137,19 @@ jobs:
   coverage:
     name: coverage
     runs-on: ubuntu-latest
+    env:
+      SCIKIT_LEARN_DATA: ${{ github.workspace }}/.cache/scikit_learn_data
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
+
+      - name: Cache scikit-learn dataset
+        uses: actions/cache@v4
+        with:
+          path: .cache/scikit_learn_data
+          key: ${{ runner.os }}-sklearn-data
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -145,6 +164,9 @@ jobs:
       - name: Install pykrige
         run: |
           pip install -v --editable .[test]
+
+      - name: Pre-fetch scikit-learn datasets
+        run: python -c "from sklearn.datasets import fetch_california_housing; fetch_california_housing()"
 
       - name: Run tests
         env:
