@@ -238,6 +238,7 @@ class UniversalKriging:
         functional_drift=None,
         verbose=False,
         enable_plotting=False,
+        enable_statistics=False,
         exact_values=True,
         pseudo_inv=False,
         pseudo_inv_type="pinv",
@@ -375,23 +376,27 @@ class UniversalKriging:
         if self.enable_plotting:
             self.display_variogram_model()
 
-        if self.verbose:
-            print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = _find_statistics(
-            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
-            self.Z,
-            self.variogram_function,
-            self.variogram_model_parameters,
-            "euclidean",
-            self.pseudo_inv,
-        )
-        self.Q1 = core.calcQ1(self.epsilon)
-        self.Q2 = core.calcQ2(self.epsilon)
-        self.cR = core.calc_cR(self.Q2, self.sigma)
-        if self.verbose:
-            print("Q1 =", self.Q1)
-            print("Q2 =", self.Q2)
-            print("cR =", self.cR, "\n")
+        self.enable_statistics = enable_statistics
+        if self.enable_statistics:
+            if self.verbose:
+                print("Calculating statistics on variogram model fit...")
+            self.delta, self.sigma, self.epsilon = _find_statistics(
+                np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+                self.Z,
+                self.variogram_function,
+                self.variogram_model_parameters,
+                "euclidean",
+                self.pseudo_inv,
+            )
+            self.Q1 = core.calcQ1(self.epsilon)
+            self.Q2 = core.calcQ2(self.epsilon)
+            self.cR = core.calc_cR(self.Q2, self.sigma)
+            if self.verbose:
+                print("Q1 =", self.Q1)
+                print("Q2 =", self.Q2)
+                print("cR =", self.cR, "\n")
+        else:
+            self.delta, self.sigma, self.epsilon, self.Q1, self.Q2, self.cR = [None] * 6
 
         if self.verbose:
             print("Initializing drift terms...")
@@ -769,23 +774,27 @@ class UniversalKriging:
         if self.enable_plotting:
             self.display_variogram_model()
 
-        if self.verbose:
-            print("Calculating statistics on variogram model fit...")
-        self.delta, self.sigma, self.epsilon = _find_statistics(
-            np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
-            self.Z,
-            self.variogram_function,
-            self.variogram_model_parameters,
-            "euclidean",
-            self.pseudo_inv,
-        )
-        self.Q1 = core.calcQ1(self.epsilon)
-        self.Q2 = core.calcQ2(self.epsilon)
-        self.cR = core.calc_cR(self.Q2, self.sigma)
-        if self.verbose:
-            print("Q1 =", self.Q1)
-            print("Q2 =", self.Q2)
-            print("cR =", self.cR, "\n")
+        if self.enable_statistics:
+            if self.verbose:
+                print("Calculating statistics on variogram model fit...")
+            self.delta, self.sigma, self.epsilon = _find_statistics(
+                np.vstack((self.X_ADJUSTED, self.Y_ADJUSTED)).T,
+                self.Z,
+                self.variogram_function,
+                self.variogram_model_parameters,
+                "euclidean",
+                self.pseudo_inv,
+            )
+            self.Q1 = core.calcQ1(self.epsilon)
+            self.Q2 = core.calcQ2(self.epsilon)
+            self.cR = core.calc_cR(self.Q2, self.sigma)
+            if self.verbose:
+                print("Q1 =", self.Q1)
+                print("Q2 =", self.Q2)
+                print("cR =", self.cR, "\n")
+        else:
+            self.delta, self.sigma, self.epsilon, self.Q1, self.Q2, self.cR = [None] * 6
+
 
     def display_variogram_model(self):
         """Displays variogram model with the actual binned data."""
