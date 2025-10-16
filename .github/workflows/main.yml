@@ -68,7 +68,7 @@ jobs:
           path: ./dist-wheel-${{ matrix.os }}/*.whl
 
   build_sdist:
-    name: sdist on ${{ matrix.os }} with py ${{ matrix.ver.py }} numpy${{ matrix.ver.np }}
+    name: sdist on ${{ matrix.os }} with py==${{ matrix.ver.py }} numpy${{ matrix.ver.np }} scipy${{ matrix.ver.sp }} sklearn${{ matrix.ver.sk }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
