@@ -4,7 +4,7 @@ Exact Values
 ============
 
 PyKrige demonstration and usage
-as a non-exact interpolator in 1D. 
+as a non-exact interpolator in 1D.
 """
 
 import matplotlib.pyplot as plt

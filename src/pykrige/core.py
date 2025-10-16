@@ -700,7 +700,7 @@ def _krige(
     # measurement points (X) and the kriging point (coords)
     if coordinates_type == "euclidean":
         d = squareform(pdist(X, metric="euclidean"))
-        bd = np.squeeze(cdist(X, coords[None, :], metric="euclidean"))
+        bd = np.asarray(cdist(X, coords[None, :], metric="euclidean")).ravel()
 
     # geographic coordinate distances still calculated in the old way...
     # assume X[:, 0] ('x') => lon, X[:, 1] ('y') => lat
@@ -709,12 +709,14 @@ def _krige(
         x1, x2 = np.meshgrid(X[:, 0], X[:, 0], sparse=True)
         y1, y2 = np.meshgrid(X[:, 1], X[:, 1], sparse=True)
         d = great_circle_distance(x1, y1, x2, y2)
-        bd = great_circle_distance(
-            X[:, 0],
-            X[:, 1],
-            coords[0] * np.ones(X.shape[0]),
-            coords[1] * np.ones(X.shape[0]),
-        )
+        bd = np.asarray(
+            great_circle_distance(
+                X[:, 0],
+                X[:, 1],
+                coords[0] * np.ones(X.shape[0]),
+                coords[1] * np.ones(X.shape[0]),
+            )
+        ).ravel()
 
     # this check is done when initializing variogram, but kept here anyways...
     else:
@@ -725,7 +727,7 @@ def _krige(
     # check if kriging point overlaps with measurement point
     if np.any(np.absolute(bd) <= 1e-10):
         zero_value = True
-        zero_index = np.where(bd <= 1e-10)[0][0]
+        zero_index = int(np.flatnonzero(bd <= 1e-10)[0])
 
     # set up kriging matrix
     n = X.shape[0]

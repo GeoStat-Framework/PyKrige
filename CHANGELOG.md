@@ -2,6 +2,23 @@ Changelog
 =========
 
 
+Version 1.7.3
+-------------
+*October 16, 2025*
+
+See [#308](https://github.com/GeoStat-Framework/PyKrige/pull/308)
+
+**Changes**
+
+* add wheels for Python 3.13 and 3.14 as well as for Linux aarch64
+* pin the earliest supported scikit-learn release alongside NumPy/SciPy in the sdist CI
+* allow the housing-based classification/regression tests to attempt loading the California housing dataset and skip cleanly when the download fails
+
+**Bug fixes**
+
+* prevent `ValueError` from NumPy when pseudo inverse kriging statistics encounter duplicate coordinates by keeping distance vectors 1-D
+
+
 Version 1.7.2
 -------------
 *May 27, 2024*
