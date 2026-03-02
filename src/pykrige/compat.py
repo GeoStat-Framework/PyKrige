@@ -267,27 +267,40 @@ class Krige(RegressorMixin, BaseEstimator):
         return self.execute(points, *args, **kwargs)[0]
 
     def execute(self, points, *args, **kwargs):
-        # TODO array of Points, (x, y) pairs of shape (N, 2)
         """
         Execute.
-
+    
         Parameters
         ----------
-        points: dict
-
+        points: dict OR ndarray
+            - dict: must contain xpoints/ypoints (and zpoints for 3D)
+            - ndarray: shape (N,2) for 2D or (N,3) for 3D
+    
         Returns
         -------
-        Prediction array
-        Variance array
+        prediction: ndarray
+        variance: ndarray
         """
+        # Accept array-like points for convenience
+        if not isinstance(points, dict):
+            pts = np.asarray(points)
+            if pts.ndim == 1:
+                pts = pts.reshape(1, -1)
+            points = self._dimensionality_check(pts, ext="points")
+    
         default_kw = dict(style="points", backend="loop")
         default_kw.update(kwargs)
-        points.update(default_kw)
+    
+        pts_kw = dict(points)
+        pts_kw.update(default_kw)
+    
         if isinstance(self.model, (OrdinaryKriging, OrdinaryKriging3D)):
-            points.update(dict(n_closest_points=self.n_closest_points))
+            pts_kw.update(dict(n_closest_points=self.n_closest_points))
         else:
             print("n_closest_points will be ignored for UniversalKriging")
-        prediction, variance = self.model.execute(**points)
+            pass
+    
+        prediction, variance = self.model.execute(**pts_kw)
         return prediction, variance
 
 
