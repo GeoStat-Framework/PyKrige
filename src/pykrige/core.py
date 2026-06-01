@@ -139,6 +139,10 @@ def _adjust_for_anisotropy(X, center, scaling, angle):
         float array [n_samples, n_dim], the X array adjusted for anisotropy.
     """
 
+    # Cast to float so integer input coordinates work: the in-place subtraction
+    # below would otherwise raise a UFuncTypeError under NumPy's "same_kind"
+    # casting rule when ``X`` is an integer array (see GH #300).
+    X = np.asarray(X, dtype=np.float64)
     center = np.asarray(center)[None, :]
     angle = np.asarray(angle) * np.pi / 180
 
