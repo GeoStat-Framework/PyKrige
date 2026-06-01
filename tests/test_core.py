@@ -111,6 +111,24 @@ def test_core_adjust_for_anisotropy_3d():
     assert_allclose(X_adj[:, 2], np.array([0.0, 0.0, 2.0]), **allclose_pars)
 
 
+def test_core_adjust_for_anisotropy_integer_coords():
+    # Integer input coordinates must not raise a casting error (GH #300):
+    # the in-place subtraction inside _adjust_for_anisotropy used to fail
+    # under NumPy's "same_kind" rule when X had an integer dtype.
+    X_int = np.array([[1, 0, -1, 0], [0, 1, 0, -1]]).T
+    X_float = X_int.astype(np.float64)
+    X_adj_int = core._adjust_for_anisotropy(X_int, [0.0, 0.0], [2.0], [90.0])
+    X_adj_float = core._adjust_for_anisotropy(X_float, [0.0, 0.0], [2.0], [90.0])
+    assert_allclose(X_adj_int, X_adj_float, **allclose_pars)
+    # An integer OrdinaryKriging run with integer query points must work too.
+    x = np.array([10, 20, 30, 40, 50])
+    y = np.array([10, 25, 35, 45, 60])
+    z = np.array([1.1, 2.2, 0.5, 3.1, 1.7])
+    ok = OrdinaryKriging(x, y, z, variogram_model="linear")
+    values, _ = ok.execute("points", np.array([15, 25]), np.array([15, 25]))
+    assert np.all(np.isfinite(values))
+
+
 def test_core_make_variogram_parameter_list():
     # test of first case - variogram_model_parameters is None
     # function should return None unaffected
