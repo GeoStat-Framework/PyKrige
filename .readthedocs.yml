@@ -4,15 +4,12 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  jobs:
+    install:
+    - python -m pip install --upgrade --no-cache-dir pip
+    - python -m pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir --group docs .
 
 sphinx:
   configuration: docs/source/conf.py
 
 formats: [pdf]
-
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - doc

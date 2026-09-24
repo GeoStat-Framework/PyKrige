@@ -1,11 +1,11 @@
 [build-system]
 requires = [
-    "setuptools>=77",
-    "wheel",
+    # keep in sync with [dependency-groups.build]
     "Cython>=3",
     "numpy>=2",
-    "scipy>=1.5.4",
     "pentapy>=1.1.0,<2",
+    "scipy>=1.5.4",
+    "setuptools>=77",
     "setuptools_scm[toml]>=7",
 ]
 build-backend = "setuptools.build_meta"
@@ -54,7 +54,28 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-doc = [
+plot = ["matplotlib>=3,<4"]
+sklearn = ["scikit-learn>=0.19"]
+
+[project.urls]
+Changelog = "https://github.com/GeoStat-Framework/PyKrige/blob/main/CHANGELOG.md"
+Conda-Forge = "https://anaconda.org/conda-forge/pykrige"
+Documentation = "https://pykrige.readthedocs.io"
+Homepage = "https://github.com/GeoStat-Framework/PyKrige"
+Source = "https://github.com/GeoStat-Framework/PyKrige"
+Tracker = "https://github.com/GeoStat-Framework/PyKrige/issues"
+
+[dependency-groups]
+build = [
+    # keep in sync with [build-system.requires]
+    "Cython>=3",
+    "numpy>=2",
+    "pentapy>=1.1.0,<2",
+    "scipy>=1.5.4",
+    "setuptools>=77",
+    "setuptools_scm[toml]>=7",
+]
+docs = [
     "gstools>=1.4,<2",
     "pillow",
     "scikit-learn>=0.19",
@@ -65,9 +86,7 @@ doc = [
     "sphinx-gallery>=0.8",
     "sphinx-rtd-theme>=2",
 ]
-plot = ["matplotlib>=3,<4"]
-sklearn = ["scikit-learn>=0.19"]
-test = [
+tests = [
     "pytest-cov>=3",
     "scikit-learn>=0.19",
     "gstools>=1.4,<2",
@@ -78,14 +97,12 @@ lint = [
     "isort[colors]",
     "cython-lint",
 ]
-
-[project.urls]
-Changelog = "https://github.com/GeoStat-Framework/PyKrige/blob/main/CHANGELOG.md"
-Conda-Forge = "https://anaconda.org/conda-forge/pykrige"
-Documentation = "https://pykrige.readthedocs.io"
-Homepage = "https://github.com/GeoStat-Framework/PyKrige"
-Source = "https://github.com/GeoStat-Framework/PyKrige"
-Tracker = "https://github.com/GeoStat-Framework/PyKrige/issues"
+dev = [
+    {include-group = "build"},
+    # {include-group = "docs"},
+    {include-group = "tests"},
+    {include-group = "lint"},
+]
 
 [tool.setuptools_scm]
 write_to = "src/pykrige/_version.py"
@@ -156,7 +173,7 @@ build-frontend = "build"
 # Disable building py3.6/7/8, pp3.8, 32bit linux
 skip = ["*-win32", "*_i686", "*-musllinux_*", "cp31?t-*"]
 # Run the package tests using `pytest`
-test-extras = "test"
+test-groups = "tests"
 test-command = "pytest -v {package}/tests"
 
 environment.PIP_ONLY_BINARY = "numpy,scipy"
