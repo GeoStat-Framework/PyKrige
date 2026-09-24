@@ -86,6 +86,9 @@ celerybeat-schedule
 # dotenv
 .env
 
+# lock files (pixi, pipenv, uv)
+*.lock
+
 # virtualenv
 .venv
 venv/
