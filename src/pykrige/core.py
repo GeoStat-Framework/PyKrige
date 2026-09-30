@@ -838,12 +838,12 @@ def _find_statistics(
 
 def calcQ1(epsilon):
     """Returns the Q1 statistic for the variogram fit (see [1])."""
-    return abs(np.sum(epsilon) / (epsilon.shape[0] - 1))
+    return abs(np.sum(epsilon) / epsilon.shape[0])
 
 
 def calcQ2(epsilon):
     """Returns the Q2 statistic for the variogram fit (see [1])."""
-    return np.sum(epsilon**2) / (epsilon.shape[0] - 1)
+    return np.sum(epsilon**2) / epsilon.shape[0]
 
 
 def calc_cR(Q2, sigma):

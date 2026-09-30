@@ -375,6 +375,18 @@ def test_core_calculate_variogram_model():
     assert_allclose(res, np.array([3.0, 2.0, 1.0]), 0.001, 0.001)
 
 
+def test_q1_q2_use_number_of_epsilon_residuals():
+    epsilon = np.array([1.0, 1.0])
+    assert core.calcQ1(epsilon) == 1.0
+    assert core.calcQ2(epsilon) == 1.0
+
+
+def test_q1_q2_single_residual_are_finite():
+    epsilon = np.array([0.5])
+    assert core.calcQ1(epsilon) == 0.5
+    assert core.calcQ2(epsilon) == 0.25
+
+
 def test_core_krige():
     # Example 3.2 from Kitanidis
     data = np.array([[9.7, 47.6, 1.22], [43.8, 24.6, 2.822]])
