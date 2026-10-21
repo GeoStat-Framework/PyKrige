@@ -167,7 +167,7 @@ class ClassificationKriging:
         pred_proba_ilr = self.krige_residual(x, **kwargs) + ml_pred_ilr
         pred_proba = inverse_ilr_transformation(pred_proba_ilr)
 
-        return np.argmax(pred_proba, axis=1)
+        return self.classes_[np.argmax(pred_proba, axis=1)]
 
     def krige_residual(self, x, **kwargs):
         """
