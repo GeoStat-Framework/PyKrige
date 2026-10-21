@@ -63,6 +63,38 @@ def test_classification_krige():
 
 
 @pytest.mark.skipif(not SKLEARN_INSTALLED, reason="requires scikit-learn")
+@pytest.mark.parametrize("method", ["ordinary", "universal"])
+@pytest.mark.parametrize("column_target", [False, True])
+def test_classification_krige_target_shape(method, column_target):
+    rng = np.random.RandomState(4)
+    p = rng.uniform(size=(12, 2))
+    x = rng.uniform(size=(12, 2))
+    y = np.arange(12) % 3
+
+    def model():
+        return ClassificationKriging(
+            classification_model=RandomForestClassifier(n_estimators=8, random_state=0),
+            method=method,
+            n_closest_points=4,
+            variogram_parameters=[1.0, 0.0],
+        )
+
+    actual = model()
+    actual.fit(p, x, y[:, None] if column_target else y)
+    reference = model()
+    reference.fit(p, x, y[:, None])
+
+    query = np.array([[0.3, 0.7], [0.8, 0.2]])
+    np.testing.assert_array_equal(
+        actual.predict(p[:2], query), reference.predict(p[:2], query)
+    )
+    np.testing.assert_allclose(
+        actual.krige_residual(query), reference.krige_residual(query)
+    )
+    assert actual.score(p, x, y) == 1.0
+
+
+@pytest.mark.skipif(not SKLEARN_INSTALLED, reason="requires scikit-learn")
 def test_krige_classification_housing():
     import ssl
     import urllib

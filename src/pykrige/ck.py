@@ -132,7 +132,7 @@ class ClassificationKriging:
         ml_pred_ilr = ilr_transformation(ml_pred)
 
         self.onehotencode = OneHotEncoder(categories=[self.classes_])
-        y_ohe = np.array(self.onehotencode.fit_transform(y).todense())
+        y_ohe = np.array(self.onehotencode.fit_transform(y.reshape(-1, 1)).todense())
         y_ohe_ilr = ilr_transformation(y_ohe)
 
         for i in range(len(self.classes_) - 1):
